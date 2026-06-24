@@ -27,7 +27,6 @@ Additional contextual information may be obtained from:
 - Snapshot data
 - Exception Audit Trail
 - Pack Audit Trail
-- Intermarket Transaction (IMT) information
 - Future VerifyIt scan events
 
 The data model must support both current operational requirements and future AI-assisted investigations.
@@ -49,10 +48,8 @@ The system shall maintain relationships between:
 - Products
 - Packs (where identifiable)
 - Audit Trail information
-- IMT information
 - Future VerifyIt events
 
-IMT information shall not be modelled as a standalone operational domain. Instead, it shall be treated as contextual evidence supporting alert investigation and root cause analysis.
 
 ## Rationale
 
@@ -86,14 +83,13 @@ The model allows future AI services to analyse:
 - Exceptions
 - Audit Trails
 - Product information
-- IMT information
 - VerifyIt scan events
 
 as a unified operational context.
 
 ### Separation of Evidence and Conclusions
 
-Operational evidence such as IMT records, audit trails and future AI recommendations shall remain distinguishable from operational decisions and user actions.
+Operational evidence such as audit trails and future AI recommendations shall remain distinguishable from operational decisions and user actions.
 
 This supports transparency, traceability and future validation activities.
 
