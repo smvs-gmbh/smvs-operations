@@ -49,6 +49,7 @@ The system shall maintain relationships between:
 - Packs (where identifiable)
 - Audit Trail information
 - Future VerifyIt events
+- Future VerifyIt events
 
 
 ## Rationale
