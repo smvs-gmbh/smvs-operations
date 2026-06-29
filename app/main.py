@@ -1,9 +1,15 @@
 from fastapi import FastAPI
 
-app = FastAPI(title="SMVS Operations")
+from app.core.config import get_settings
+
+settings = get_settings()
+
+app = FastAPI(title=settings.app_name)
 
 
 @app.get("/health")
 def health_check() -> dict[str, str]:
-    return {"status": "ok"}
-
+    return {
+        "status": "ok",
+        "environment": settings.environment,
+    }
