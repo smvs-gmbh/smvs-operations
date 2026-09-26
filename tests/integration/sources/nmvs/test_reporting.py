@@ -47,6 +47,7 @@ def test_daily_snapshot_uses_report_requests_and_records_version_headers() -> No
     result = client.get_daily_snapshot(date(2026, 9, 25), date(2026, 9, 25))
 
     assert result.content == b"csv artifact"
+    assert http.calls[1][1]["Accept"] == "text/csv"
     assert http.calls[0][0] == "https://nmvs.example/report-requests"
     assert http.calls[0][2] == {
         "fromDate": "2026-09-25T00:00:00Z",

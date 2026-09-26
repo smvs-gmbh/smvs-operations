@@ -8,6 +8,13 @@ Requests select a UTC calendar day and serialize inclusive bounds at 00:00:00Z
 and 23:59:59Z. Acquisition DateTime columns store those instants as UTC-naive
 values, consistent with the existing database convention.
 
+Downloads explicitly request `Accept: text/csv`. Processing validates the retained
+Content-Type before parsing, accepting `text/csv` with syntactically valid
+parameters and rejecting absent/unrelated/malformed media types. Validation occurs
+after raw artifact retention and creation of the durable processing attempt, so
+failure and replay preserve acquisition provenance. Parameters do not select an
+alternative decoder; strict UTF-8 remains the observed encoding policy.
+
 The parser decodes strict UTF-8 with an optional BOM. It does not normalize
 Unicode, replace invalid bytes or repair suspected mojibake. Python CSV parsing
 uses unchanged newline sequences; only empty logical records outside quoted

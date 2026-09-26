@@ -6,6 +6,7 @@ import pytest
 from app.integration.sources.nmvs.parsing import (
     DailySnapshotParseError,
     parse_daily_snapshot,
+    validate_csv_content_type,
 )
 
 UNICODE = 'ä ö ü Ä Ö Ü é è à ç Ελληνικά \u00a0 \u200b Â® Ã¶'
@@ -104,3 +105,17 @@ def test_rejects_ambiguous_metadata(metadata):
 def test_rejects_duplicate_dataset_names():
     with pytest.raises(DailySnapshotParseError, match="Duplicate dataset"):
         parse_daily_snapshot(report_bytes([["Data"], ["A"]], [["Data"], ["B"]]))
+
+
+@pytest.mark.parametrize("content_type", ["text/csv", "TEXT/CSV", 'text/csv; charset="utf-8"',
+                                        "text/csv; charset=UTF-8; header=present"])
+def test_accepts_csv_media_type_parameters(content_type):
+    validate_csv_content_type(content_type)
+
+
+@pytest.mark.parametrize("content_type", [None, "", "text/plain", "application/json", "text/csv-other",
+                                        "text/csv, text/html", "text/csv; broken", 'text/csv; charset="unfinished',
+                                        "text/csv\r\nX-Fake: value"])
+def test_rejects_missing_unrelated_or_malformed_media_type(content_type):
+    with pytest.raises(DailySnapshotParseError, match="Content-Type"):
+        validate_csv_content_type(content_type)

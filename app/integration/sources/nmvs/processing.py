@@ -5,7 +5,10 @@ from sqlalchemy.orm import Session
 from app.core.db.models import AcquiredArtifact, IntegrationJob, ProcessingRun
 from app.integration.artifacts.storage import utcnow
 from app.integration.failures import fail_execution, require_idle_runtime_session
-from app.integration.sources.nmvs.parsing import parse_daily_snapshot
+from app.integration.sources.nmvs.parsing import (
+    parse_daily_snapshot,
+    validate_csv_content_type,
+)
 from app.integration.staging.service import stage_daily_snapshot
 
 PARSER_VERSION = "daily-snapshot-parser-2"
@@ -43,6 +46,7 @@ def process_daily_snapshot(session: Session, artifact_id: int, *, parser_version
         session.commit()  # Durable attempt before any parsing or staging work.
 
         stage = "extraction"
+        validate_csv_content_type(artifact.content_type)
         parsed = parse_daily_snapshot(artifact.artifact_bytes)
         run.status = "staging"
         session.commit()

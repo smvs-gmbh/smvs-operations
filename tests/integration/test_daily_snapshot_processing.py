@@ -1,3 +1,6 @@
+import csv
+import hashlib
+import io
 from datetime import UTC, date, datetime
 from unittest.mock import Mock
 
@@ -319,3 +322,80 @@ def test_acquisition_stores_actual_utc_request_bounds(session, database, today, 
         assert stored.requested_snapshot_date == target
         assert stored.from_date == datetime(target.year, target.month, target.day, 0, 0, 0, tzinfo=UTC).replace(tzinfo=None)
         assert stored.to_date == datetime(target.year, target.month, target.day, 23, 59, 59, tzinfo=UTC).replace(tzinfo=None)
+
+
+@pytest.mark.parametrize("content,content_type", [
+    (VALID + b'"\xff"\r\n', "text/csv"),
+    (VALID + b'"unclosed', "text/csv"),
+    (VALID + b'"too","many"\r\n', "text/csv"),
+    (VALID.replace(b'"Code"', b'"Code","Code"'), "text/csv"),
+    (VALID.replace(b'"Code"', b'"Code","Other"'), "text/csv"),
+    (VALID.split(b"\r\n\r\n", 1)[0], "text/csv"),
+    (VALID, "text/html"),
+    (VALID, None),
+])
+def test_invalid_artifact_retained_with_durable_failure_and_failed_replay(session, database, content, content_type):
+    source = client(content)
+    response = source.get_daily_snapshot.return_value
+    source.get_daily_snapshot.return_value = DailySnapshotResponse(
+        report_uri=response.report_uri, report_metadata=response.report_metadata,
+        content=content, content_type=content_type, requested_api_version="1", used_api_version="1",
+    )
+    with pytest.raises(IntegrationExecutionError) as failure:
+        DailySnapshotAcquisition(source).run(session)
+    assert failure.value.failure_recorded and failure.value.stage == "extraction"
+    with Session(database) as observer:
+        artifact = observer.scalar(select(AcquiredArtifact))
+        artifact_id = artifact.id
+        assert artifact.artifact_bytes == content
+        assert artifact.sha256 == hashlib.sha256(content).hexdigest()
+        assert artifact.content_length == len(content)
+        assert artifact.report_metadata["report"] == {"id": "daily"}
+        run = observer.get(ProcessingRun, failure.value.processing_run_id)
+        assert run.failure_code == "parse_error" and run.failure_message and run.completed_at
+        assert run.parser_version == "daily-snapshot-parser-2"
+        assert counts(observer)["staging_rows"] == counts(observer)["staging_datasets"] == 0
+    source.get_daily_snapshot.side_effect = AssertionError("No reacquisition")
+    with pytest.raises(IntegrationExecutionError) as replay_failure:
+        replay_daily_snapshot(session, artifact_id)
+    assert replay_failure.value.failure_recorded and replay_failure.value.stage == "extraction"
+    assert source.get_daily_snapshot.call_count == 1
+    with Session(database) as observer:
+        runs = observer.scalars(select(ProcessingRun)).all()
+        assert len(runs) == 2 and all(run.status == "failed" for run in runs)
+        assert counts(observer)["staging_rows"] == counts(observer)["staging_datasets"] == 0
+        assert observer.get(AcquiredArtifact, artifact_id).artifact_bytes == content
+
+
+def test_synthetic_csv_values_survive_acquisition_staging_and_replay(session, database):
+    stream = io.StringIO(newline="")
+    writer = csv.writer(stream, quoting=csv.QUOTE_ALL, lineterminator="\r\n")
+    values = [' ä ö ü Ä Ö Ü é è à ç Ελληνικά \u00a0 \u200b Â® Ã¶ ',
+              'comma, "quoted"\nLF\r\nCRLF\r\n\r\nblank']
+    writer.writerows([
+        ["Report Type", "Report Name", "Date Requested (UTC)"],
+        ["Daily Snapshot", "Fictional", "2024-02-29T00:00:00Z"], [],
+        ["First"], ["B", "A"], ["1", values[0]], ["2", values[1]], [],
+        ["Empty"], ["Header"], [], ["Last"], ["__extra__"], ["source value"],
+    ])
+    content = stream.getvalue().encode("utf-8")
+    source = client(content)
+    DailySnapshotAcquisition(source).run(session)
+    with Session(database) as observer:
+        artifact_id = observer.scalar(select(AcquiredArtifact.id))
+    replay_daily_snapshot(session, artifact_id)
+    assert source.get_daily_snapshot.call_count == 1
+    with Session(database) as observer:
+        artifact = observer.get(AcquiredArtifact, artifact_id)
+        assert artifact.artifact_bytes == content
+        assert artifact.sha256 == hashlib.sha256(content).hexdigest()
+        datasets = observer.scalars(select(StagingDataset).order_by(StagingDataset.id)).all()
+        assert [(d.source_dataset_name, d.section_order, d.row_count) for d in datasets] == [
+            ("First", 1, 2), ("Empty", 2, 0), ("Last", 3, 1),
+        ] * 2
+        assert datasets[0].source_headers == datasets[3].source_headers == ["B", "A"]
+        rows = observer.scalars(select(StagingRow).order_by(StagingRow.id)).all()
+        assert [row.raw_row_json for row in rows] == [
+            {"B": "1", "A": values[0]}, {"B": "2", "A": values[1]}, {"__extra__": "source value"},
+        ] * 2
+        assert [row.source_row_number for row in rows] == [1, 2, 1] * 2

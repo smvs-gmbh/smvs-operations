@@ -89,7 +89,7 @@ class ReportingApiClient:
 
         report_response = self._http.get(
             self._absolute_uri(str(report["uri"])),
-            headers=self._headers(),
+            headers={**self._headers(), "Accept": "text/csv"},
         )
         return DailySnapshotResponse(
             report_uri=str(report["uri"]),

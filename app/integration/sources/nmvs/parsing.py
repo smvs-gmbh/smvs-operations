@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import io
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -24,6 +25,17 @@ class ParsedDailySnapshot:
     # Ordered CSV column/value mapping, distinct from acquisition API metadata.
     file_metadata: dict[str, str]
     datasets: tuple[ExtractedDataset, ...]
+
+
+def validate_csv_content_type(content_type: str | None) -> None:
+    """Require CSV before parsing, after the acquisition bytes have been retained."""
+    token = r"[!#$%&'*+.^_`|~0-9A-Za-z-]+"
+    quoted = r'"(?:[\t\x20\x21\x23-\x5b\x5d-\x7e]|\\[\t\x20-\x7e])*"'
+    parameter = rf"[ \t]*;[ \t]*{token}[ \t]*=[ \t]*(?:{token}|{quoted})"
+    if content_type is None or not re.fullmatch(
+        rf"[ \t]*text/csv(?:{parameter})*[ \t]*", content_type, flags=re.IGNORECASE,
+    ):
+        raise DailySnapshotParseError("Daily Snapshot requires a valid text/csv Content-Type")
 
 
 def parse_daily_snapshot(content: bytes) -> ParsedDailySnapshot:
