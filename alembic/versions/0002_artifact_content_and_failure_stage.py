@@ -127,8 +127,8 @@ def downgrade():
                                   ("artifact_bytes", sa.LargeBinary().with_variant(mysql.LONGBLOB(), "mysql"))):
             batch.alter_column(name, existing_type=column_type, nullable=False)
         batch.create_unique_constraint("uq_acquired_artifacts_sha256", ["sha256"])
-        batch.drop_index("ix_acquired_artifacts_content")
         batch.drop_constraint("fk_acquired_artifacts_content", type_="foreignkey")
+        batch.drop_index("ix_acquired_artifacts_content")
         batch.drop_column("content_id")
     op.drop_table("artifact_contents")
     op.drop_column("integration_jobs", "failure_stage")

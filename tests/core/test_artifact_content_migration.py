@@ -1,5 +1,8 @@
+import ast
 import hashlib
 import importlib.util
+import inspect
+import io
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -161,3 +164,36 @@ def test_backfill_verifier_prevents_dropping_original_bytes(migration_database, 
     assert "artifact_bytes" in table(connection, "acquired_artifacts").c
     with pytest.raises(RuntimeError, match="inspect migration state"):
         migration.upgrade()
+
+
+@pytest.mark.parametrize("direction,ordered_statements", [
+    ("downgrade", (
+        "ALTER TABLE acquired_artifacts DROP FOREIGN KEY fk_acquired_artifacts_content;",
+        "DROP INDEX ix_acquired_artifacts_content ON acquired_artifacts;",
+        "ALTER TABLE acquired_artifacts DROP COLUMN content_id;",
+    )),
+    ("upgrade", (
+        "ALTER TABLE acquired_artifacts ADD COLUMN content_id INTEGER;",
+        ("ALTER TABLE acquired_artifacts ADD CONSTRAINT fk_acquired_artifacts_content "
+         "FOREIGN KEY(content_id) REFERENCES artifact_contents (id);"),
+        "CREATE INDEX ix_acquired_artifacts_content ON acquired_artifacts (content_id);",
+    )),
+])
+def test_mysql_content_foreign_key_ddl_order(direction, ordered_statements):
+    migration = load_migration("0002_artifact_content_and_failure_stage")
+    # Compile the actual migration batch blocks, not copied operation calls.
+    # Data queries/reflection cannot run offline; existing tests exercise those
+    # paths separately. No connection or migration environment is created here.
+    function = ast.parse(inspect.getsource(getattr(migration, direction))).body[0]
+    batches = [node for node in function.body if isinstance(node, ast.With)]
+    ddl = io.StringIO()
+    context = MigrationContext.configure(
+        dialect_name="mysql", opts={"as_sql": True, "output_buffer": ddl},
+    )
+    namespace = {**vars(migration), "op": Operations(context)}
+    code = compile(ast.Module(body=batches, type_ignores=[]), "<migration batches>", "exec")
+    exec(code, namespace)  # noqa: S102 - trusted repository migration compiled without a connection
+    sql = ddl.getvalue()
+    assert all(sql.count(statement) == 1 for statement in ordered_statements)
+    positions = [sql.index(statement) for statement in ordered_statements]
+    assert positions == sorted(positions)
