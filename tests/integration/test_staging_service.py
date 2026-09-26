@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.db.models import (
     AcquiredArtifact,
+    ArtifactContent,
     Base,
     IntegrationJob,
     StagingDataset,
@@ -33,12 +34,15 @@ def test_stages_dynamic_datasets_and_empty_dataset_without_raw_csv_lines() -> No
             source_name="NMVS",
             channel_name="Reporting API",
             report_type="DailySnapshot",
-            content_length=3,
-            sha256="a" * 64,
+            content=ArtifactContent(
+                content_length=3,
+                sha256="a" * 64,
+                artifact_bytes=b"csv",
+                created_at=datetime.now(UTC).replace(tzinfo=None),
+            ),
             report_metadata={"Report Type": "DailySnapshot"},
             received_at=datetime.now(UTC).replace(tzinfo=None),
             processing_status="acquired",
-            artifact_bytes=b"csv",
             created_at=datetime.now(UTC).replace(tzinfo=None),
         )
         session.add(artifact)

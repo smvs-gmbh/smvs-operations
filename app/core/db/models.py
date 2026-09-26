@@ -39,6 +39,7 @@ class IntegrationJob(Base):
     status: Mapped[str] = mapped_column(String(40), nullable=False)
     started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    failure_stage: Mapped[str | None] = mapped_column(String(60), nullable=True)
     failure_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
     failure_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
@@ -46,33 +47,56 @@ class IntegrationJob(Base):
     artifacts: Mapped[list[AcquiredArtifact]] = relationship(back_populates="integration_job")
 
 
+class ArtifactContent(Base):
+    __tablename__ = "artifact_contents"
+    __table_args__ = (UniqueConstraint("sha256", name="uq_artifact_contents_sha256"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    content_length: Mapped[int] = mapped_column(Integer, nullable=False)
+    artifact_bytes: Mapped[bytes] = mapped_column(
+        LargeBinary().with_variant(LONGBLOB(), "mysql"), nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+
 class AcquiredArtifact(Base):
     __tablename__ = "acquired_artifacts"
     __table_args__ = (
-        UniqueConstraint("sha256", name="uq_acquired_artifacts_sha256"),
         Index("ix_acquired_artifacts_job", "integration_job_id"),
+        Index("ix_acquired_artifacts_content", "content_id"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     integration_job_id: Mapped[int] = mapped_column(ForeignKey("integration_jobs.id"), nullable=False)
+    content_id: Mapped[int] = mapped_column(
+        ForeignKey("artifact_contents.id", name="fk_acquired_artifacts_content"), nullable=False,
+    )
     source_name: Mapped[str] = mapped_column(String(100), nullable=False)
     channel_name: Mapped[str] = mapped_column(String(100), nullable=False)
     report_type: Mapped[str] = mapped_column(String(100), nullable=False)
     source_uri: Mapped[str | None] = mapped_column(Text, nullable=True)
     content_type: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    content_length: Mapped[int] = mapped_column(Integer, nullable=False)
-    sha256: Mapped[str] = mapped_column(String(64), nullable=False)
     report_metadata: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     received_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     processing_status: Mapped[str] = mapped_column(String(40), nullable=False)
-    artifact_bytes: Mapped[bytes] = mapped_column(
-        LargeBinary().with_variant(LONGBLOB(), "mysql"),
-        nullable=False,
-    )
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
     integration_job: Mapped[IntegrationJob] = relationship(back_populates="artifacts")
+    content: Mapped[ArtifactContent] = relationship()
     processing_runs: Mapped[list[ProcessingRun]] = relationship(back_populates="artifact")
+
+    @property
+    def artifact_bytes(self) -> bytes:
+        return self.content.artifact_bytes
+
+    @property
+    def sha256(self) -> str:
+        return self.content.sha256
+
+    @property
+    def content_length(self) -> int:
+        return self.content.content_length
 
 
 class ProcessingRun(Base):
