@@ -17,5 +17,5 @@ def test_artifact_uses_longblob_and_staging_rows_do_not_store_raw_csv_lines() ->
     artifact = Base.metadata.tables["acquired_artifacts"]
     staging_row = Base.metadata.tables["staging_rows"]
 
-    assert isinstance(artifact.c.artifact_bytes.type, mysql.LONGBLOB)
+    assert isinstance(artifact.c.artifact_bytes.type.dialect_impl(mysql.dialect()), mysql.LONGBLOB)
     assert "raw_csv_line" not in staging_row.c

@@ -3,7 +3,18 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import Date, DateTime, ForeignKey, Index, Integer, JSON, String, Text, UniqueConstraint
+from sqlalchemy import (
+    JSON,
+    Date,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    LargeBinary,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.mysql import LONGBLOB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -54,7 +65,10 @@ class AcquiredArtifact(Base):
     report_metadata: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     received_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     processing_status: Mapped[str] = mapped_column(String(40), nullable=False)
-    artifact_bytes: Mapped[bytes] = mapped_column(LONGBLOB, nullable=False)
+    artifact_bytes: Mapped[bytes] = mapped_column(
+        LargeBinary().with_variant(LONGBLOB(), "mysql"),
+        nullable=False,
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
     integration_job: Mapped[IntegrationJob] = relationship(back_populates="artifacts")
