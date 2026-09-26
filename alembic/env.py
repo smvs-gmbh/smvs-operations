@@ -1,12 +1,15 @@
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import text
 
+from alembic import context
 from app.core.config import get_settings
 from app.core.db.engine import create_database_engine
 from app.core.db.models import Base
-from app.core.db.safety import assert_database_name_safe
+from app.core.db.safety import (
+    assert_configured_database_safe,
+    assert_database_name_safe,
+)
 
 config = context.config
 if config.config_file_name is not None:
@@ -21,9 +24,10 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     settings = get_settings()
+    assert_configured_database_safe(settings.db_name)
     connectable = create_database_engine()
 
-    with connectable.connect() as connection:
+    with connectable.begin() as connection:
         selected_name = connection.execute(text("SELECT DATABASE()")).scalar_one_or_none()
         assert_database_name_safe(settings.db_name, selected_name or "")
         context.configure(connection=connection, target_metadata=target_metadata, compare_type=True)
@@ -31,4 +35,7 @@ def run_migrations_online() -> None:
             context.run_migrations()
 
 
-run_migrations_online()
+if context.is_offline_mode():
+    run_migrations_offline()
+else:
+    run_migrations_online()
