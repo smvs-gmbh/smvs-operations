@@ -58,3 +58,36 @@ SQLite batch reconstruction is not a verification of MySQL ALTER TABLE behavior.
 The checksum-race test exercises the real unique-constraint recovery path by
 simulating a stale initial read; real concurrent MySQL transactions still require
 an isolated MySQL instance whose database is also named `smvs_operations`.
+
+## Processing and replay
+
+Each initial extraction or explicit replay commits a `processing_runs` record
+before parsing. Extraction and staging failures roll back their work and update
+that durable record in a fresh guarded transaction. Staging records and success
+markers commit together. Failure codes/messages come from a fixed diagnostic
+allowlist; exception text, URLs, response bodies and SQL parameters are excluded.
+
+After migration approval/application, replay can be called with a dedicated idle
+runtime session and an existing acquisition ID:
+
+```python
+from app.core.db.session import SessionFactory
+from app.integration.sources.nmvs.processing import replay_daily_snapshot
+
+with SessionFactory() as session:
+    attempt = replay_daily_snapshot(session, artifact_id=existing_acquisition_id)
+```
+
+Replay uses the retained bytes and creates only a new processing run and its
+staging records. It has no HTTP client. It preserves original acquisition/job
+outcomes and earlier successful staging. The caller must not pass a session
+containing another active transaction.
+
+`IntegrationExecutionError` exposes safe stage/code, job/run IDs and whether the
+failure was durably recorded. If the server committed success before a connection
+error, verified success is preserved and `processing_succeeded` is true. If the
+database is unavailable, failure recording cannot be guaranteed; this is reported
+explicitly. Process termination can leave an unfinished durable attempt. Automatic
+recovery/scheduling is outside this change; inspect such attempts before retrying.
+
+Authenticated download URI behavior remains unchanged pending its specification.

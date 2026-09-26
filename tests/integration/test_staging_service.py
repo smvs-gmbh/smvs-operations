@@ -8,6 +8,7 @@ from app.core.db.models import (
     ArtifactContent,
     Base,
     IntegrationJob,
+    ProcessingRun,
     StagingDataset,
     StagingRow,
 )
@@ -55,13 +56,19 @@ def test_stages_dynamic_datasets_and_empty_dataset_without_raw_csv_lines() -> No
             ),
         )
 
-        run = stage_daily_snapshot(session, artifact, parsed)
+        run = ProcessingRun(
+            artifact_id=artifact.id, run_type="initial_extraction", parser_version="1",
+            transform_version="none", status="staging", started_at=datetime.now(UTC).replace(tzinfo=None),
+        )
+        session.add(run)
+        session.flush()
+        stage_daily_snapshot(session, artifact, parsed, processing_run=run)
         session.commit()
 
         datasets = session.scalars(select(StagingDataset).order_by(StagingDataset.section_order)).all()
         rows = session.scalars(select(StagingRow)).all()
 
-        assert run.status == "succeeded"
+        assert run.status == "staging"  # Completion belongs to the transaction orchestrator.
         assert [(dataset.source_dataset_name, dataset.row_count) for dataset in datasets] == [
             ("Products", 1),
             ("Empty Dataset", 0),
