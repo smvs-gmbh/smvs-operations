@@ -5,6 +5,7 @@ from datetime import UTC, date, datetime, timedelta
 from sqlalchemy.orm import Session
 
 from app.core.db.models import IntegrationJob
+from app.core.db.session import require_runtime_session
 from app.integration.artifacts.storage import MySQLArtifactStore, utcnow
 from app.integration.sources.nmvs.parsing import parse_daily_snapshot
 from app.integration.sources.nmvs.reporting import ReportingApiClient
@@ -17,6 +18,7 @@ class DailySnapshotAcquisition:
         self._artifact_store = artifact_store or MySQLArtifactStore()
 
     def run(self, session: Session, days_in_past: int = 0, today: date | None = None) -> IntegrationJob:
+        require_runtime_session(session)
         requested_date = (today or datetime.now(UTC).date()) - timedelta(days=days_in_past)
         job = IntegrationJob(
             source_name="NMVS",
