@@ -2,12 +2,20 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from datetime import date
+from datetime import UTC, date, datetime, time
 from typing import Any
 
 from app.core.http.client import HttpClient
 
 DAILY_SNAPSHOT_OPERATION_CODE = "15100000"
+
+
+def utc_day_bounds(from_date: date, to_date: date) -> tuple[datetime, datetime]:
+    """Inclusive, second-precision UTC bounds for the selected calendar days."""
+    return (
+        datetime.combine(from_date, time.min, tzinfo=UTC),
+        datetime.combine(to_date, time(23, 59, 59), tzinfo=UTC),
+    )
 
 
 class ReportingApiError(RuntimeError):
@@ -55,12 +63,13 @@ class ReportingApiClient:
         from_date: date,
         to_date: date,
     ) -> DailySnapshotResponse:
+        start, end = utc_day_bounds(from_date, to_date)
         response = self._http.get(
             f"{self._base_url}/report-requests",
             headers=self._headers(),
             params={
-                "fromDate": from_date.isoformat(),
-                "toDate": to_date.isoformat(),
+                "fromDate": start.isoformat(timespec="seconds").replace("+00:00", "Z"),
+                "toDate": end.isoformat(timespec="seconds").replace("+00:00", "Z"),
                 "reportType": "DailySnapshot",
             },
         )

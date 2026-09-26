@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from datetime import date
 
+import pytest
+
 from app.integration.sources.nmvs.reporting import ReportingApiClient
 
 
@@ -47,9 +49,20 @@ def test_daily_snapshot_uses_report_requests_and_records_version_headers() -> No
     assert result.content == b"csv artifact"
     assert http.calls[0][0] == "https://nmvs.example/report-requests"
     assert http.calls[0][2] == {
-        "fromDate": "2026-09-25",
-        "toDate": "2026-09-25",
+        "fromDate": "2026-09-25T00:00:00Z",
+        "toDate": "2026-09-25T23:59:59Z",
         "reportType": "DailySnapshot",
     }
     assert http.calls[0][1]["emvs-api-version"] == "1.0"
     assert result.used_api_version == "1.0"
+
+
+@pytest.mark.parametrize("day", [date(2025, 6, 15), date(2025, 4, 30), date(2025, 12, 31), date(2024, 2, 29)])
+def test_reporting_serializes_exact_utc_day_bounds(day):
+    http = FakeHttpClient()
+    ReportingApiClient("https://example.test", lambda: "synthetic", http_client=http).get_daily_snapshot(day, day)
+    assert http.calls[0][2] == {
+        "fromDate": f"{day.isoformat()}T00:00:00Z",
+        "toDate": f"{day.isoformat()}T23:59:59Z",
+        "reportType": "DailySnapshot",
+    }

@@ -8,7 +8,7 @@ from app.core.db.models import IntegrationJob
 from app.integration.artifacts.storage import MySQLArtifactStore, utcnow
 from app.integration.failures import fail_execution, require_idle_runtime_session
 from app.integration.sources.nmvs.processing import process_daily_snapshot
-from app.integration.sources.nmvs.reporting import ReportingApiClient
+from app.integration.sources.nmvs.reporting import ReportingApiClient, utc_day_bounds
 
 
 class DailySnapshotAcquisition:
@@ -19,14 +19,15 @@ class DailySnapshotAcquisition:
     def run(self, session: Session, days_in_past: int = 0, today: date | None = None) -> IntegrationJob:
         require_idle_runtime_session(session)
         requested_date = (today or datetime.now(UTC).date()) - timedelta(days=days_in_past)
+        start, end = utc_day_bounds(requested_date, requested_date)
         job = IntegrationJob(
             source_name="NMVS",
             channel_name="Reporting API",
             report_type="DailySnapshot",
             requested_snapshot_date=requested_date,
             days_in_past=days_in_past,
-            from_date=requested_date,
-            to_date=requested_date,
+            from_date=start.replace(tzinfo=None),  # Database DateTime values are UTC-naive.
+            to_date=end.replace(tzinfo=None),
             requested_api_version=self._client.api_version,
             status="acquiring",
             started_at=utcnow(),

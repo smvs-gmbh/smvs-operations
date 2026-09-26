@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import UTC, date, datetime
 from unittest.mock import Mock
 
 import httpx
@@ -298,3 +298,20 @@ def test_default_expiring_guarded_session_is_supported(database):
     with GuardedSession(database, configured_database="smvs_operations") as session:
         job = DailySnapshotAcquisition(client()).run(session)
         assert job.status == "succeeded"
+
+
+@pytest.mark.parametrize("today,target", [
+    (date(2025, 6, 16), date(2025, 6, 15)),
+    (date(2025, 5, 1), date(2025, 4, 30)),
+    (date(2026, 1, 1), date(2025, 12, 31)),
+    (date(2024, 3, 1), date(2024, 2, 29)),
+])
+def test_acquisition_stores_actual_utc_request_bounds(session, database, today, target):
+    source = client()
+    job = DailySnapshotAcquisition(source).run(session, days_in_past=1, today=today)
+    source.get_daily_snapshot.assert_called_once_with(target, target)
+    with Session(database) as observer:
+        stored = observer.get(IntegrationJob, job.id)
+        assert stored.requested_snapshot_date == target
+        assert stored.from_date == datetime(target.year, target.month, target.day, 0, 0, 0, tzinfo=UTC).replace(tzinfo=None)
+        assert stored.to_date == datetime(target.year, target.month, target.day, 23, 59, 59, tzinfo=UTC).replace(tzinfo=None)
