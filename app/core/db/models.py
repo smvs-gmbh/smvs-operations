@@ -18,6 +18,8 @@ from sqlalchemy import (
 from sqlalchemy.dialects.mysql import LONGBLOB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
+from app.core.db.ordered_metadata import OrderedMetadataJSON
+
 
 class Base(DeclarativeBase):
     pass
@@ -114,6 +116,8 @@ class ProcessingRun(Base):
     failure_stage: Mapped[str | None] = mapped_column(String(60), nullable=True)
     failure_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
     failure_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    file_metadata: Mapped[dict[str, str] | None] = mapped_column(OrderedMetadataJSON(), nullable=True)
 
     artifact: Mapped[AcquiredArtifact] = relationship(back_populates="processing_runs")
     datasets: Mapped[list[StagingDataset]] = relationship(back_populates="processing_run")

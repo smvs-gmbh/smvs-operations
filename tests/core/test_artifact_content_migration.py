@@ -97,7 +97,12 @@ def test_upgrade_matches_models_and_preserves_all_ids_and_provenance(migration_d
     names = ["integration_jobs", "acquired_artifacts", "processing_runs", "staging_datasets", "staging_rows"]
     before = snapshot(connection, names)
     migration.upgrade()
-    assert compare_metadata(MigrationContext.configure(connection), Base.metadata) == []
+    expected = sa.MetaData()
+    for model_table in Base.metadata.sorted_tables:
+        model_table.to_metadata(expected)
+    # This historical migration stops before the separately tested 0003 column.
+    expected.tables["processing_runs"]._columns.remove(expected.tables["processing_runs"].c.file_metadata)
+    assert compare_metadata(MigrationContext.configure(connection), expected) == []
     version_column = sa.inspect(connection).get_columns("alembic_version")[0]
     assert version_column["type"].length >= len(migration.revision)
     after = snapshot(connection, names)
@@ -114,6 +119,11 @@ def test_upgrade_matches_models_and_preserves_all_ids_and_provenance(migration_d
         assert all(content[k] == old[k] for k in moved)
         assert after["integration_jobs"][0] == {**before["integration_jobs"][0], "failure_stage": None}
     assert connection.exec_driver_sql("PRAGMA foreign_key_check").all() == []
+    metadata_migration = load_migration("0003_file_metadata")
+    metadata_migration.op = Operations(MigrationContext.configure(connection))
+    metadata_migration.upgrade()
+    assert compare_metadata(MigrationContext.configure(connection), Base.metadata) == []
+    metadata_migration.downgrade()
     migration.downgrade()
     assert snapshot(connection, names) == before
 

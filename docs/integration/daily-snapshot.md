@@ -35,18 +35,26 @@ blank headers, malformed quoting, mismatched widths and ambiguous metadata or
 name records fail explicitly. Source header `__extra__` is an ordinary header;
 no synthetic keys are introduced. Errors omit source values.
 
-## File metadata persistence gap
+## File metadata persistence
 
-File metadata remains available to processing through the parsed representation,
-but is not currently persisted separately. The retained artifact bytes allow it
-to be reconstructed. Existing acquisition `report_metadata` stores API metadata
-and is not overloaded with file metadata.
+Migration `0003_file_metadata` adds nullable JSON `processing_runs.file_metadata`.
+Apply it in a separately approved deployment before running this version of the
+processing code. Migrations 0001 and 0002 remain unchanged.
 
-If structured persistence is approved, the smallest proposed change is a nullable
-`processing_runs.file_metadata` JSON column in a separate migration. Parsed file
-metadata belongs to a particular parser attempt, including replays. Persist it
-with successful staging; leave historical/failed attempts null rather than infer
-values or alter acquisition provenance. Migration 0002 is unchanged.
+File metadata belongs to the interpretation attempt, not acquisition provenance
+or immutable content. Each replay persists its own parsed mapping. Historical
+runs and attempts failing before successful parsing retain SQL NULL; no backfill
+is inferred. Successful parsing commits the entire mapping with the transition
+to staging, before any staging inserts. Later staging failures retain that
+metadata while rolling back all partial staging data. A failure of the metadata
+commit itself can leave metadata absent; existing durable failure reporting still
+applies.
+
+The model exposes an insertion-ordered dictionary. The JSON storage representation
+is an array of `[key, value]` pairs, because MySQL JSON objects do not preserve
+member order. All columns and exact Unicode values survive without normalization.
+API response metadata stays on the acquisition. Downgrading 0003 removes this
+derived metadata column; raw bytes remain available for later reprocessing.
 
 ## Boundaries still requiring specification
 

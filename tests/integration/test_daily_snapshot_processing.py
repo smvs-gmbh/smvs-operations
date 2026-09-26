@@ -1,12 +1,13 @@
 import csv
 import hashlib
 import io
+import json
 from datetime import UTC, date, datetime
 from unittest.mock import Mock
 
 import httpx
 import pytest
-from sqlalchemy import create_engine, event, func, select
+from sqlalchemy import create_engine, event, func, select, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
@@ -399,3 +400,65 @@ def test_synthetic_csv_values_survive_acquisition_staging_and_replay(session, da
             {"B": "1", "A": values[0]}, {"B": "2", "A": values[1]}, {"__extra__": "source value"},
         ] * 2
         assert [row.source_row_number for row in rows] == [1, 2, 1] * 2
+
+
+def test_metadata_is_ordered_complete_and_separate_on_replay(session, database, monkeypatch):
+    from dataclasses import replace
+
+    expected = {
+        "Report Type": "Daily Snapshot", "Report Name": "  é Ελληνικά Â® Ã¶ \u00a0\u200b  ",
+        "Date Requested (UTC)": "2024-02-29T00:00:00Z", "Unknown Column": " unchanged ",
+    }
+    stream = io.StringIO(newline="")
+    writer = csv.writer(stream, quoting=csv.QUOTE_ALL, lineterminator="\r\n")
+    writer.writerows([list(expected), list(expected.values()), [], ["Synthetic"], ["Value"], ["a"]])
+    source = client(stream.getvalue().encode("utf-8"))
+    DailySnapshotAcquisition(source).run(session)
+    with Session(database) as observer:
+        artifact = observer.scalar(select(AcquiredArtifact))
+        artifact_id = artifact.id
+        run = observer.scalar(select(ProcessingRun))
+        assert list(run.file_metadata.items()) == list(expected.items())
+        assert artifact.report_metadata["report"] == {"id": "daily"}
+        # The database stores ordered pairs, not an order-losing JSON object.
+        raw = observer.execute(text("SELECT file_metadata FROM processing_runs")).scalar_one()
+        assert json.loads(raw) == [list(item) for item in expected.items()]
+
+    replay_metadata = {**expected, "Parser addition": "replay only"}
+    monkeypatch.setattr(processing, "parse_daily_snapshot", lambda data: replace(
+        parse_daily_snapshot(data), file_metadata=replay_metadata,
+    ))
+    replay_daily_snapshot(session, artifact_id, parser_version="synthetic-next")
+    assert source.get_daily_snapshot.call_count == 1
+    with Session(database) as observer:
+        runs = observer.scalars(select(ProcessingRun).order_by(ProcessingRun.id)).all()
+        assert list(runs[0].file_metadata.items()) == list(expected.items())
+        assert list(runs[1].file_metadata.items()) == list(replay_metadata.items())
+
+
+def test_metadata_survives_later_staging_failure(session, database, monkeypatch):
+    original = processing.stage_daily_snapshot
+
+    def fail_after_staging(*args, **kwargs):
+        original(*args, **kwargs)
+        raise RuntimeError(SENSITIVE)
+
+    monkeypatch.setattr(processing, "stage_daily_snapshot", fail_after_staging)
+    with pytest.raises(IntegrationExecutionError) as failure:
+        DailySnapshotAcquisition(client()).run(session)
+    assert failure.value.failure_recorded and failure.value.stage == "staging"
+    with Session(database) as observer:
+        run = observer.get(ProcessingRun, failure.value.processing_run_id)
+        assert run.status == "failed"
+        assert run.file_metadata == parse_daily_snapshot(VALID).file_metadata
+        assert counts(observer)["staging_rows"] == counts(observer)["staging_datasets"] == 0
+
+
+def test_metadata_is_sql_null_before_successful_parse(session, database):
+    with pytest.raises(IntegrationExecutionError) as failure:
+        DailySnapshotAcquisition(client(b"invalid")).run(session)
+    with Session(database) as observer:
+        assert observer.get(ProcessingRun, failure.value.processing_run_id).file_metadata is None
+        assert observer.execute(text(
+            "SELECT COUNT(*) FROM processing_runs WHERE file_metadata IS NULL"
+        )).scalar_one() == 1

@@ -48,8 +48,9 @@ def process_daily_snapshot(session: Session, artifact_id: int, *, parser_version
         stage = "extraction"
         validate_csv_content_type(artifact.content_type)
         parsed = parse_daily_snapshot(artifact.artifact_bytes)
+        run.file_metadata = dict(parsed.file_metadata)
         run.status = "staging"
-        session.commit()
+        session.commit()  # Retain parsed metadata even if the staging transaction fails.
 
         stage = "staging"
         stage_daily_snapshot(session, artifact, parsed, processing_run=run)
