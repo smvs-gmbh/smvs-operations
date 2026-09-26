@@ -9,6 +9,7 @@ from app.integration.sources.nmvs.reporting import ReportingApiClient
 @dataclass
 class FakeResponse:
     payload: dict
+    status_code: int = 200
     content: bytes = b"artifact"
     headers: dict[str, str] | None = None
 
@@ -21,7 +22,7 @@ class FakeHttpClient:
         self.calls: list[tuple[str, dict, dict]] = []
         self.responses = [
             FakeResponse(
-                {"operationCode": "15100000", "reports": [{"uri": "/reports/daily.csv", "id": "r1"}]}
+                {"operationCode": "15100000", "reports": [{"uri": "https://nmvs.example/reports/daily.csv", "id": "r1"}]}
             ),
             FakeResponse(b"not used" if False else {}, headers={"content-type": "text/csv", "emvs-api-version": "1.0"}),
         ]
@@ -30,6 +31,9 @@ class FakeHttpClient:
     def get(self, url: str, headers: dict, params: dict | None = None) -> FakeResponse:
         self.calls.append((url, headers, params or {}))
         return self.responses.pop(0)
+
+    def get_sensitive(self, url: str, headers: dict, params: dict | None = None) -> FakeResponse:
+        return self.get(url, headers, params)
 
     def close(self) -> None:
         pass
@@ -61,7 +65,7 @@ def test_daily_snapshot_uses_report_requests_and_records_version_headers() -> No
 @pytest.mark.parametrize("day", [date(2025, 6, 15), date(2025, 4, 30), date(2025, 12, 31), date(2024, 2, 29)])
 def test_reporting_serializes_exact_utc_day_bounds(day):
     http = FakeHttpClient()
-    ReportingApiClient("https://example.test", lambda: "synthetic", http_client=http).get_daily_snapshot(day, day)
+    ReportingApiClient("https://nmvs.example", lambda: "synthetic", http_client=http).get_daily_snapshot(day, day)
     assert http.calls[0][2] == {
         "fromDate": f"{day.isoformat()}T00:00:00Z",
         "toDate": f"{day.isoformat()}T23:59:59Z",

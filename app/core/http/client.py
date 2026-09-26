@@ -1,7 +1,14 @@
 from collections.abc import Mapping
 from pathlib import Path
+from typing import Self
 
 import httpx
+
+from app.core.http.sensitive import sensitive_http_request
+
+
+class SensitiveHttpError(RuntimeError):
+    """Sanitized transport failure for requests containing secrets."""
 
 
 class HttpClient:
@@ -17,6 +24,16 @@ class HttpClient:
         response = self._client.get(url, headers=headers, params=params)
         response.raise_for_status()
         return response
+
+    def get_sensitive(self, url: str, headers: Mapping[str, str],
+                      params: Mapping[str, str] | None = None) -> httpx.Response:
+        # Caller validates the destination first. Never follow even same-origin
+        # redirects; callers handle status codes without exposing response URLs.
+        with sensitive_http_request():
+            try:
+                return self._client.get(url, headers=headers, params=params, follow_redirects=False)
+            except httpx.HTTPError:
+                raise SensitiveHttpError("Authenticated HTTP request failed") from None
 
     def post(
         self,
@@ -48,7 +65,7 @@ class HttpClient:
     def close(self) -> None:
         self._client.close()
 
-    def __enter__(self) -> "HttpClient":
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *args: object) -> None:

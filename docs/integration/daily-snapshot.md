@@ -61,6 +61,22 @@ derived metadata column; raw bytes remain available for later reprocessing.
 The evidence does not establish support for duplicate names/headers, metadata-only
 reports, alternative encodings, arbitrary metadata multiplicity, or alternate
 separator conventions. Rejection of ambiguous input is deliberate. Dynamic
-headers and datasets do not imply a business interpretation. Authenticated URI
-restrictions remain a separate pending change; this task does not define a new
-cross-origin URI contract.
+headers and datasets do not imply a business interpretation.
+
+
+## Authenticated report destinations
+
+A reusable validator requires an absolute HTTPS URL, no userinfo or fragment,
+valid host/port syntax, and the configured Reporting API's exact normalized
+origin. Host case and explicit HTTPS port 443 are normalized. Relative URLs,
+foreign/suffix hosts, unexpected ports and malformed encodings are rejected
+before the download token provider is called. Query parameters are retained and
+are not treated as cross-origin. The configured API base itself must pass HTTPS
+validation and cannot contain a query.
+
+Both authenticated report lookup and download explicitly disable redirects on
+each request, even if an injected HTTP client's defaults enable them. A download
+3xx fails with a fixed diagnostic; no redirect target is contacted. Transport and
+HTTP failure messages omit URLs, query values, response bodies and headers.
+HTTPX/httpcore transport logging is suppressed context-locally for these requests,
+including DEBUG headers; unrelated requests retain their normal logging behavior.

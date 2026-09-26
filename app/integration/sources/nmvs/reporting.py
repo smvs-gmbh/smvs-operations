@@ -5,7 +5,12 @@ from dataclasses import dataclass
 from datetime import UTC, date, datetime, time
 from typing import Any
 
-from app.core.http.client import HttpClient
+from app.core.http.client import HttpClient, SensitiveHttpError
+from app.integration.sources.nmvs.download_uri import (
+    DownloadUriError,
+    validate_download_uri,
+    validate_report_base_url,
+)
 
 DAILY_SNAPSHOT_OPERATION_CODE = "15100000"
 
@@ -40,6 +45,7 @@ class ReportingApiClient:
         api_version: str | None = None,
         http_client: HttpClient | None = None,
     ) -> None:
+        validate_report_base_url(base_url)
         self._base_url = base_url.rstrip("/")
         self._token_provider = token_provider
         self._api_version = api_version
@@ -64,19 +70,29 @@ class ReportingApiClient:
         to_date: date,
     ) -> DailySnapshotResponse:
         start, end = utc_day_bounds(from_date, to_date)
-        response = self._http.get(
-            f"{self._base_url}/report-requests",
-            headers=self._headers(),
-            params={
-                "fromDate": start.isoformat(timespec="seconds").replace("+00:00", "Z"),
-                "toDate": end.isoformat(timespec="seconds").replace("+00:00", "Z"),
-                "reportType": "DailySnapshot",
-            },
-        )
-        payload = response.json()
+        try:
+            response = self._http.get_sensitive(
+                f"{self._base_url}/report-requests",
+                headers=self._headers(),
+                params={
+                    "fromDate": start.isoformat(timespec="seconds").replace("+00:00", "Z"),
+                    "toDate": end.isoformat(timespec="seconds").replace("+00:00", "Z"),
+                    "reportType": "DailySnapshot",
+                },
+            )
+        except SensitiveHttpError:
+            raise ReportingApiError("Report lookup transport failure") from None
+        if not 200 <= response.status_code < 300:
+            raise ReportingApiError("Report lookup returned an unsuccessful HTTP status")
+        try:
+            payload = response.json()
+        except ValueError:
+            raise ReportingApiError("Invalid report lookup response") from None
+        if not isinstance(payload, Mapping):
+            raise ReportingApiError("Invalid report lookup response")
         if payload.get("operationCode") != DAILY_SNAPSHOT_OPERATION_CODE:
             raise ReportingApiError(
-                f"Unexpected Daily Snapshot operation code: {payload.get('operationCode')}"
+                "Unexpected Daily Snapshot operation code"
             )
         reports = payload.get("reports")
         if not isinstance(reports, list) or len(reports) != 1:
@@ -87,10 +103,20 @@ class ReportingApiClient:
         if not isinstance(report, Mapping) or not report.get("uri"):
             raise ReportingApiError("Daily Snapshot report does not contain a URI")
 
-        report_response = self._http.get(
-            self._absolute_uri(str(report["uri"])),
-            headers={**self._headers(), "Accept": "text/csv"},
-        )
+        try:
+            download_uri = validate_download_uri(report["uri"], self._base_url)
+        except DownloadUriError as error:
+            raise ReportingApiError(str(error)) from None
+        try:
+            report_response = self._http.get_sensitive(
+                download_uri, headers={**self._headers(), "Accept": "text/csv"},
+            )
+        except SensitiveHttpError:
+            raise ReportingApiError("Report download transport failure") from None
+        if 300 <= report_response.status_code < 400:
+            raise ReportingApiError("Report download redirect refused")
+        if not 200 <= report_response.status_code < 300:
+            raise ReportingApiError("Report download returned an unsuccessful HTTP status")
         return DailySnapshotResponse(
             report_uri=str(report["uri"]),
             report_metadata=dict(report),
@@ -99,8 +125,3 @@ class ReportingApiClient:
             requested_api_version=self._api_version,
             used_api_version=report_response.headers.get("emvs-api-version"),
         )
-
-    def _absolute_uri(self, uri: str) -> str:
-        if uri.startswith(("http://", "https://")):
-            return uri
-        return f"{self._base_url}/{uri.lstrip('/')}"
