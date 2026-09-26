@@ -38,7 +38,7 @@ The User Requirements Specification serves as the basis for the Functional Requi
 
 SMVS Operations is an Operational Intelligence Platform supporting the operation of the Swiss National Medicines Verification System (NMVS).
 
-The platform enables authorised users to integrate Operational Information from multiple authoritative Operational Information Sources, perform operational investigations, establish Operational Assessments and obtain evidence-based Decision Support.
+The platform enables authorised users to derive purpose-driven Operational Information from source data, perform operational investigations, establish Operational Assessments and obtain evidence-based Decision Support. It is not a historical replica, data warehouse or shadow copy of NMVS. Source System and Source Authority remain distinct as defined in GLO-001.
 
 The platform is intended to support operational investigations, reporting, analytics and continuous organisational learning. It does not replace operational systems such as the Swiss NMVS or the EMVS Alert Management System (AMS) Hub and shall not modify production NMVS data.
 
@@ -90,7 +90,7 @@ The system shall provide capabilities for accessing Operational Information, Ope
 
 ## URS-010
 
-The system shall integrate Operational Information originating from multiple authoritative Operational Information Sources.
+The system shall derive Operational Information by combining information from multiple Source Systems/Source Authorities, including NMVS/EMVS-derived information, appropriate external authoritative sources and SMVS/NMVO-owned operational or contractual context. It shall distinguish supplied assertions from internally created observations and results.
 
 ## URS-011
 
@@ -102,7 +102,7 @@ The system shall validate Operational Information before making it available to 
 
 ## URS-013
 
-The system shall maintain a historical record of integrated Operational Information.
+The system shall retain compact history of operationally relevant derived information under an explicit purpose-based retention policy, independently of underlying source-data retention. It shall not require every intermediate Product/Batch state or every source snapshot to be retained.
 
 ## URS-014
 
@@ -119,6 +119,14 @@ The system shall preserve traceability between integrated Operational Informatio
 ## URS-017
 
 The system shall maintain Operational Information independently of source-specific data structures and interfaces.
+
+## URS-018
+
+The system shall provide Operational Information without requiring permanent replication of NMVS source data. Persistence shall be assigned an operational purpose and retention category; source exposure alone shall not require long-term retention.
+
+## URS-019
+
+The system shall support Alert/Investigation Management, MAH/contractual/financing oversight and end-user participant eligibility review through source evidence, observations/relevant changes, multi-source context, assessment, decisions, actions and outcomes/follow-up. Not every workflow shall require every stage or an initiating Alert. These operational capabilities complement NMVS medicines verification; they shall not depend on NMVS providing the complete operational workflow.
 
 # Product & Batch Investigation
 
@@ -140,19 +148,19 @@ The system shall support searching and navigation of Product and Batch informati
 
 ## URS-024
 
-The system shall present relationships between Products, Batches, Marketing Authorisation Holders (MAHs), Onboarding Partners (OBPs) and other related Operational Information.
+The system shall present source-supported relationships between Swiss NMVS-visible Products, Product Code Versions, Batches, MAHs, OBPs and other relevant Operational Information. Product Code Scheme/Code and version shall remain distinct; MAH/OBP identifiers shall not be equated with NMVS Organisation identifiers or resolved solely by names. OBP uses the GLO-001 definition; its acronym expansion remains unverified.
 
 ## URS-025
 
-The system shall support identifying newly onboarded Products.
+The system shall identify first-observed Product Codes and Product Code Versions in the Swiss NMVS context, retaining Observation Time and supporting provenance. First observation shall not be presented as proven onboarding or market-entry time without source evidence.
 
 ## URS-026
 
-The system shall support identifying Product ownership changes.
+The system shall identify source-supported changes in reported Product Code/version MAH or OBP associations and flag potential transfers for review. A version change alone shall not establish a transfer, legal ownership change or its Effective Time.
 
 ## URS-027
 
-The system shall support identifying Products associated with Marketing Authorisation Holders (MAHs) without a contractual relationship with SMVS.
+The system shall support reviewing MAHs, including newly observed MAHs, and associated Products against local contractual/registration context. It shall distinguish an established contract, evidence of no active contract and unresolved identity or insufficient evidence. Potential free-rider/contractual mismatch assessments shall require verification and shall not be presented as established legal conclusions; decisions and resulting follow-up or no-action outcomes shall be recordable.
 
 ## URS-028
 
@@ -196,6 +204,10 @@ The system shall support correlating operational activities associated with Orga
 
 ---
 
+## URS-037
+
+The system shall support comparison of NMVS Local Organisation/Location information with appropriate authoritative establishment-existence and authorisation/status information to support participant eligibility review. It shall distinguish source-supported status/mismatch findings from unresolved identity, absent matches or insufficient coverage. A missing match alone shall not establish ineligibility. Review decisions and follow-up outcomes shall be recordable; comparison shall not itself imply automatic deactivation. Applicable participant categories, authorities and matching/decision rules require later domain analysis. Swiss GMDP is a historical example, not a mandated source or approved technical integration.
+
 # Operational Events
 
 ## URS-040
@@ -216,7 +228,7 @@ The system shall correlate Operational Events with related Operational Informati
 
 ## URS-044
 
-The system shall maintain historical Operational Event information.
+The system shall retain operationally relevant Event information under its assigned retention policy. Underlying Exception source/detail data shall use the separate rolling window in URS-095 rather than indefinite retention of all Exceptions.
 
 ## URS-045
 
@@ -256,7 +268,7 @@ The system shall support assigning investigations to authorised users.
 
 ## URS-057
 
-The system shall maintain a complete history of investigation activities.
+The system shall maintain a complete history of investigation activities under the case retention policy. Investigation/Case context, findings, assessments, decisions, actions and required evidence shall not be deleted merely because underlying Exception source/detail data expires locally.
 
 ## URS-058
 
@@ -300,11 +312,15 @@ The system shall support analytical views across multiple Operational Informatio
 
 ## URS-074
 
-The system shall support historical analysis of Operational Information and Operational Events.
+The system shall support historical analysis of retained Relevant Changes, case/decision/action history, required longitudinal Alert/Exception analysis and selected system-wide metrics for documented operational purposes. It shall not require complete daily Product/Batch state histories or automatically generate historical metrics for every business dimension.
 
 ## URS-075
 
 The system shall support reporting on Operational Information, investigations, Operational Assessments and operational trends.
+
+## URS-076
+
+The system shall support deliberately selected Swiss NMVS-wide time series for Product counts, Product Version counts where meaningful, Batch counts, reported Number Of Packs and Number Of Active Packs. Each series shall have a documented scope, grain, aggregation rule, time basis, completeness indicator and retention purpose. Equivalent histories per MAH, Product, Batch, Organisation or Location shall not be generated by default. Differences in reported pack aggregates shall not be labelled as upload counts without supporting source semantics, or interpreted as individual Packs/Serial Numbers.
 
 # AI-assisted Investigation Support
 
@@ -356,4 +372,32 @@ The system shall maintain traceability between Operational Information, Operatio
 
 ## URS-094
 
-The system shall support reconstruction of operational investigations for audit and regulatory purposes.
+The system shall support explanation and reconstruction of operational investigations from retained context, evidence and provenance, without requiring complete source datasets indefinitely. Historical source retrieval should be preferred where the relevant Source System/report/API supports it; unavailable or incomplete reconstruction shall be disclosed rather than assumed possible.
+
+## URS-095
+
+The system shall support purpose-bounded retention of detailed Exception operational working data under a defined, configurable rolling policy, subject to documented stronger legal/regulatory requirements. The duration, age reference and expiry calculation shall be approved before enforcement based on operational needs, verified source re-retrieval capabilities and analytical requirements. Information/evidence required by active or retained Investigations/Cases shall remain available under their own requirements even when the working-set window elapses (URS-057). Detailed-source expiry shall not prevent required longitudinal analysis (URS-099).
+
+Approximately three months rolling is the current design assumption for later validation, not an approved fixed retention period. Older detail may be retrieved again only where the documented NMVS capability supports it; historical retrieval is not guaranteed.
+
+## URS-096
+
+The system shall retain audit/accountability information for at least five years from the recorded activity, or longer where a documented stronger requirement applies. It shall record who performed or approved an action/decision, what changed, when, relevant evidence/context, and the automated process/rule and version where applicable. Audit retention shall not require copying every source dataset.
+
+## URS-097
+
+For retained derived information, the system shall preserve sufficient provenance and selected evidence to explain the result after complete source data expires. Where relevant this shall identify Source System, Channel/report/API, acquisition/Observation Times, report/snapshot identity, Processing Run, processing/mapping/rule versions, source-qualified object identifiers, derived result and assessment/decision/action links. For multi-source results, provenance shall distinguish each contributing Source System, Source Authority and relevant assertion, including SMVS/NMVO-owned context, from internally generated observations, assessments and decisions. Unknown source fields and limits on reconstruction shall be explicit. A remote locator or checksum alone shall not satisfy explainability.
+
+## URS-098
+
+The system shall retain Relevant Changes classified by explicit operational relevance rules: first-observed MAHs, Product Codes/versions, changed MAH/OBP associations, potential transfers and relevant new Batch uploads where source evidence supports that classification. Each retained change shall identify what was observed, Observation Time, involved objects, relevance reason/rule version, supporting context/evidence and resulting assessment/decision/action links where applicable. Detection shall not require retaining every intermediate source state; inferred Effective Time, actor or cause shall not be asserted as source fact.
+
+## URS-099
+
+The system shall support required longitudinal Alert/Exception analysis beyond the detailed-source working-set window by retaining the minimum derived information necessary for that analysis under its own purpose-based policy. The analytical use cases, time horizons, source semantics and completeness requirements shall determine the retained information; the working-set expiry shall not determine the analytical horizon. Active/retained Case evidence and minimum five-year audit retention remain independent.
+
+“A7 Alerts per Location over the last year” illustrates the required capability. This does not yet select dimensions/fields for retention, aggregation levels or a physical representation: pre-aggregated metrics, reduced observations or another derived representation require later use-case and source-data analysis. Complete detailed Exception records shall not be retained solely to provide that analysis where sufficient derived information meets the requirement.
+
+## URS-100
+
+The system shall preserve required SMVS-created assessments, investigation/review outcomes, decisions, actions, operational classifications, contextual relationships and evidence that a review occurred under their own operational, case and audit/accountability policies. Expiry or re-retrievability of external source data shall not determine retention of these records; the system shall not assume they can be reconstructed solely from NMVS or another external source.

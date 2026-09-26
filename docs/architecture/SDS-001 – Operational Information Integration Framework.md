@@ -114,7 +114,7 @@ The Acquisition Layer shall not perform business transformations.
 
 ## 5.2 Raw Data Storage
 
-Raw source data shall be preserved in its original form. Artifact Content means the exact retained bytes, distinct from source-faithful parsed Staging Datasets and Staging Rows. Content deduplication does not deduplicate acquisition provenance.
+Raw source data shall be preserved in its original form for its applicable processing/evidence retention period, not indefinitely by default. Artifact Content means the exact retained bytes, distinct from source-faithful parsed Staging Datasets and Staging Rows. Content deduplication does not deduplicate acquisition provenance.
 
 Examples include:
 
@@ -240,9 +240,15 @@ Lineage denotes the traceable relationships below; Provenance records origin and
 - Mapping
 - Operational Information
 
-Every mapped Business Entity shall be traceable back to its originating source information.
+Every mapped Business Entity shall be traceable back to its originating source information. Where multiple sources contribute, lineage shall distinguish each supplying Source System, relevant Source Authority and input assertion, including SMVS/NMVO-owned context and internally created observations/results. Traceability after source expiry uses retained source identifiers, processing/mapping/rule versions and selected supporting evidence; it does not require a permanent complete source copy.
 
 ---
+
+## Retention boundary
+
+[ADR-005](ADR-005%20Operational%20Information%20Model.md) defines separate categories for processing data, current context, detailed Exception working data, Relevant Changes, case/decision/action history, longitudinal Alert/Exception analytical information, audit and selected system-wide metrics. The Exception rolling duration remains to be approved; approximately three months is a design assumption. Required Case evidence and minimum derived information for longer-term analysis follow independent policies. Required SMVS-created reviews, assessments, decisions, actions and outcomes have independent retention because they may not be retrievable from any external source. Acquisition and source-faithful staging do not automatically publish permanent Operational Information. Daily Snapshot and future Delta Snapshot are source mechanisms, not business history.
+
+Replay requires retained Artifact Content; it is available within that retention boundary. Retrieval after expiry is a new Acquisition and depends on verified source availability, not a guaranteed replay. Before disposal, future retention handling must preserve required case/audit evidence and sufficient lineage independently, account for content shared by acquisitions, and avoid breaking active processing/evidence dependencies. Audit evidence is retained for at least five years without retaining every raw artifact for that period. No deletion jobs or schema changes are implemented by this specification refinement.
 
 # 10. Error Handling
 

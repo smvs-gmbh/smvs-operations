@@ -230,7 +230,7 @@ Priority: High
 
 ### FRS-IMP-013
 
-The system shall preserve historical Operational Information where required to support operational investigations.
+The system shall preserve selected historical Operational Information for documented operational purposes under the retention categories in ADR-005. This includes compact Relevant Changes and required evidence, not automatically complete Product/Batch state histories or all source snapshots. Retention of derived information shall be independent of source-detail expiry.
 
 Priority: High
 
@@ -247,6 +247,8 @@ The system shall maintain complete traceability between:
 - Staging data
 - Mapping process
 - Operational Information
+
+This lineage shall remain explainable after source expiry through retained identifiers, versions and selected evidence as specified in FRS-IMP-023. It shall not require complete source datasets to remain local indefinitely.
 
 Priority: High
 
@@ -315,6 +317,48 @@ Priority: High
 
 ---
 
+# Persistence and retention requirements
+
+The following specify target behavior; they are not claims that retention, domain mapping or change detection is implemented. Existing requirements retain their identifiers.
+
+### FRS-IMP-021
+
+For each persisted information category, the system shall apply an explicit purpose and retention policy distinguishing processing artifacts/staging, current Operational Information, short-term source details, Relevant Changes, case/decision/action history, longitudinal Alert/Exception analytical information, audit and selected system-wide metrics. Source acquisition shall not automatically publish every supplied record as long-term Operational Information. Replay shall use locally retained content; retrieval after expiry shall be a separate Acquisition and conditional on verified source capability.
+
+Priority: High
+
+### FRS-IMP-022
+
+Before source-detail expiry, the system shall preserve required derived information, case/decision/action context, audit evidence and selected supporting evidence under their independent policies. Source expiry shall not cascade into deletion of that information. Active processing and shared artifact/evidence dependencies shall be accounted for before disposal. Underlying Exception working data shall follow URS-095's defined, configurable rolling policy. Approximately three months is a design assumption, not an approved fixed duration. Duration and age/expiry rules require approval before enforcement. Required evidence for active or retained Cases shall remain available even beyond the working-set window, and the minimum derived information required for longitudinal analysis under URS-099 shall be preserved independently; no physical preservation or analytical representation is prescribed.
+
+Priority: High
+
+### FRS-IMP-023
+
+For derived results, the system shall retain the applicable provenance fields in URS-097, the relevant input assertions/selected evidence and processing/mapping/rule versions needed to explain the result. Before disposing of complete source data it shall establish that this evidence remains available; an unverified promise of later NMVS retrieval shall not suffice. For multi-source results, provenance shall identify the contributing Source Systems, relevant Source Authorities and assertions, including SMVS/NMVO-owned information, separately from internal derivations/results. Required SMVS-created assessments, decisions, actions and review outcomes shall be preserved according to URS-100 rather than assumed retrievable from external sources. Missing source identity/time and unavailable reconstruction shall be explicitly represented. Observation Time shall remain separate from Effective Time, identity and retention duration.
+
+Priority: High
+
+### FRS-IMP-024
+
+The system shall retain relevant integration and automated-result audit evidence for at least five years from the recorded activity, subject to documented stronger requirements. Records shall identify the actor or automated execution, time, action/change, applicable rule/version and supporting context/result links. This shall not impose the same duration on all raw source data or staging.
+
+Priority: High
+
+### FRS-IMP-025
+
+The system shall retain only changes classified by documented operational relevance rules in Operational Change History, recording the information required by URS-098. Daily Snapshot input shall not itself constitute business history; Delta Snapshot input shall not itself constitute Operational Change History. Source change, Observation Time and asserted Effective Time shall remain distinguishable. No detailed Delta Snapshot semantics are specified until its source contract is established.
+
+Priority: High
+
+### FRS-IMP-026
+
+Historical metrics shall be selected explicitly according to URS-076. For each selected series the system shall retain its scope, time basis, aggregation-rule version, completeness and source provenance. It shall distinguish changes in reported snapshot aggregates from source-established upload counts and shall not automatically create histories for each business dimension. Undefined count/aggregation semantics shall be resolved before publishing the affected metric.
+
+Priority: High
+
+---
+
 # 7. Traceability
 
 | URS     | Description                                |
@@ -327,6 +371,21 @@ Priority: High
 | URS-015 | Extensible Information Sources             |
 | URS-016 | Source traceability                        |
 | URS-017 | Source-independent Operational Information |
+| URS-018, URS-019 | Purpose-driven persistence and multiple operational domains |
+| URS-057, URS-095 | Independent case preservation and short-term Exception context |
+| URS-074, URS-076, URS-099 | Selected historical analysis, system-wide metrics and independent longitudinal Alert/Exception analysis |
+| URS-094, URS-097, URS-100 | Multi-source provenance, reconstruction and independent retention of SMVS-created records |
+| URS-096 | Minimum audit retention and accountability |
+| URS-098 | Compact Relevant Change history |
+
+| Functional requirement | User requirement basis |
+| --- | --- |
+| FRS-IMP-013, FRS-IMP-021 | URS-013, URS-018 |
+| FRS-IMP-022 | URS-057, URS-095, URS-099 |
+| FRS-IMP-014, FRS-IMP-023 | URS-010, URS-016, URS-094, URS-097, URS-100 |
+| FRS-IMP-024 | URS-090–URS-093, URS-096 |
+| FRS-IMP-025 | URS-024–URS-026, URS-098 |
+| FRS-IMP-026 | URS-074, URS-076 |
 
 ---
 

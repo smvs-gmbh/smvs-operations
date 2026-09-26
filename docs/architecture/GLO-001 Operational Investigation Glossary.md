@@ -133,7 +133,7 @@ A difference between Observations does not by itself establish the Event that ca
 
 | Attribute             | Value                                                        |
 | --------------------- | ------------------------------------------------------------ |
-| **Definition**        | **Operational Information** is structured information describing Business Entities, operational events or observations within the medicines verification ecosystem. |
+| **Definition**        | **Operational Information** is purpose-driven information derived or selected from source data to describe relevant Business Entities, changes, events or observations for operational work. Source exposure alone does not justify persistence. |
 | **Purpose**           | Operational Information provides the common information layer used throughout the platform. |
 | **Related Concepts**  | Observation, Evidence, Business Entity, Investigation Context |
 | **Primary Reference** | ADR-005                                                      |
@@ -224,7 +224,7 @@ GTIN is used where the source code scheme establishes it. A Product is not autom
 
 Product-related information is delivered through multiple Source Systems. The Daily Snapshot exposes EMVS-originated Product information held in the NMVS for the applicable national market; delivery through NMVS does not establish original authority.
 
-**Product Version** means the source-reported Product Version, not a parser version, Mapping Version, Snapshot Revision or Processing Run version.
+**Product Version** (also **Product Code Version**) represents a source-reported EMVS Product Master Data version. Product Code may remain unchanged when a new version appears. It is not a parser version, Mapping Version, Snapshot Revision or Processing Run version. This project concerns versions visible in the Swiss NMVS context; a version change alone does not establish an MAH transfer.
 
 ---
 
@@ -514,7 +514,7 @@ Product master data and Batch/Lot and associated pack information are uploaded b
 | File Metadata | Metadata parsed from report bytes, distinct from API Response Metadata. |
 | API Response Metadata | Metadata supplied by the API about a report/acquisition rather than parsed from file contents. |
 | Provenance | Recorded origin and circumstances of acquisition of information/artifacts. |
-| Lineage | Traceable relationships linking Source System/Channel, Acquisition and retained Artifact Content, Processing Run and Staging, and eventually mapping/publication. The final mapping/publication layer is not implemented. |
+| Lineage | Traceable relationships linking Source System/Channel, Acquisition and retained Artifact Content, Processing Run and Staging, and eventually mapping/publication. The final mapping/publication layer is not implemented. Lineage does not require indefinite retention of complete source bytes; retained identifiers, versions and selected evidence must preserve explainability under the retention policy. |
 
 ## Daily Snapshot
 
@@ -539,3 +539,24 @@ These terms support future Operational Information design. Their physical implem
 | Mapping | Defined interpretation from source structures into Operational Information concepts. |
 | Mapping Version | Identifier for mapping rules used; distinct from Product Version, parser version and Snapshot Revision. |
 | Publication | Explicit acceptance of mapped information for operational use, separate from acquisition, parsing or staging success. |
+
+## Purpose-driven persistence concepts
+
+These are conceptual definitions, not new physical entities. Retention categories and requirements are specified in [ADR-005](ADR-005%20Operational%20Information%20Model.md) and URS-001.
+
+| Term | Definition |
+| --- | --- |
+| Source Data | Supplied reports, snapshots, API responses and other detailed input used to derive or select Operational Information; not automatically long-term Operational Information. |
+| Relevant Change | Source-supported change or first-observed condition classified as operationally relevant by an explicit rule or reason. It records observation time, involved source-qualified objects, relevance and evidence/context links; it does not assert an exact causal Event or Effective Time without evidence. |
+| Operational Change History | Compact retained history of Relevant Changes, not a full sequence of source states or all source deltas. |
+| Observation Time | Time SMVS Operations observed information; distinct from acquisition, source metadata and Effective Time. First observed does not mean first existed or entered the market. |
+| Retention | How long information is kept locally for a stated purpose; independent of identity, Observation Time and Effective Time. |
+| Delta Snapshot | NMVS source mechanism for retrieving/detecting changes for a supported selected period/point. Detailed coverage, time, completeness and change semantics remain unestablished here; it is not Operational Change History or implemented support. |
+
+Daily Snapshot may inform Current State, but is not Operational Information history. Changes in reported pack aggregates are not proof of a corresponding number of uploads, individual Packs or Serial Numbers. Historical Observations are retained only for a concrete operational purpose, not simply because they are available.
+
+Detailed Exception operational working data, required Investigation/Case evidence, longitudinal Alert/Exception analytical information and audit evidence have independent retention purposes. Longitudinal analysis uses the minimum derived information necessary for its validated use cases; this vocabulary does not choose its representation. Approximately three months is only the current working-set retention assumption, pending approval; audit retention remains at least five years. Neither source expiry nor that audit minimum sets the retention period for the other categories.
+
+**End-user eligibility assessment** concerns whether an NMVS Local Organisation/Location corresponds to an existing, appropriately authorised participant establishment, using suitable authoritative information. This operational capability label does not redefine the physical **end-user**. An unresolved or missing external match is not proof of ineligibility.
+
+Operational context can combine multiple Source Systems and Source Authorities with SMVS/NMVO-owned information. SMVS-created observations, classifications and contextual relationships, and the separately defined assessments, decisions, actions and outcomes, have internal provenance and may exist in no external system. Required retention therefore cannot depend solely on external re-retrieval; the distinct meanings of Operational Information, Assessment and Decision remain intact.

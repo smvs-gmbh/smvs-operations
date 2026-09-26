@@ -69,6 +69,63 @@ The Operational Information Model shall provide the common information foundatio
 
 ---
 
+# Persistence and retention principles
+
+SMVS Operations is not a historical replica, data warehouse or shadow copy of NMVS. NMVS remains the authoritative source for detailed NMVS source data; this does not erase the distinction between its delivery role and the upstream or local Source Authorities defined in GLO-001. Persistence follows operational value and retention purpose, not the volume of information exposed by a source.
+
+SMVS Operations is also not merely an analytical copy or extension of NMVS data. NMVS provides medicines verification and relevant source information. SMVS Operations complements it with operational management capabilities: investigations, assessments, contractual oversight, eligibility review, decisions, actions and follow-up. These capabilities combine NMVS/EMVS-derived information, other authoritative external information, SMVS/NMVO-owned context and information created by operational work; they are not capabilities attributed to NMVS itself.
+
+The common progression is **Source Evidence → Observation / Relevant Change → context from one or more sources → assessment → decision → action → outcome / follow-up**, with Decision Support informing human decisions. Not every use case needs every stage. It serves Alert/Investigation Management, MAH/contractual/financing oversight and end-user eligibility without requiring an Alert to initiate operational work. Human decision responsibility and existing NMVS read-only boundaries remain unchanged. Assessments and decisions remain distinct from source observations, even though the platform retains both.
+
+For Alert/Investigation Management, NMVS Exception/transaction information contributes to context, assessment, decision and action/follow-up/closure. The complete SMVS investigation, including assessments, communications where applicable, decisions, actions and outcomes, is not simply an NMVS record.
+
+For example, a Product Code/version and its reported MAH/OBP may reveal a previously unseen MAH. Comparison with local contractual/registration context can lead to no action when a contract is established, or to a potential contractual mismatch for review. “Free rider” is a potential assessment requiring verification, not an automatic legal conclusion. Missing or unresolved identity/contract evidence must remain distinguishable from confirmed absence of a contract. A valid NMVS Product record may therefore still raise a contractual oversight question when combined with SMVS/NMVO-owned information. No contract database or matching rules are prescribed here.
+
+End-user eligibility is another cross-source use case: NMVS Local Organisation/Location context is compared with appropriate authoritative establishment-existence or authorisation/status information, leading to review of a mismatch, changed status or unresolved match and operational follow-up where required. “End-user eligibility” here concerns participant establishment eligibility, not identification of the physical end-user defined in GLO-001. Swiss GMDP is a concrete historical example used by the previous solution, not an approved integration: no API, synchronisation, local replica, schema, identifiers, matching algorithm or automatic deactivation is prescribed. Coverage of every Location type is not assumed. A missing match does not establish ineligibility. Applicable authorities, participant categories and decision rules require later domain/source analysis.
+
+Source System identifies delivery; Source Authority identifies responsibility for a fact. NMVS/EMVS-derived information can establish source-reported Product/version visibility, Batch, participant or Exception context; an establishment authority may establish existence/licensing status; SMVS/NMVO-owned information may establish contractual or internal operational status. SMVS Operations records first observations, classifications, contextual relationships, reviews, assessments, decisions, actions and outcomes. Provenance must distinguish these contributions rather than assign them one generic source.
+
+## Current context and compact change history
+
+Current context can answer which Swiss NMVS-visible Products/versions and Batches relate to an MAH, their reported pack aggregates and current operational/contractual status. This does not require daily historical copies of every Product, Batch or MAH state. Generic persistent Business Entity terminology does not require complete state history or a complete European multi-market Product master.
+
+Retain Relevant Changes such as first-observed MAHs, Product Codes or Product Code Versions; reported MAH/OBP association changes; potential transfers; and relevant new Batch uploads where supported by source semantics. A Product Code can stay the same across versions: version 1 associated with MAH A/OBP X and version 2 with MAH B/OBP X or MAH A/OBP Y may warrant review. Not every version change is an MAH transfer. Preserve code scheme, version and source-qualified party identifiers; names do not resolve identity and EMVS MAH/OBP identifiers are not NMVS Organisation identifiers.
+
+A retained Relevant Change records what was detected, when observed, involved objects, why relevant, supporting context/evidence and links to resulting assessments, decisions and actions (including no action where applicable). It does not require every intermediate source state. First observation is not market-entry time, exact upload time or the legal/effective date of a transfer. No event table or change-log schema is prescribed.
+
+Daily Snapshot can supply current source state. Delta Snapshot is another source mechanism for change detection/retrieval; its detailed contract remains to be established. Neither defines the desired historical business model. Reprocessing or repeated acquisition must not itself imply a new business change; relevance and identity rules remain domain design concerns.
+
+## Retention categories
+
+| Category | Persistence principle |
+| --- | --- |
+| Transient / processing data | Raw artifacts and staging serve acquisition, validation and bounded replay. Preserve exact bytes while retained; define a purpose-based period before disposal is implemented. No indefinite default is required. |
+| Current Operational Information | Keep context required for current work; replacement does not mandate a complete historical copy. Preserve separately selected changes and required evidence. |
+| Detailed Exception operational working data | Purpose-bounded, configurable rolling policy. Approximately three months is a working assumption for validation, not an approved fixed period; operational needs, verified re-retrieval capabilities and analytical requirements determine the policy. |
+| Relevant Operational Change History | Keep compact changes with relevance and provenance under an explicit operational retention policy; no automatic full Product/Batch history. |
+| Case / decision / action history | Retain investigation context, findings, assessments, decisions, actions and required evidence under their own policy, independently of source expiry. |
+| Longitudinal Alert/Exception analytical information | Retain the minimum derived information necessary for required longer-term analysis under a separate purpose-based policy; detailed-source expiry must not limit the analytical horizon. Representation remains undecided. |
+| Audit / accountability evidence | Retain for at least five years; any documented stronger requirement prevails. Audit captures accountable activity and explanation, not a replica of source data. |
+| System-wide historical metrics | Deliberately selected Swiss NMVS-wide series: Product count, Product Version count where meaningful, Batch count, reported Number Of Packs and Number Of Active Packs. No automatic per-MAH/Product/Batch/Organisation/Location histories. |
+
+The Exception working-set duration itself, as well as its calendar-day/month convention and age reference, requires approval before enforcement. Durations for other categories remain policy decisions; the audit minimum does not impose five-year retention on all source data. Case information must not disappear when Exception source details expire. Information/evidence required by active or retained Cases must remain available even when an investigation outlasts the normal working-set window. Case, longitudinal analytical and audit policies are independent of that window; no evidence-preservation mechanism is prescribed here.
+
+For example, “How many A7 Alerts occurred per Location during the last year?” requires longitudinal analytical capability, not a one-year copy of complete Exception records. Retain the minimum derived information needed for the validated question. Later use-case and source-data analysis must determine whether pre-aggregated metrics, reduced Alert/Exception observations or another representation is sufficient; no dimensions, fields, aggregation levels or tables are selected here. This is distinct from the narrow system-wide snapshot metrics category and does not introduce per-MAH historical counts.
+
+Metrics require documented scope, grain, source time/Observation Time, completeness and aggregation rules. Changes in reported pack aggregates do not prove that exactly that number of Packs was uploaded. Product/Batch totals must not be added together without establishing non-overlapping semantics. No individual Pack or Serial Number is inferred.
+
+## Explainability after source expiry
+
+Retain, where relevant, Source System, Channel/report/API, acquisition and Observation Times, source report/snapshot identity, Processing Run, parser/transformation/mapping/rule versions, source-qualified identifiers, relevant values or selected evidence, derived result and linked assessment/decision/action. Missing source identities or times must be explicit rather than invented. Record who acted or approved, what changed, when, and which automated process/version produced a result. Provenance must explain the conclusion even when complete source content is no longer local.
+
+Prefer retrieval of older detailed source information from its relevant Source System where the particular report/API supports it, including NMVS for NMVS detail. Existing date-based lookup does not guarantee arbitrary historical availability, retention duration or exact reproduction. Before discarding source detail, ensure required explanations and evidence remain available independently of an unverified retrieval promise. If reconstruction is unavailable or incomplete, disclose that limitation; a checksum or remote locator alone is not sufficient evidence of the reasoning.
+
+SMVS-created assessments, investigation results, decisions, actions, classifications, review evidence and contextual relationships may exist nowhere else. Retain required records under their own operational, case and audit/accountability policies; they cannot be assumed reconstructable from NMVS or another external source. Multi-source provenance records the contributing authorities and relevant assertions as well as the internal reasoning/execution and outcome. Source re-retrieval is not a substitute for retaining required SMVS-created records.
+
+This is a conceptual target. It does not approve physical domain design, implement retention/deletion, or change the current technical foundation's storage behavior.
+
+---
+
 # Rationale
 
 The Operational Information Model establishes a stable conceptual foundation for the platform.
