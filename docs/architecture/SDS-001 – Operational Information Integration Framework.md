@@ -26,9 +26,9 @@
 
 This Software Design Specification (SDS) defines the conceptual software design of the Operational Information Integration Framework.
 
-The framework provides the technical foundation for acquiring, integrating and transforming Operational Information originating from multiple authoritative Operational Information Sources.
+The framework provides the technical foundation for acquiring, integrating and transforming information delivered by multiple Operational Information Sources.
 
-The design is independent of individual source systems and provides a reusable integration architecture for future Information Sources.
+The design is independent of individual source systems and provides a reusable integration architecture for future Information Sources. Terminology follows [GLO-001](GLO-001%20Operational%20Investigation%20Glossary.md). Source System denotes delivery; Source Authority denotes responsibility for originating or maintaining an information domain/attribute. These need not coincide within one report. This document remains draft; terminology alignment does not approve domain implementation.
 
 ---
 
@@ -97,7 +97,7 @@ Each stage has a clearly defined responsibility.
 
 ## 5.1 Acquisition
 
-The Acquisition Layer communicates with external Operational Information Sources.
+The Acquisition Layer accesses Source Systems through Channels. An Acquisition is one retrieval occurrence; an Acquired Artifact links that delivery provenance to retained Artifact Content. Identical content does not merge separate Acquisitions.
 
 Responsibilities include:
 
@@ -114,7 +114,7 @@ The Acquisition Layer shall not perform business transformations.
 
 ## 5.2 Raw Data Storage
 
-Raw source data shall be preserved in its original form.
+Raw source data shall be preserved in its original form. Artifact Content means the exact retained bytes, distinct from source-faithful parsed Staging Datasets and Staging Rows. Content deduplication does not deduplicate acquisition provenance.
 
 Examples include:
 
@@ -134,7 +134,7 @@ Raw Data Storage enables:
 
 ## 5.3 Transformation
 
-Transformation converts source-specific structures into internal integration objects.
+Transformation converts source-specific structures into internal integration objects. In the implemented foundation, a Processing Run is a durable attempt over an existing Acquired Artifact; parsing produces source-faithful Staging Datasets/Rows. Replay starts a new Processing Run from retained content without reacquisition and does not itself establish a new Source Snapshot or Observation. The broader transformation activities below do not describe modifications to retained bytes or source-faithful staging.
 
 Typical activities include:
 
@@ -160,7 +160,7 @@ Examples include:
 - Locations
 - Operational Events
 
-Mapping is responsible for resolving source-specific semantics.
+Mapping is responsible for resolving source-specific semantics. Mapping and Publication are conceptual future stages, distinct from successful acquisition, parsing or staging; the implemented technical foundation does not yet provide them.
 
 ---
 
@@ -185,7 +185,7 @@ The framework consists of the following logical components.
 | ---------------------------------- | ---------------------------------------------------------- |
 | Scheduler                          | Starts scheduled integration jobs                          |
 | Job Manager                        | Controls execution of integration jobs                     |
-| Information Source                 | Represents an authoritative operational information source |
+| Information Source                 | Identifies the supplying Source System, distinct from Source Authority |
 | Import Channel                     | Implements a specific acquisition mechanism                |
 | Acquisition                        | Retrieves Operational Information                          |
 | Raw Data Storage                   | Preserves original source data                             |
@@ -200,7 +200,7 @@ The framework consists of the following logical components.
 
 The framework is independent of individual Information Sources.
 
-Initial implementations include:
+Source Systems considered by this draft include:
 
 - Swiss NMVS
 - SAI
@@ -212,16 +212,17 @@ Future Information Sources can be added without modifying the integration pipeli
 
 # 8. Import Channels
 
-An Information Source may expose multiple Import Channels.
+A Source System may expose multiple Channels (technical interfaces). A report is a delivered artifact; a dataset is a logical section within it. These are not interchangeable with Source System or Channel.
 
 Examples for the Swiss NMVS include:
 
-| Import Channel  | Typical Behaviour                            |
-| --------------- | -------------------------------------------- |
-| Snapshot        | Immediate download of pre-generated datasets |
-| Report          | Request → Processing → Polling → Download    |
-| Exceptions API  | Incremental API polling                      |
-| Future Channels | Additional acquisition mechanisms            |
+| Channel | Report/access pattern |
+| --- | --- |
+| Reporting API | Daily Snapshot: retrieval of a pre-generated report; other report flows may use request, processing, polling and download |
+| Exceptions API | Incremental API polling |
+| Future Channels | Additional technical acquisition interfaces |
+
+The Daily Snapshot combines EMVS-originated Product/Batch information held in NMVS for the national market with locally maintained SSR Local Organisation/Location context and technical datasets. NMVS is the delivering Source System, not necessarily the original Source Authority for each item.
 
 Each Import Channel implements the acquisition logic appropriate for the underlying technical interface.
 
@@ -229,13 +230,13 @@ Each Import Channel implements the acquisition logic appropriate for the underly
 
 # 9. Traceability
 
-The framework shall maintain traceability between:
+Lineage denotes the traceable relationships below; Provenance records origin and acquisition circumstances. The framework shall maintain traceability between:
 
 - Information Source
 - Import Channel
 - Import Job
-- Raw Data
-- Transformation
+- Raw Data (Acquired Artifact and Artifact Content)
+- Transformation (including Processing Run and parsed Staging)
 - Mapping
 - Operational Information
 

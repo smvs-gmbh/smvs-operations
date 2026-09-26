@@ -24,7 +24,7 @@
 
 # Context
 
-SMVS Operations integrates information originating from multiple authoritative Information Sources across the medicines verification ecosystem.
+SMVS Operations integrates information delivered by multiple Information Sources across the medicines verification ecosystem. Terminology follows [GLO-001](GLO-001%20Operational%20Investigation%20Glossary.md): Source System identifies delivery, while Source Authority identifies responsibility for originating or maintaining particular information. This terminology alignment does not approve this draft model or its identity rules.
 
 Current and planned Information Sources include, but are not limited to:
 
@@ -36,13 +36,13 @@ Current and planned Information Sources include, but are not limited to:
 
 Each Information Source has its own information model, terminology, identifiers and operational purpose. Furthermore, the completeness and granularity of the available information differ considerably between sources.
 
-For example, NMVS reference information provides Product, Batch, Organisation and Location information, whereas individual pack identifiers such as Serial Numbers are typically only available through operational events such as Alerts, Exceptions or Audit Trail records.
+The Daily Snapshot delivers EMVS-originated Product and Batch/Lot information held in NMVS for the national market, alongside locally maintained SSR Local Organisation and Location context. Delivery through NMVS does not make these one authority domain. NMVS holds individual Serial Numbers, but the Daily Snapshot does not expose them or individual Pack records.
 
 Without a common information model, every analytical capability would need to interpret each Information Source individually, leading to duplicated integration logic, inconsistent interpretation and reduced maintainability.
 
 A common conceptual representation of the operational domain is therefore required before analytical processing can take place.
 
-The platform does not own operational information. It maintains an integrated operational representation of information originating from authoritative Operational Information Sources.
+The platform does not own operational information. It maintains an integrated operational representation of information delivered by Operational Information Sources, preserving the distinction between delivery and original authority.
 
 ---
 
@@ -89,7 +89,7 @@ The introduction of additional operational systems therefore primarily affects t
 
 Information integration and operational analysis represent distinct architectural concerns.
 
-The Information Integration Layer is responsible for acquiring, validating, transforming and correlating information originating from multiple Information Sources.
+The Information Integration Layer is responsible for acquiring, validating, transforming and correlating information delivered by multiple Information Sources.
 
 Operational Intelligence operates exclusively on the consolidated Operational Information Model and remains independent of source-specific implementation details.
 
@@ -131,10 +131,10 @@ Contextual investigation concepts are established from operational events and av
 
 | Entity           | Description                                                  | Typical Identifier |
 | ---------------- | ------------------------------------------------------------ | ------------------ |
-| **Product**      | A medicinal product within the medicines verification ecosystem. A Product is identified by its GTIN. Product represents the primary business entity of the Operational Information Model. Most operational investigations originate from or are correlated to a Product identified by its GTIN. | GTIN               |
-| **Batch**        | A production batch associated with a Product. A Batch cannot exist independently of a Product. | GTIN + Batch ID    |
-| **Organisation** | An organisation participating in the medicines verification ecosystem, such as an end-user organisation, MAH, OBP or wholesaler. | Organisation ID    |
-| **Location**     | A physical or logical location associated with an Organisation. Operational activity is usually associated with a specific Location. | Location ID        |
+| **Product**      | Source Product concept represented by EMVS/NMVS information; preserve Product Code Scheme and Product Code. It is not automatically a regulatory preparation or Swissmedic authorisation. | Source Product Code Scheme + Code               |
+| **Batch**        | A production Batch (Lot) associated with a Product; Batch Id alone is not a global identity. | Source Product identifier + Batch Id    |
+| **Organisation** | Generic legal or operational participant; broader than SSR Local Organisation. MAH, OBP and manufacturer roles do not establish identity with Local Organisation. | Source-qualified identifier    |
+| **Location**     | SSR instance of an actor entitled/required to verify medicinal packs, owned by a Local Organisation; not necessarily a postal address. | Source-qualified Location Id        |
 
 ---
 
@@ -142,14 +142,16 @@ Contextual investigation concepts are established from operational events and av
 
 | Concept                   | Description                                                  | Typical Identifier                                           |
 | ------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| **Pack Context**          | Context relating to an individual pack. Pack Context is established only when sufficient identifiers are available. Pack Context represents an investigation concept rather than a persistent business entity. | GTIN + Serial Number + Batch ID + Expiry Date, where available |
+| **Pack Context**          | Context relating to an individual pack. Pack Context is established only when sufficient identifiers are available. Pack Context represents an investigation concept rather than a persistent business entity. | Source Product identifier + Serial Number, with Batch Id and Expiry Date where available |
 | **Event**                 | An Event represents an operational occurrence observed within the medicines verification ecosystem.Examples include:- Alerts- Exceptions- Transaction Events- Audit Trail Events- Future Field Intelligence Events | Source-specific identifier, Transaction ID or Event ID       |
 | **Evidence**              | Evidence consists of objective information collected during an investigation.Evidence remains distinguishable from Intelligence, Risk Assessment and Decision Support. | Platform-generated identifier                                |
 | **Investigation Context** | Contextual representation of an operational investigation established in accordance with ADR-004. | Platform-generated identifierPlatform-generated identifier   |
 
 Pack-level information is not generally available from all Information Sources.
 
-In particular, NMVS reference information and snapshot-style operational extracts typically provide Product, Batch, Organisation and Location information, but not Serial Numbers. Serial Numbers are usually available only where an operational event has occurred, for example through an Alert, Exception, Audit Trail record or future field intelligence event.
+The Daily Snapshot exposes no individual Serial Numbers or Pack records. Its `Number Of Packs` and `Number Of Active Packs` values are aggregates and cannot reconstruct Pack Context. This report limitation does not imply that NMVS lacks serial-number holdings. Other information would be needed for conditional Pack Context; no source or implementation is approved here.
+
+A Snapshot Observation can describe state, context, relationships or measures without being an Event. Differences between Observations do not by themselves establish a causal Event, its time or actor.
 
 The model therefore treats Pack Context as conditional. It can enrich an investigation where sufficient identifiers are available, but it is not required for all operational analyses.
 
@@ -164,8 +166,8 @@ It does not represent a physical database model.
 ```mermaid
 flowchart LR
 
-    Product["Product(GTIN)"]
-    Batch["Batch(GTIN + Batch ID)"]
+    Product["Product(source code scheme/code)"]
+    Batch["Batch(Product + Batch Id)"]
     Pack["Pack(Context, where identifiable)"]
 
     Organisation["Organisation"]
@@ -204,18 +206,18 @@ Dashed relationships indicate conditional relationships that depend on the avail
 
 The Operational Information Model uses stable business identifiers wherever possible.
 
-| Entity or Concept | Primary Identifier                                           |
+| Entity or Concept | Source identifier context                                           |
 | ----------------- | ------------------------------------------------------------ |
-| **Product**       | GTIN                                                         |
-| **Batch**         | GTIN + Batch ID                                              |
-| **Organisation**  | Organisation ID                                              |
-| **Location**      | Location ID                                                  |
-| **Pack Context**  | GTIN + Serial Number + Batch ID + Expiry Date, where available |
+| **Product**       | Source Product Code Scheme + Code                                                         |
+| **Batch**         | Source Product identifier + Batch Id                                              |
+| **Organisation**  | Source-qualified identifier                                              |
+| **Location**      | Source-qualified Location Id                                                  |
+| **Pack Context**  | Source Product identifier + Serial Number, with Batch Id and Expiry Date where available |
 | **Event**         | Source-specific identifier, Transaction ID or Event ID       |
 | **Evidence**      | Platform-generated identifier                                |
 | **Investigation** | Platform-generated identifier                                |
 
-The chosen identifiers represent conceptual identifiers rather than implementation-specific database keys.
+These source identifier descriptions are conceptual, not approved canonical identity rules or database keys. `Organisation Id`, `EMVS MAH Id`, `OBP Id` and manufacturer names are separate namespaces; names alone do not resolve identity. EMVS MAH is not automatically Swiss regulatory MAH. Product Version is a source attribute, not a Mapping Version or Snapshot Revision.
 
 Where source systems provide different identifiers or incomplete information, the Information Integration Layer is responsible for mapping and correlating the available information into the Operational Information Model.
 

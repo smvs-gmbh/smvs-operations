@@ -1,5 +1,19 @@
 # Daily Snapshot import contract
 
+Terminology follows [GLO-001](../architecture/GLO-001%20Operational%20Investigation%20Glossary.md), including its canonical Daily Snapshot definition. This pre-generated SSR NMVS Reporting API report describes selected source-reported state/context; it is not a complete extract of NMVS holdings.
+
+## Delivery, authority and granularity
+
+- **Products / Batches:** EMVS-originated Product and Batch/Lot information held in NMVS for the applicable national market. Product Code Scheme and Product Code retain their source meaning; this is not an identity mapping to regulatory preparations.
+- **Organisations / Locations:** locally maintained Swiss/Liechtenstein SSR NMVS end-user context. The source `Organisations` dataset describes Local Organisations, distinct from physical end-users and from MAH/OBP/manufacturer roles and identifier namespaces.
+- **API-version datasets:** technical/usage context; they do not independently establish Organisation master-data authority.
+
+The NMVS holds individual pack/serial-number data required for verification, but individual Serial Numbers are not exposed by the Daily Snapshot. The validated report contains no individual Pack records. `Number Of Packs` and `Number Of Active Packs` are aggregate measures and cannot reconstruct Pack Context. The EU Hub holds Product and Batch/Lot data, not serial numbers; delivery through it is distinct from national-system holdings.
+
+Lookup/request range, report/file metadata time, acquisition time, processing time and Effective Time are distinct. `Date Requested (UTC)` is not established as the Effective Time of every record. A report download is an Acquisition; reprocessing it is a Processing Run. Neither defines a Source Snapshot identity or revision. Mapping and Publication remain future conceptual stages.
+
+## Validated parsing and processing contract
+
 The implementation follows the observed CSV grammar, not a domain model. Fixtures
 contain fictional values only. No domain mapping or fixed dataset inventory is
 imposed.

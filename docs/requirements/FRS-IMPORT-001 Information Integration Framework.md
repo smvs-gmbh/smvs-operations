@@ -26,7 +26,7 @@
 
 This document defines the functional requirements for the Information Integration Framework of the SMVS Operations platform.
 
-The framework is responsible for acquiring Operational Information from authoritative Operational Information Sources, validating and transforming the information, and updating the Operational Information Layer used throughout the platform.
+The framework is responsible for acquiring information delivered by Operational Information Sources, validating and transforming the information, and updating the Operational Information Layer used throughout the platform.
 
 The framework establishes the foundation for all Operational Intelligence, Operational Assessment and Decision Support capabilities.
 
@@ -34,33 +34,34 @@ The framework establishes the foundation for all Operational Intelligence, Opera
 
 # 2. Scope
 
-The Information Integration Framework supports the acquisition and integration of Operational Information originating from multiple authoritative Operational Information Sources.
+The Information Integration Framework supports the acquisition and integration of information delivered by multiple Operational Information Sources. Source System and Source Authority have the distinct meanings defined in GLO-001: the delivering system need not originate or maintain every supplied attribute.
 
-Initial Operational Information Sources include:
+Initial source/access scope includes:
 
-- NMVS Snapshot Reports
-- NMVS Reports
-- NMVS Exceptions API
-- Regulatory Reference Information
+- NMVS as Source System, accessed through Reporting API (including Daily Snapshot and other reports) and Exceptions API Channels;
+- providers of regulatory reference information as Source Systems.
 
-Future Operational Information Sources may include:
-
-- EMVS AMS Hub
-- VerifyIt
-- Operational Audit Trail
-- Additional NMVS services
-- Future Operational Information Sources
+Future scope includes EMVS AMS Hub and VerifyIt as Source Systems, and operational audit-trail reports or additional services through appropriate Channels. A report or interface is not itself synonymous with its Source System. EU Hub and EMVS AMS Hub are distinct systems.
 
 ---
 
 # 3. References
 
+- [GLO-001 Operational Intelligence Vocabulary](../architecture/GLO-001%20Operational%20Investigation%20Glossary.md)
 - ARCH-001 Conceptual Reference Architecture
 - ADR-004 Operational Investigation Model
 - ADR-005 Operational Information Model
 - URS-001 User Requirements Specification
 
 ---
+
+## Terminology and implementation boundary
+
+Acquisition is a retrieval occurrence with provenance; Acquired Artifact links that occurrence to retained Artifact Content. Identical bytes may share content without collapsing Acquisitions. Parsed Staging Datasets/Rows preserve source structure and values and are distinct from retained raw bytes and future mapped Operational Information.
+
+Implemented Replay creates a new Processing Run from retained acquired content without contacting the Source System. It does not establish a new Source Snapshot or business Observation. Provenance records origin/acquisition circumstances; Lineage links the delivery, content, processing, staging and future mapping stages.
+
+FRS-IMP-004's ordering of staging before validation/transformation and FRS-IMP-006's specific reference to reprocessing staging data are retained unchanged. Their relationship to parse-time validation and replay from retained bytes requires separate requirements review; terminology alignment does not change those obligations or claim they are fully satisfied. This document remains draft.
 
 # 4. Functional Overview
 
