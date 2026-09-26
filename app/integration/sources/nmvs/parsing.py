@@ -21,68 +21,103 @@ class ExtractedDataset:
 
 @dataclass(frozen=True)
 class ParsedDailySnapshot:
-    report_metadata: dict[str, str]
+    # Ordered CSV column/value mapping, distinct from acquisition API metadata.
+    file_metadata: dict[str, str]
     datasets: tuple[ExtractedDataset, ...]
 
 
 def parse_daily_snapshot(content: bytes) -> ParsedDailySnapshot:
     try:
-        text = content.decode("utf-8-sig")
-    except UnicodeDecodeError as exc:
-        raise DailySnapshotParseError("Daily Snapshot is not valid UTF-8") from exc
+        text = content.decode("utf-8-sig", errors="strict")
+    except UnicodeDecodeError:
+        raise DailySnapshotParseError("Daily Snapshot is not valid UTF-8") from None
 
-    sections = _split_sections(text)
+    _reject_bare_quotes(text)
+    sections: list[list[list[str]]] = []
+    section: list[list[str]] = []
+    try:
+        # newline='' leaves embedded LF/CRLF untouched. Only an empty *logical*
+        # record separates sections; quoted empty fields and blank lines are data.
+        for row in csv.reader(io.StringIO(text, newline=""), strict=True):
+            if row:
+                section.append(row)
+            elif section:
+                sections.append(section)
+                section = []
+    except csv.Error:
+        raise DailySnapshotParseError("Malformed Daily Snapshot CSV") from None
+    if section:
+        sections.append(section)
     if not sections:
         raise DailySnapshotParseError("Daily Snapshot is empty")
     metadata = _parse_metadata(sections[0])
-    datasets = tuple(
-        _parse_dataset(section, section_order)
-        for section_order, section in enumerate(sections[1:], start=1)
-        if section.strip()
-    )
-    return ParsedDailySnapshot(report_metadata=metadata, datasets=datasets)
+    if len(sections) < 2:
+        raise DailySnapshotParseError("Daily Snapshot contains no datasets")
+    datasets = tuple(_parse_dataset(rows, order) for order, rows in enumerate(sections[1:], 1))
+    names = [dataset.source_dataset_name for dataset in datasets]
+    if len(set(names)) != len(names):
+        raise DailySnapshotParseError("Duplicate dataset names")
+    return ParsedDailySnapshot(file_metadata=metadata, datasets=datasets)
 
 
-def _split_sections(text: str) -> list[str]:
-    normalized = text.replace("\r\n", "\n")
-    return normalized.split("\n\n")
+def _reject_bare_quotes(text: str) -> None:
+    """csv strict mode still accepts quotes inside unquoted fields; reject those."""
+    state = "start"
+    for char in text:
+        if state == "quoted":
+            if char == '"':
+                state = "closed"
+        elif state == "closed":
+            if char == '"':
+                state = "quoted"  # CSV doubled quote.
+            elif char in ",\r\n":
+                state = "start"
+            else:
+                raise DailySnapshotParseError("Malformed Daily Snapshot CSV quoting")
+        elif char == '"':
+            if state != "start":
+                raise DailySnapshotParseError("Quote inside an unquoted CSV field")
+            state = "quoted"
+        elif char in ",\r\n":
+            state = "start"
+        else:
+            state = "unquoted"
+    if state == "quoted":
+        raise DailySnapshotParseError("Unclosed Daily Snapshot CSV quote")
 
 
-def _parse_metadata(section: str) -> dict[str, str]:
-    rows = list(csv.reader(io.StringIO(section)))
-    if not rows:
-        raise DailySnapshotParseError("Missing report metadata section")
-    metadata: dict[str, str] = {}
-    for row in rows:
-        if len(row) < 2 or not row[0].strip():
-            raise DailySnapshotParseError("Malformed report metadata row")
-        metadata[row[0].strip()] = row[1].strip()
-    return metadata
+def _headers(row: list[str]) -> tuple[str, ...]:
+    if not row or any(not value or value.isspace() for value in row):
+        raise DailySnapshotParseError("Missing or empty CSV header")
+    if len(set(row)) != len(row):
+        raise DailySnapshotParseError("Duplicate CSV headers")
+    return tuple(row)
 
 
-def _parse_dataset(section: str, section_order: int) -> ExtractedDataset:
-    lines = section.strip().splitlines()
-    if len(lines) < 2 or not lines[0].strip():
-        raise DailySnapshotParseError("Malformed dataset section")
-    dataset_name = lines[0].strip()
-    rows = list(csv.reader(io.StringIO("\n".join(lines[1:]))))
-    if not rows or not rows[0]:
-        raise DailySnapshotParseError(f"Dataset {dataset_name!r} has no header")
-    headers = tuple(rows[0])
-    records: list[dict[str, Any]] = []
-    for row in rows[1:]:
-        if not row:
-            continue
-        values = row[: len(headers)]
-        record = {header: values[index] if index < len(values) else None for index, header in enumerate(headers)}
-        if len(row) > len(headers):
-            record["__extra__"] = row[len(headers) :]
-        records.append(record)
+def _record(headers: tuple[str, ...], row: list[str]) -> dict[str, str]:
+    if len(row) != len(headers):
+        raise DailySnapshotParseError("CSV row width does not match its headers")
+    return dict(zip(headers, row, strict=True))
+
+
+def _parse_metadata(rows: list[list[str]]) -> dict[str, str]:
+    if len(rows) != 2:
+        raise DailySnapshotParseError("Report metadata must contain one header and one value record")
+    headers = _headers(rows[0])
+    if not {"Report Type", "Report Name", "Date Requested (UTC)"}.issubset(headers):
+        raise DailySnapshotParseError("Missing required report metadata columns")
+    return _record(headers, rows[1])
+
+
+def _parse_dataset(rows: list[list[str]], section_order: int) -> ExtractedDataset:
+    if len(rows) < 2 or len(rows[0]) != 1 or not rows[0][0] or rows[0][0].isspace():
+        raise DailySnapshotParseError("Dataset requires one name field and a header record")
+    headers = _headers(rows[1])
     return ExtractedDataset(
-        source_dataset_name=dataset_name,
+        source_dataset_name=rows[0][0],
         section_order=section_order,
         source_headers=headers,
-        rows=tuple(records),
+        rows=tuple(_record(headers, row) for row in rows[2:]),
     )
 
 

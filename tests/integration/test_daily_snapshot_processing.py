@@ -31,7 +31,11 @@ from app.integration.sources.nmvs.reporting import (
     ReportingApiError,
 )
 
-VALID = b"Report Type,DailySnapshot\n\nProducts\nCode\n001\n002\n\nEmpty\nHeader\n"
+VALID = (
+    b'"Report Type","Report Name","Date Requested (UTC)"\r\n'
+    b'"Daily Snapshot","Synthetic","2024-02-29T00:00:00Z"\r\n\r\n'
+    b'"Products"\r\n"Code"\r\n"001"\r\n"002"\r\n\r\n"Empty"\r\n"Header"\r\n'
+)
 SENSITIVE = "Authorization: Bearer private-token password=secret https://user:pw@example.test/report?sig=private-key"
 
 

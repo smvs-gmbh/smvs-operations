@@ -8,7 +8,7 @@ from app.integration.failures import fail_execution, require_idle_runtime_sessio
 from app.integration.sources.nmvs.parsing import parse_daily_snapshot
 from app.integration.staging.service import stage_daily_snapshot
 
-PARSER_VERSION = "daily-snapshot-parser-1"
+PARSER_VERSION = "daily-snapshot-parser-2"
 
 
 def replay_daily_snapshot(session: Session, artifact_id: int, *, parser_version: str = PARSER_VERSION) -> ProcessingRun:

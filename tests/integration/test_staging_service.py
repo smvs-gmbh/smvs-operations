@@ -49,7 +49,7 @@ def test_stages_dynamic_datasets_and_empty_dataset_without_raw_csv_lines() -> No
         session.add(artifact)
         session.flush()
         parsed = ParsedDailySnapshot(
-            report_metadata={"Report Type": "DailySnapshot"},
+            file_metadata={"Report Type": "DailySnapshot"},
             datasets=(
                 ExtractedDataset("Products", 1, ("Product Code",), ({"Product Code": "001"},)),
                 ExtractedDataset("Empty Dataset", 2, ("A", "B"), ()),
