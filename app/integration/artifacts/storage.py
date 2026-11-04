@@ -46,6 +46,21 @@ class MySQLArtifactStore:
         session.flush()
         return artifact
 
+    def save_sai_export(self, session: Session, job: IntegrationJob, *, content_bytes: bytes,
+                        source_uri: str, content_type: str | None,
+                        metadata: dict[str, str]) -> AcquiredArtifact:
+        digest = hashlib.sha256(content_bytes).hexdigest()
+        content = self._get_or_create_content(session, digest, content_bytes)
+        artifact = AcquiredArtifact(
+            integration_job_id=job.id, content=content,
+            source_name="Refdata SAI", channel_name="Public XML Export", report_type="SAIFullExport",
+            source_uri=source_uri, content_type=content_type, report_metadata=metadata,
+            received_at=utcnow(), processing_status="acquired", created_at=utcnow(),
+        )
+        session.add(artifact)
+        session.flush()
+        return artifact
+
     @staticmethod
     def _get_or_create_content(session: Session, digest: str, data: bytes) -> ArtifactContent:
         statement = select(ArtifactContent).where(ArtifactContent.sha256 == digest)

@@ -94,3 +94,25 @@ each request, even if an injected HTTP client's defaults enable them. A download
 HTTP failure messages omit URLs, query values, response bodies and headers.
 HTTPX/httpcore transport logging is suppressed context-locally for these requests,
 including DEBUG headers; unrelated requests retain their normal logging behavior.
+
+
+## Idempotent extraction (migration 0004)
+
+A repeat acquisition/replay with the same source, retained content, parser and
+transform version reuses an already successful extraction. The new processing
+attempt stores `reused_from_run_id`; no new staging dataset or row is inserted.
+Resolve `COALESCE(reused_from_run_id, id)` to read that attempt's data. Per-attempt
+metadata and acquisition provenance remain independent. Failed attempts are not
+reused; changed content or an explicitly different interpretation version is
+processed separately and is itself repeatable.
+
+A lock on the immutable content row serializes concurrent extraction decisions.
+The success lookup uses a current locking read to avoid stale MySQL REPEATABLE
+READ snapshots. The lock is held until the staging/result transaction commits or
+rolls back. This changes the previous replay behavior, which created staging rows
+for every successful attempt. Existing historical duplicate rows are preserved;
+there is no automatic cleanup or publication of competing interpretations.
+
+The [central scheduler](scheduler.md) can invoke the same acquisition service.
+Its Snapshot adapter needs explicit NMVS configuration; no live NMVS connection
+is enabled or exercised merely by configuring a disabled schedule.

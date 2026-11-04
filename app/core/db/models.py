@@ -117,6 +117,10 @@ class ProcessingRun(Base):
     failure_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
     failure_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    reused_from_run_id: Mapped[int | None] = mapped_column(
+        ForeignKey("processing_runs.id", name="fk_processing_runs_reused_from"), nullable=True,
+    )
+
     file_metadata: Mapped[dict[str, str] | None] = mapped_column(OrderedMetadataJSON(), nullable=True)
 
     artifact: Mapped[AcquiredArtifact] = relationship(back_populates="processing_runs")
@@ -159,3 +163,40 @@ class StagingRow(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
     dataset: Mapped[StagingDataset] = relationship(back_populates="rows")
+
+
+class ImportMutex(Base):
+    """Independent lock row: no foreign keys, held for an entire worker invocation."""
+    __tablename__ = "import_mutexes"
+    import_key: Mapped[str] = mapped_column(String(100), primary_key=True)
+
+
+class ImportSchedule(Base):
+    __tablename__ = "import_schedules"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    import_key: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    enabled: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    timezone: Mapped[str] = mapped_column(String(100), nullable=False)
+    daily_time: Mapped[str] = mapped_column(String(5), nullable=False)
+    next_run_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
+    retry_delay_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=300)
+    retry_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+
+class ImportExecution(Base):
+    __tablename__ = "import_executions"
+    __table_args__ = (Index("ix_import_executions_schedule_status", "schedule_id", "status"),)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    schedule_id: Mapped[int] = mapped_column(ForeignKey("import_schedules.id"), nullable=False)
+    trigger: Mapped[str] = mapped_column(String(20), nullable=False)
+    status: Mapped[str] = mapped_column(String(40), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    integration_job_id: Mapped[int | None] = mapped_column(ForeignKey("integration_jobs.id"), nullable=True)
+    failure_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    failure_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+# Register the operational tables after integration classes are defined.
+from app.domain import models as domain_models  # noqa: F401

@@ -11,6 +11,12 @@ def test_integration_foundation_metadata_contains_only_approved_tables() -> None
         "processing_runs",
         "staging_datasets",
         "staging_rows",
+        "import_schedules",
+        "import_executions",
+        "import_mutexes",
+        "products", "product_source_records", "product_versions", "batches",
+        "sai_holders", "sai_preparations", "sai_packages", "product_reference_matches",
+        "mapping_runs", "current_publications",
     }
 
 

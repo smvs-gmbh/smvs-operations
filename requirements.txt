@@ -9,3 +9,5 @@ SQLAlchemy>=2.0
 alembic
 PyMySQL
 
+defusedxml>=0.7.1,<1
+tzdata>=2025.1

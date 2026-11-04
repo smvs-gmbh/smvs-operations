@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -12,6 +13,13 @@ class Settings(BaseSettings):
     db_name: str
     db_user: str
     db_password: str
+
+    nmvs_reporting_base_url: str | None = None
+    nmvs_token_url: str | None = None
+    nmvs_client_id: str | None = None
+    nmvs_client_secret: SecretStr | None = None
+    nmvs_scope: str | None = None
+    nmvs_api_version: str | None = None
 
     model_config = SettingsConfigDict(
         env_file=".env",

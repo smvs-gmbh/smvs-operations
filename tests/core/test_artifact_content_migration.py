@@ -15,6 +15,7 @@ from sqlalchemy.dialects.mysql import LONGBLOB
 from sqlalchemy.ext.compiler import compiles, deregister
 
 from app.core.db.models import Base
+from app.domain.models import DOMAIN_TABLES
 
 VERSIONS = Path(__file__).resolve().parents[2] / "alembic" / "versions"
 
@@ -99,9 +100,17 @@ def test_upgrade_matches_models_and_preserves_all_ids_and_provenance(migration_d
     migration.upgrade()
     expected = sa.MetaData()
     for model_table in Base.metadata.sorted_tables:
-        model_table.to_metadata(expected)
+        if model_table.name not in DOMAIN_TABLES:
+            model_table.to_metadata(expected)
     # This historical migration stops before the separately tested 0003 column.
     expected.tables["processing_runs"]._columns.remove(expected.tables["processing_runs"].c.file_metadata)
+    run_table = expected.tables["processing_runs"]
+    for constraint in list(run_table.foreign_key_constraints):
+        if constraint.name == "fk_processing_runs_reused_from":
+            run_table.constraints.remove(constraint)
+    run_table._columns.remove(run_table.c.reused_from_run_id)
+    for name in ("import_executions", "import_schedules", "import_mutexes"):
+        expected.remove(expected.tables[name])
     assert compare_metadata(MigrationContext.configure(connection), expected) == []
     version_column = sa.inspect(connection).get_columns("alembic_version")[0]
     assert version_column["type"].length >= len(migration.revision)
@@ -122,7 +131,24 @@ def test_upgrade_matches_models_and_preserves_all_ids_and_provenance(migration_d
     metadata_migration = load_migration("0003_file_metadata")
     metadata_migration.op = Operations(MigrationContext.configure(connection))
     metadata_migration.upgrade()
+    scheduling_migration = load_migration("0004_import_scheduling")
+    scheduling_migration.op = Operations(MigrationContext.configure(connection))
+    scheduling_migration.upgrade()
+    scheduling_expected = sa.MetaData()
+    for model_table in Base.metadata.sorted_tables:
+        if model_table.name not in DOMAIN_TABLES:
+            model_table.to_metadata(scheduling_expected)
+    assert compare_metadata(MigrationContext.configure(connection), scheduling_expected) == []
+    domain_migration = load_migration("0005_product_batch_model_operational_product_batch_and_sai_")
+    domain_migration.op = Operations(MigrationContext.configure(connection))
+    domain_migration.upgrade()
+    version_migration = load_migration("0006_source_version_values_retain_unresolved_source_version_values")
+    version_migration.op = Operations(MigrationContext.configure(connection))
+    version_migration.upgrade()
     assert compare_metadata(MigrationContext.configure(connection), Base.metadata) == []
+    version_migration.downgrade()
+    domain_migration.downgrade()
+    scheduling_migration.downgrade()
     metadata_migration.downgrade()
     migration.downgrade()
     assert snapshot(connection, names) == before

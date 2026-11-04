@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.db.models import AcquiredArtifact, IntegrationJob, ProcessingRun
 from app.integration.artifacts.storage import utcnow
 from app.integration.failures import fail_execution, require_idle_runtime_session
+from app.integration.idempotency import reusable_result
 from app.integration.sources.nmvs.parsing import (
     parse_daily_snapshot,
     validate_csv_content_type,
@@ -53,7 +54,11 @@ def process_daily_snapshot(session: Session, artifact_id: int, *, parser_version
         session.commit()  # Retain parsed metadata even if the staging transaction fails.
 
         stage = "staging"
-        stage_daily_snapshot(session, artifact, parsed, processing_run=run)
+        previous = reusable_result(session, artifact, run)
+        if previous is not None:
+            run.reused_from_run_id = previous.id
+        else:
+            stage_daily_snapshot(session, artifact, parsed, processing_run=run)
         run.status = "succeeded"
         run.completed_at = utcnow()
         artifact.processing_status = "staged"

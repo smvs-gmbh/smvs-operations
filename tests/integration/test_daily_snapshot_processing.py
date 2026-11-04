@@ -98,9 +98,10 @@ def test_success_and_identical_reacquisition_have_separate_lineage(session, data
         assert [a.integration_job_id for a in acquisitions] == [first.id, second.id]
         assert [r.artifact_id for r in runs] == [a.id for a in acquisitions]
         assert all(r.status == "succeeded" and r.completed_at for r in runs)
+        assert runs[1].reused_from_run_id == runs[0].id
         assert counts(observer) == {
             "integration_jobs": 2, "acquired_artifacts": 2, "artifact_contents": 1,
-            "processing_runs": 2, "staging_datasets": 4, "staging_rows": 4,
+            "processing_runs": 2, "staging_datasets": 2, "staging_rows": 2,
         }
 
 
@@ -157,7 +158,7 @@ def test_staging_failure_rolls_back_rows_and_preserves_prior_success_on_replay(s
 
     monkeypatch.setattr(processing, "stage_daily_snapshot", stage_then_fail)
     with pytest.raises(IntegrationExecutionError) as failure:
-        replay_daily_snapshot(session, artifact_id)
+        replay_daily_snapshot(session, artifact_id, parser_version="failure-test-next-parser")
     assert failure.value.stage == "staging" and failure.value.failure_recorded
     assert "private" not in str(failure.value)
     assert failure.value.__suppress_context__
@@ -393,13 +394,13 @@ def test_synthetic_csv_values_survive_acquisition_staging_and_replay(session, da
         datasets = observer.scalars(select(StagingDataset).order_by(StagingDataset.id)).all()
         assert [(d.source_dataset_name, d.section_order, d.row_count) for d in datasets] == [
             ("First", 1, 2), ("Empty", 2, 0), ("Last", 3, 1),
-        ] * 2
-        assert datasets[0].source_headers == datasets[3].source_headers == ["B", "A"]
+        ]
+        assert datasets[0].source_headers == ["B", "A"]
         rows = observer.scalars(select(StagingRow).order_by(StagingRow.id)).all()
         assert [row.raw_row_json for row in rows] == [
             {"B": "1", "A": values[0]}, {"B": "2", "A": values[1]}, {"__extra__": "source value"},
-        ] * 2
-        assert [row.source_row_number for row in rows] == [1, 2, 1] * 2
+        ]
+        assert [row.source_row_number for row in rows] == [1, 2, 1]
 
 
 def test_metadata_is_ordered_complete_and_separate_on_replay(session, database, monkeypatch):
@@ -462,3 +463,28 @@ def test_metadata_is_sql_null_before_successful_parse(session, database):
         assert observer.execute(text(
             "SELECT COUNT(*) FROM processing_runs WHERE file_metadata IS NULL"
         )).scalar_one() == 1
+
+
+def test_changed_snapshot_content_has_one_new_result_and_then_reuses_it(session, database):
+    first = DailySnapshotAcquisition(client()).run(session)
+    changed = client(VALID.replace(b'"001"', b'"003"'))
+    DailySnapshotAcquisition(changed).run(session)
+    DailySnapshotAcquisition(changed).run(session)
+    with Session(database) as observer:
+        runs = observer.scalars(select(ProcessingRun).order_by(ProcessingRun.id)).all()
+        assert first.id is not None
+        assert [r.reused_from_run_id for r in runs] == [None, None, runs[1].id]
+        assert counts(observer)['artifact_contents'] == 2
+        assert counts(observer)['staging_rows'] == 4
+
+
+def test_same_bytes_with_new_parser_are_a_distinct_interpretation(session, database):
+    DailySnapshotAcquisition(client()).run(session)
+    with Session(database) as observer:
+        artifact_id = observer.scalar(select(AcquiredArtifact.id))
+    next_run = replay_daily_snapshot(session, artifact_id, parser_version='explicit-new-interpretation')
+    assert next_run.reused_from_run_id is None
+    repeated = replay_daily_snapshot(session, artifact_id, parser_version='explicit-new-interpretation')
+    assert repeated.reused_from_run_id == next_run.id
+    with Session(database) as observer:
+        assert counts(observer)['staging_rows'] == 4
