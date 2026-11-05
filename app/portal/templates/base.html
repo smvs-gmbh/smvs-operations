@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ title }} · SMVS Operations</title>
-  <link rel="stylesheet" href="{{ request.url_for('portal_static', path='portal.css') }}?v=text-size">
+  <link rel="stylesheet" href="{{ request.url_for('portal_static', path='portal.css') }}?v=list-layout">
   <script src="{{ request.url_for('portal_static', path='text-size.js') }}"></script>
 </head>
 <body>
@@ -20,6 +20,8 @@
     <a class="{{ 'selected' if active == 'activity' else '' }}" href="/activity/verification"><span class="nav-icon">▥</span>Activity <span class="nav-arrow">›</span></a>
     <a class="{{ 'selected' if active == 'exceptions' else '' }}" href="/exceptions"><span class="nav-icon">!</span>Exceptions <span class="nav-arrow">›</span></a>
     <a class="{{ 'selected' if active == 'intelligence' else '' }}" href="/intelligence/rules"><span class="nav-icon">✦</span>Intelligence <span class="nav-arrow">›</span></a>
+    <a class="{{ 'selected' if active == 'mah_reports' else '' }}" href="/reports/mah"><span class="nav-icon">▤</span>MAH reports <span class="nav-arrow">›</span></a>
+    <a class="{{ 'selected' if active == 'crm' else '' }}" href="/crm/mahs"><span class="nav-icon">▥</span>CRM <span class="nav-arrow">›</span></a>
     <a class="{{ 'selected' if active == 'imports' else '' }}" href="/imports"><span class="nav-icon">↻</span>Imports <span class="nav-arrow">›</span></a>
   </nav>
   <div class="sidebar-foot"><span class="foot-dot"></span>Local dataset<small>Swiss Medicines Verification</small></div>
@@ -35,7 +37,14 @@
     </div></header>
   <main>
     {% block heading %}{% endblock %}
-    {% if imports_section %}
+    {% if crm_section %}
+    <nav class="crm-nav" aria-label="CRM navigation">
+      {% for label, path in [('MAHs', '/crm/mahs'), ('Contacts', '/crm/contacts'), ('End Users', '/crm/end-users'), ('IT Suppliers', '/crm/it-suppliers'), ('Import review', '/crm/imports')] %}
+      {% set current = request.url.path == path or request.url.path.startswith(path ~ '/') %}
+      <a href="{{ path }}"{% if current %} aria-current="{{ 'page' if request.url.path == path else 'location' }}"{% endif %}>{{ label }}</a>
+      {% endfor %}
+    </nav>
+    {% elif imports_section %}
     <div class="source-strip"><span><i class="dot"></i>Import management</span><span>Daily schedules use their configured time zone</span><span>History and data periods use UTC</span></div>
     {% elif upload_section %}
     <div class="source-strip"><span><i class="dot"></i>Product Pack Upload Audit Trail Report</span><span>Times in UTC</span><span>Genuine Transactions</span></div>

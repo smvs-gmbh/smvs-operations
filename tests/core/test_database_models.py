@@ -22,7 +22,7 @@ def test_integration_foundation_metadata_contains_only_approved_tables() -> None
         "exception_publications", "nmvs_exceptions", "exception_revisions",
         "pack_audit_reports", "pack_audit_requests",
         "upload_reports", "upload_requests",
-        "exception_reviews", "exception_review_events", "intelligence_rule_revisions",
+        "exception_reviews", "exception_review_events", "intelligence_rule_revisions", "crm_mahs", "crm_contacts", "end_user_import_reviews", "crm_end_users",
         "manual_import_requests", "manual_import_attempts", "scheduler_heartbeats",
     }
 

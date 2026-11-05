@@ -13,6 +13,8 @@ from app.portal.exception_routes import router as exception_router
 from app.portal.pack_audit_routes import router as pack_audit_router
 from app.portal.upload_routes import router as upload_router
 from app.portal.intelligence_routes import router as intelligence_router
+from app.portal.mah_report_routes import router as mah_report_router
+from app.portal.crm_routes import router as crm_router
 from app.portal.import_routes import router as import_router
 
 settings = get_settings()
@@ -34,6 +36,8 @@ app.include_router(pack_audit_router)
 app.include_router(upload_router)
 app.include_router(import_router)
 app.include_router(intelligence_router)
+app.include_router(mah_report_router)
+app.include_router(crm_router)
 
 
 @app.get("/health")

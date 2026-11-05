@@ -1,5 +1,5 @@
 {% extends 'base.html' %}{% import 'macros.html' as ui %}
-{% block heading %}<div class="heading"><div><div class="eyebrow">PRODUCTS & BATCHES</div><h1>Batches<span class="heading-dot">.</span></h1><p>Batch context with Swiss product names and separately retained version references.</p></div><span class="section-icon">▤</span></div>{% endblock %}
+{% block heading %}{{ ui.list_heading('CATALOGUE & REFERENCES', 'Batches', 'Review batch states, Swiss product names and reported version references.', icon='▤') }}{% endblock %}
 {% block content %}
 <section class="metrics three">
   <div class="metric"><span>Observed batches</span><strong>{{ statistics.get('batches', 0)|number }}</strong><small>In the selected NMVS snapshot</small></div>
@@ -8,6 +8,6 @@
 </section>
 <section class="panel"><div class="panel-heading"><h2>Batch directory</h2><span class="subtle">{{ pagination.total|number }} results · <a href="{{ request.url.include_query_params(version='-1',page=1) }}">-1</a> / <a href="{{ request.url.include_query_params(version='-2',page=1) }}">-2</a></span></div>
 <form class="filters" method="get" action="/batches" role="search"><label class="search-box"><span aria-hidden="true">⌕</span><input type="search" name="q" value="{{ q }}" placeholder="Batch ID, GTIN or Swiss product name …" aria-label="Search batches"></label><select name="state" aria-label="Batch State"><option value="not_expired" {{ 'selected' if state_filter=='not_expired' else '' }}>All except Expired (default)</option><option value="" {{ 'selected' if state_filter=='' else '' }}>All states</option>{% for value in batch_states %}<option value="{{ value }}" {{ 'selected' if state_filter==value else '' }}>{{ value }}</option>{% endfor %}</select><label class="version-filter"><span>Version · source value</span><input name="version" value="{{ version_filter }}" placeholder="All" aria-label="Filter batch version"></label><button class="primary" type="submit">Search</button>{% if q or version_filter or state_filter!='not_expired' %}<a class="clear-link" href="/batches">Reset</a>{% endif %}</form>
-{{ ui.batch_table(rows) }}{{ ui.pagination(pagination, request) }}</section>
+{{ ui.batch_table(rows, record_query=filter_query(request, 'q', 'version', 'state')) }}{{ ui.pagination(pagination, request) }}</section>
 <div class="information-note"><span>i</span><p>The batch version may differ from the version in the product record. Expiry values are shown as supplied; no date is inferred.</p></div>
 {% endblock %}

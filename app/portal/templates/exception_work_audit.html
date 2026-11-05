@@ -5,8 +5,9 @@
 {% elif value is not none and value != '' %}<div class="work-audit-value">{{ value }}</div>
 {% else %}—{% endif %}
 {% endmacro %}
+{% from 'macros.html' import record_bar %}
 {% block heading %}
-<a class="back-link" href="/exceptions">← Exceptions</a>
+{% if record_nav %}{{ record_bar(record_nav) }}{% else %}<a class="back-link" href="/exceptions">← Exceptions</a>{% endif %}
 <div class="heading"><div><div class="eyebrow">LOCAL WORKFLOW</div><h1>Audit trail</h1><p>{{ record.unique_alert_id }} · Changes to this exception in Operations</p></div></div>
 {% endblock %}
 {% block content %}

@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import record_bar %}
+{% block heading %}
+{{ record_bar(record_nav, user and not edit) }}
+<div class="heading"><div><div class="eyebrow">CRM · End User</div><h1>{{ user.name if user else 'New End User' }}</h1></div></div>
+{% endblock %}
+{% block content %}
+{% from "crm_contact_picker.html" import contact_picker, contact_labels with context %}
+{% macro value(label, data) %}
+<div><dt>{{ label }}</dt><dd>{{ data or '—' }}</dd></div>
+{% endmacro %}
+{% macro heading(label, section) %}
+<div class="mah-section-heading"><h2 id="{{ section }}">{{ label }}</h2>
+{% if user and not user.archived_at and not edit %}<a class="preview-label" href="{{ detail_query ~ '&' if detail_query else '?' }}edit={{ section }}#{{ section }}" aria-label="Edit {{ label|lower }}">Edit</a>{% endif %}
+</div>
+{% endmacro %}
+{% macro actions(command) %}
+<div class="mah-section-heading">
+<button name="command" value="{{ command }}" type="submit">{{ 'Save changes' if user else 'Create End User' }}</button>
+<a href="{{ '/crm/end-users/' ~ user.id ~ detail_query ~ '#' ~ command if user else '/crm/end-users' }}">Cancel</a>
+</div>
+{% endmacro %}
+<div class="review-form">
+{% if user and user.archived_at %}<p class="notice">Archived End User</p>{% endif %}
+<section class="panel review-body review-form">
+{{ heading('General', 'general') }}
+{% if edit == 'general' %}
+<form method="post" action="{{ '/crm/end-users/' ~ user.id ~ detail_query if user else '/crm/end-users' }}" class="review-form mah-profile">
+{% if user %}<input type="hidden" name="version" value="{{ user.version }}">{% endif %}
+<label>End User name<input name="name" required maxlength="255" value="{{ user.name if user else '' }}"></label>
+<div class="review-controls">
+{% for key, (_, label) in profile_fields.items() %}
+<label>{{ label }}<input name="{{ key }}" maxlength="255" value="{{ profile[key] }}"></label>
+{% endfor %}
+</div>
+{{ actions('general') }}
+</form>
+{% else %}
+<dl class="mah-values">
+{% for key, (_, label) in profile_fields.items() %}{{ value(label, profile[key]) }}{% endfor %}
+</dl>
+{% endif %}
+</section>
+{% if user %}
+<section class="panel review-body review-form">
+<div class="mah-section-heading">
+<h2 id="organisation">NMVS organisation</h2>
+{% if not edit and not user.archived_at %}<a class="preview-label" href="{{ detail_query ~ '&' if detail_query else '?' }}edit=organisation#organisation">{{ 'Edit link' if organisation else 'Link organisation' }}</a>{% endif %}
+</div>
+{% if edit == "organisation" %}
+<form method="post" action="/crm/end-users/{{ user.id }}/organisation{{ detail_query }}" class="review-form">
+<input type="hidden" name="previous_organisation_id" value="{{ user.organisation_id or '' }}">
+<label>Organisation<select name="organisation_id">
+<option value="">Unlinked</option>
+{% for option in options %}
+<option value="{{ option.id }}" {{ 'selected' if option.id == user.organisation_id }}>{{ option.organisation_name or 'Unnamed organisation' }} · {{ option.source_organisation_id }}{% if option.organisation_status %} · {{ option.organisation_status }}{% endif %}</option>
+{% endfor %}
+</select></label>
+<div class="mah-section-heading"><button type="submit">Save link</button><a href="/crm/end-users/{{ user.id }}{{ detail_query }}#organisation">Cancel</a></div>
+</form>
+{% elif organisation %}
+<dl class="mah-values">
+<div><dt>Organisation</dt><dd><a href="/organisations/{{ organisation.id }}">{{ organisation.organisation_name or organisation.source_organisation_id }} →</a></dd></div>
+{{ value('NMVS organisation ID', organisation.source_organisation_id) }}
+{{ value('Status', organisation.organisation_status) }}
+{{ value('Link origin', 'Exact import match' if user.link_origin == 'exact' else 'Manual assignment') }}
+</dl>
+{% else %}<p>No NMVS organisation linked.</p>{% endif %}
+</section>
+<section class="panel review-body review-form">
+{{ heading('Contacts', 'contacts') }}
+{% set spoc_ids = [profile.spoc_id] if profile.spoc_id else [] %}
+{% set alert_ids = profile.alert_contact_ids or [] %}
+{% if edit == 'contacts' %}
+<script src="{{ request.url_for('portal_static', path='crm-contacts.js') }}?v=contact-actions" defer></script>
+<form method="post" action="/crm/end-users/{{ user.id }}{{ detail_query }}" class="review-form end-user-contact-editor">
+<input type="hidden" name="version" value="{{ user.version }}">
+<div class="review-controls">
+{{ contact_picker('spoc_id', 'SPOC', spoc_ids, compact=true) }}
+{{ contact_picker('alert_contact_ids', 'Alert contacts', alert_ids, multiple=true, compact=true) }}
+</div>
+{% else %}
+<dl class="mah-values">
+{{ value('SPOC', contact_labels(spoc_ids)) }}
+{{ value('Alert contacts', contact_labels(alert_ids)) }}
+</dl>
+{% endif %}
+{% if source.get('SPOC') or source.get('Alert contacts') %}
+<details {{ 'open' if pending_contact_references }}><summary>Imported contact references</summary>
+{% if pending_contact_references %}<ul>{% for issue in pending_contact_references %}<li>{{ issue }}</li>{% endfor %}</ul>{% endif %}
+<dl class="mah-values">
+{{ value('Imported SPOC', source.get('SPOC')) }}
+{{ value('Imported alert contacts', source.get('Alert contacts')) }}
+</dl></details>
+{% endif %}
+{% if edit == 'contacts' %}
+<div class="contact-action-row">
+<a class="contact-button-secondary" href="/crm/end-users/{{ user.id }}{{ detail_query }}#contacts">Cancel</a>
+<button name="command" value="contacts" type="submit">Save changes</button>
+</div>
+</form>
+{% endif %}
+</section>
+{% if source %}
+<section class="panel review-body review-form">
+<h2>Import provenance</h2>
+<dl class="mah-values">{{ value('Airtable Record Id', source.get('Record Id')) }}</dl>
+<p><a href="/crm/imports#end-user-review">End User import review →</a></p>
+</section>
+{% endif %}
+{% if not edit %}
+<section class="panel review-body">
+{% if not user.archived_at %}<details><summary>Archive End User</summary><p>Archived records can be restored. Their NMVS links and contact assignments are retained.</p>{% endif %}
+<form method="post" action="/crm/end-users/{{ user.id }}{{ detail_query }}" class="review-form">
+<input type="hidden" name="version" value="{{ user.version }}">
+<div><button name="command" value="{{ 'restore' if user.archived_at else 'archive' }}" type="submit">{{ 'Restore End User' if user.archived_at else 'Archive End User' }}</button></div>
+</form>
+{% if not user.archived_at %}</details>{% endif %}
+</section>
+{% endif %}
+{% endif %}
+</div>
+{% endblock %}

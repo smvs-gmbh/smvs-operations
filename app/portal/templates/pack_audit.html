@@ -1,8 +1,9 @@
 {% extends 'base.html' %}
 {% macro state(v) %}{{ v if v else 'Not specified' }}{% endmacro %}
 {% macro change(g) %}{% if g.before and g.actual and g.before!=g.actual %}{{ state(g.before) }} → {{ state(g.actual) }}{% elif g.actual %}{{ state(g.actual) }}{% if g.before==g.actual %} · unchanged{% endif %}{% else %}State not specified{% endif %}{% endmacro %}
+{% from 'macros.html' import record_bar %}
 {% block heading %}
-<a class="back-link" href="{{ '/exceptions/' ~ record.id if record else '/exceptions' }}">← {{ 'Exception & context' if record else 'Exceptions' }}</a>
+{% if record_nav %}{{ record_bar(record_nav) }}{% else %}<a class="back-link" href="{{ '/exceptions/' ~ record.id if record else '/exceptions' }}">← {{ 'Exception & context' if record else 'Exceptions' }}</a>{% endif %}
 <div class="heading"><div><div class="eyebrow">TECHNICAL PACK HISTORY{% if example %} · EXAMPLE REPORT{% endif %}</div><h1>Pack audit trail</h1><p class="mono audit-pack-key">{{ report.product_code if report else record.product_code or 'Product code missing' }} · Serial number {{ report.serial_number if report else record.serial_number or 'missing' }}</p></div></div>
 {% endblock %}
 {% block content %}

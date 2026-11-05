@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import record_bar %}
+{% block heading %}
+{{ record_bar(record_nav) }}
+<div class="heading"><div><div class="eyebrow">CRM · IT Supplier</div><h1>{{ supplier['IT Supplier Name'] }}</h1></div></div>
+{% endblock %}
+{% block content %}
+{% macro field(label, value) %}
+<div><dt>{{ label }}</dt><dd>{{ value or '—' }}</dd></div>
+{% endmacro %}
+<div class="review-form">
+<section class="panel review-body review-form">
+<h2>General</h2>
+<dl class="mah-values">
+<div class="mah-summary"><dt>Company summary</dt><dd>{{ supplier.get('Company summary') or '—' }}</dd></div>
+{% for label in ('Record Id', 'Status', 'Domain', 'GLN', 'UID') %}{{ field(label, supplier.get(label)) }}{% endfor %}
+{{ field('Qualified', 'Checked' if supplier.get('Qualified') == 'checked' else '—') }}
+</dl>
+</section>
+<section class="panel review-body review-form">
+<h2>Address and communication</h2>
+<dl class="mah-values">
+<div class="mah-wide"><dt>Postal address</dt><dd class="preserve-lines">{{ [supplier.get('Street'), supplier.get('Additional address information'), ([supplier.get('Postal code'), supplier.get('City')]|select|join(' ')), supplier.get('Country')]|select|join('\n') or '—' }}</dd></div>
+{{ field('Phone', supplier.get('Phone')) }}
+{{ field('Email', supplier.get('Email general')) }}
+</dl>
+</section>
+<section class="panel review-body review-form">
+<h2>Software and contacts</h2>
+
+<dl class="mah-values">
+<div class="mah-wide"><dt>End-user software</dt><dd>{% for product in software %}<span class="mah-association">{{ product }}</span>{% else %}—{% endfor %}</dd></div>
+<div class="mah-wide"><dt>Contacts</dt><dd>
+{% if supplier_contacts %}<ul>{% for contact, spoc in supplier_contacts %}
+<li><a href="/crm/contacts/{{ contact.id }}">{{ contact.display_name }} →</a>{{ ' · SPOC' if spoc }}</li>
+{% endfor %}</ul>{% else %}No linked contacts.{% endif %}
+</dd></div>
+</dl>
+{% if pending_contacts %}<p>Contact references awaiting review · {{ pending_contacts|join(', ') }}</p>{% endif %}
+<p><a href="/crm/imports">Review candidate links →</a></p>
+</section>
+</div>
+{% endblock %}

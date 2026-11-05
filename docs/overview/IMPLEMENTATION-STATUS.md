@@ -209,7 +209,7 @@ for uncovered UTC days. No automatic report requests or schema changes were adde
 
 ## Verification and version-control state
 
-Most recent complete code validation: **368 tests passed**, with one pre-existing
+Most recent complete code validation: **376 tests passed**, with one pre-existing
 Starlette/httpx deprecation warning. Targeted Upload tests passed after the final
 wording/fixture changes. Local review tests cover reversible hiding, older to-do
 items, stale versions/source data, exact bulk scope and atomicity. Ruff and whitespace checks passed for the latest change.
@@ -217,12 +217,15 @@ Live database checks and browser checks covered default state filters, explicit
 Expired/Deactivated selection, older Upload suggestions and day navigation.
 Exact replay of the supplied Upload CSV left report and staging row counts unchanged.
 
-The database is at **`0018_local_resolution` (Alembic head)**. The last committed code
-baseline is **`9fc51e7`**; the subsequent portal, participant/activity/Exceptions,
-pack/upload evidence and documentation work is still uncommitted. Review the
-working tree and database evidence before a separately authorised commit. No commit or push has been performed. The later Imports UI validation preserved
-the existing enabled states and cadence values. Its additive migration and updated
-local worker were applied for the verified implementation.
+The database is at **`0020_crm_mahs`**. The portal, local audit and
+A7 Intelligence workflows are in baseline commit **`1283e90`**. The
+[implementation list](IMPLEMENTATION-LIST.md) tracks subsequent work.
+
+The MAH monthly drafts page shows retained A2 and A3 alerts for a completed UTC
+month, grouped by provisional SAI holder and by product and batch. It reports
+accepted alert coverage, separates unassigned alerts and links to individual
+pack analysis and upload history. CRM-backed assignment and evidence rollups
+remain upcoming work.
 
 ## Entry points and detailed notes
 

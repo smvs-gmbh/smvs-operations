@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
-{% block heading %}<a class="back-link" href="/exceptions/{{ record.id }}">← Exception</a><div class="heading"><div><div class="eyebrow">PRODUCT & BATCH</div><h1>Upload history</h1><p>{{ record.unique_alert_id }} · {{ record.product_code or 'Product missing' }} · Provided: {{ record.provided_batch or '—' }} · Stored: {{ record.stored_batch or '—' }}</p></div></div>{% endblock %}
+{% from 'macros.html' import record_bar %}
+{% block heading %}{% if record_nav %}{{ record_bar(record_nav) }}{% else %}<a class="back-link" href="/exceptions/{{ record.id }}">← Exception</a>{% endif %}<div class="heading"><div><div class="eyebrow">PRODUCT & BATCH</div><h1>Upload history</h1><p>{{ record.unique_alert_id }} · {{ record.product_code or 'Product missing' }} · Provided: {{ record.provided_batch or '—' }} · Stored: {{ record.stored_batch or '—' }}</p></div></div>{% endblock %}
 {% block content %}
 {% set exception_tab='uploads' %}{% include 'exception_tabs.html' %}
 {% if eligible %}

@@ -272,7 +272,7 @@ def test_analysis_is_a_separate_tab_and_legacy_text_is_preserved(exceptions_port
     seed(factory)
     assert save(client, cause="Earlier free-text finding").status_code == 303
     context = client.get("/exceptions/1").text
-    assert 'href="/exceptions/1/analysis"' in context
+    assert 'href="/exceptions/1/analysis?nav_start=' in context
     assert 'name="cause"' not in context
     analysis = client.get("/exceptions/1/analysis").text
     assert "Earlier free-text finding" in analysis
@@ -280,7 +280,9 @@ def test_analysis_is_a_separate_tab_and_legacy_text_is_preserved(exceptions_port
     assert "Classify the cause" in analysis and "Check the evidence" in analysis
     assert "Record the assessment" in analysis and "Decide the next step" in analysis
     assert (
-        client.get("/exceptions/1/source").text.count('href="/exceptions/1/analysis"')
+        client.get("/exceptions/1/source").text.count(
+            'href="/exceptions/1/analysis?nav_start='
+        )
         == 1
     )
     assert client.get("/exceptions/999/analysis").status_code == 404

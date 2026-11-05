@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% import 'macros.html' as ui %}
+{% block heading %}{{ ui.list_heading('CRM · CONTACTS', 'Contacts', 'Browse contact details and their organisation assignments.') }}{% endblock %}
+{% block content %}
+
+{{ ui.crm_list_status(imported_at) }}
+{{ ui.list_metrics('Contacts overview', [('Contacts in CRM', directory_total|number, 'All contact records'), ('Matching results', pagination.total|number, 'With the current search')]) }}
+<section class="panel">
+<div class="panel-heading"><h2>Contact directory</h2><span class="subtle">{{ pagination.total|number }} results</span></div>
+<form method="get" class="review-body review-form list-filters" role="search">
+<div class="review-controls">
+<label>Contact or function<input name="q" maxlength="150" value="{{ q }}"></label>
+<button type="submit">Search</button>
+</div>
+</form>
+<div class="table-scroll"><table>
+<thead><tr><th>Contact</th><th>Function</th><th>Airtable record ID</th></tr></thead>
+<tbody>
+{% for contact in rows %}<tr><td><a href="/crm/contacts/{{ contact.id }}{{ filter_query(request, 'q') }}">{{ contact.display_name }}</a></td><td>{{ contact.function or '—' }}</td><td>{{ contact.airtable_id }}</td></tr>
+{% else %}<tr><td colspan="3">No matching contacts.</td></tr>{% endfor %}
+</tbody>
+</table></div>{{ ui.pagination(pagination, request) }}
+</section>
+{% endblock %}

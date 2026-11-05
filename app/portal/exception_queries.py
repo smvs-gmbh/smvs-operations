@@ -136,6 +136,7 @@ def enriched(session, records):
                 "review": reviews.get(r.id),
                 "name": preparation.preparation_name if preparation else None,
                 "holder": holder.company_name if holder else None,
+                "holder_id": holder.id if holder else None,
                 "package": package,
                 "product": product,
                 "sai_status": "Matched to SAI"
@@ -157,7 +158,7 @@ def enriched(session, records):
     return rows
 
 
-def listing(
+def listing_statement(
     session,
     *,
     start,
@@ -170,7 +171,6 @@ def listing(
     process="",
     date_quality="",
     intermarket="",
-    page=1,
     work_status="open",
 ):
     ns = namespace(session)
@@ -236,10 +236,16 @@ def listing(
             ExceptionReview.due_date.is_(None),
             ExceptionReview.due_date,
             NMVSException.alert_at,
+            NMVSException.id,
         )
         if work_status == "to_do"
         else (NMVSException.alert_at.desc(), NMVSException.id.desc())
     )
+    return statement, ordering
+
+
+def listing(session, *, page=1, **filters):
+    statement, ordering = listing_statement(session, **filters)
     rows, pagination = paged(
         session,
         statement.order_by(*ordering),

@@ -1,14 +1,27 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %}{% import 'macros.html' as ui %}
 {% block heading %}
 {% if org_record %}<a class="back-link" href="/organisations/{{ org_record.id }}">← Organisation details</a>{% endif %}
-<div class="heading"><div><div class="eyebrow">NMVS · DAILY ACTIVITY</div><h1>{{ org_record.organisation_name if org_record else 'Activity' }}</h1><p>{{ 'Verification by organisation' if section=='verification' else 'IMT Fulfilment by foreign market' }} · {{ start.strftime('%Y-%m-%d') }}–{{ end.strftime('%Y-%m-%d') }}</p></div></div>
+{{ ui.list_heading('NMVS · DAILY ACTIVITY', org_record.organisation_name if org_record else 'Activity', ('Verification by organisation' if section=='verification' else 'IMT Fulfilment by foreign market') ~ ' · ' ~ start ~ '–' ~ end) }}
 {% endblock %}
 {% block content %}
 <nav class="detail-tabs" aria-label="Activity views">
 <a class="{{ 'active' if section=='verification' }}" href="/activity/verification?start={{ start }}&end={{ end }}">Verification</a>
 <a class="{{ 'active' if section=='imt' }}" href="/activity/imt?start={{ start }}&end={{ end }}">IMT Fulfilment</a>
 </nav>
-<form class="activity-filters panel" method="get">
+
+{% if latest %}
+{% if covered<expected %}<div class="notice">Data gaps in this period: {{ expected-covered }} of {{ expected }} days are missing. Totals and rates cover the {{ covered }} imported days. Comparisons are shown only for complete periods.</div>{% endif %}
+{{ ui.list_metrics('Activity overview', [
+  ('Transactions', total|number if covered else '—', ('%+.1f'|format(comparison) ~ ' % vs previous period') if comparison is not none else ('Complete period' if complete else 'Incomplete period')),
+  ('Exceptions', exceptions|number if covered else '—', 'Reported exceptions · not alerts'),
+  ('Exception rate', ('%.2f'|format(rate) ~ ' %') if rate is not none else '—', 'Exceptions / transactions'),
+  ('Data coverage', covered ~ ' / ' ~ expected, 'Days in the selected period · UTC')
+]) }}
+{% endif %}
+
+<section class="panel">
+<div class="panel-heading"><div><h2>{{ 'Business Processes' if per_process else 'Organisations' if section=='verification' else 'Markets' }}</h2><p class="subtle">{% if day %}Daily details {{ day.strftime('%Y-%m-%d') }} · <a href="{{ request.url.remove_query_params('day') }}">Show full period</a>{% else %}Previous period {{ previous_start.strftime('%Y-%m-%d') }}–{{ previous_end.strftime('%Y-%m-%d') }}{% if not previous_complete %} · still incomplete{% endif %}{% endif %}</p></div></div>
+<form class="activity-filters list-filters" method="get">
 <div class="activity-filter-row">
 <label>From (UTC)<input type="date" name="start" value="{{ start }}" max="{{ yesterday }}" required></label>
 <label>To (UTC)<input type="date" name="end" value="{{ end }}" max="{{ yesterday }}" required></label>
@@ -19,14 +32,14 @@
 </div>
 <div class="activity-presets"><span>Period:</span>{% for n in (7,30,90) %}<a href="{{ request.url.path }}?days={{ n }}{% if not org_record %}&organisation={{ organisation|urlencode }}&market={{ market|urlencode }}{% endif %}&process={{ process|urlencode }}&org_type={{ org_type|urlencode }}">{{ n }} days</a>{% endfor %}<a href="{{ request.url.path }}">Reset</a></div>
 </form>
-{% if not latest %}<div class="notice">No activity data has been published yet. Views will populate after the first successful import.</div>{% else %}
-{% if covered<expected %}<div class="notice">Data gaps in this period: {{ expected-covered }} of {{ expected }} days are missing. Totals and rates cover the {{ covered }} imported days. Comparisons are shown only for complete periods.</div>{% endif %}
-<div class="activity-metrics">
-<div class="panel"><span>Transactions</span><strong>{{ total|number if covered else '—' }}</strong><small>{% if comparison is not none %}{{ '%+.1f'|format(comparison) }} % vs previous period{% else %}{{ 'Complete period' if complete else 'Incomplete period' }}{% endif %}</small></div>
-<div class="panel"><span>Exceptions</span><strong>{{ exceptions|number if covered else '—' }}</strong><small>Reported exceptions · not alerts</small></div>
-<div class="panel"><span>Exception rate</span><strong>{{ '%.2f'|format(rate) ~ ' %' if rate is not none else '—' }}</strong><small>Exceptions / transactions</small></div>
-<div class="panel"><span>Data coverage</span><strong>{{ covered }} / {{ expected }}</strong><small>Days in the selected period · UTC</small></div>
-</div>
+{% if not latest %}<p class="review-body">No activity data has been published yet. Views will populate after the first successful import.</p>{% else %}
+<div class="table-scroll"><table><thead><tr><th><a href="{{ request.url.include_query_params(sort='name') }}">{{ 'Business Process' if per_process else 'Organisation' if section=='verification' else 'Market' }} ↕</a></th><th class="numeric"><a href="{{ request.url.include_query_params(sort='count') }}">Transactions ↓</a></th><th class="numeric"><a href="{{ request.url.include_query_params(sort='exceptions') }}">Exceptions ↓</a></th><th class="numeric"><a href="{{ request.url.include_query_params(sort='rate') }}">Rate ↓</a></th><th class="numeric"><a href="{{ request.url.include_query_params(sort='delta') }}">Change ↓</a></th></tr></thead><tbody>
+{% for r in rows %}<tr><td>{% if not per_process %}<a href="{{ request.url.include_query_params(**({'organisation':r.key} if section=='verification' else {'market':r.key})) }}">{{ r.name }}</a><small class="activity-row-meta">{{ r.type if section=='verification' else r.key }}{% if r.organisation_id %} · <a href="/organisations/{{ r.organisation_id }}/activity?start={{ start }}&end={{ end }}">Organisation history →</a>{% endif %}</small>{% else %}{{ r.name }}{% endif %}</td><td class="numeric">{{ r.count|number }}</td><td class="numeric">{{ r.exceptions|number }}</td><td class="numeric">{{ '%.2f'|format(r.rate) ~ ' %' if r.rate is not none else '—' }}</td><td class="numeric">{{ '%+.1f'|format(r.delta) ~ ' %' if r.delta is not none else '—' }}</td></tr>
+{% else %}<tr><td colspan="5" class="empty">{% if selected_day_covered %}No activity reported for this selection.{% else %}No data imported for this selection.{% endif %}</td></tr>{% endfor %}
+</tbody></table></div>
+{% endif %}
+</section>
+{% if latest %}
 <section class="panel activity-charts">
 {% for metric,label in (('count','Transactions'),('exceptions','Exceptions')) %}
 <div class="panel-heading"><h2>{{ label }} per day</h2><span class="subtle">Select a day for details</span></div>
@@ -41,13 +54,6 @@
 {% endfor %}</svg></div>
 {% endfor %}
 <p class="card-footnote">UTC calendar days · × = missing import · zero is shown at the baseline. Synthetic Monitoring is excluded.</p>
-</section>
-<section class="panel">
-<div class="panel-heading"><div><h2>{{ 'Business Processes' if per_process else 'Organisations' if section=='verification' else 'Markets' }}</h2><p class="subtle">{% if day %}Daily details {{ day.strftime('%Y-%m-%d') }} · <a href="{{ request.url.remove_query_params('day') }}">Show full period</a>{% else %}Previous period {{ previous_start.strftime('%Y-%m-%d') }}–{{ previous_end.strftime('%Y-%m-%d') }}{% if not previous_complete %} · still incomplete{% endif %}{% endif %}</p></div></div>
-<div class="table-scroll"><table><thead><tr><th><a href="{{ request.url.include_query_params(sort='name') }}">{{ 'Business Process' if per_process else 'Organisation' if section=='verification' else 'Market' }} ↕</a></th><th class="numeric"><a href="{{ request.url.include_query_params(sort='count') }}">Transactions ↓</a></th><th class="numeric"><a href="{{ request.url.include_query_params(sort='exceptions') }}">Exceptions ↓</a></th><th class="numeric"><a href="{{ request.url.include_query_params(sort='rate') }}">Rate ↓</a></th><th class="numeric"><a href="{{ request.url.include_query_params(sort='delta') }}">Change ↓</a></th></tr></thead><tbody>
-{% for r in rows %}<tr><td>{% if not per_process %}<a href="{{ request.url.include_query_params(**({'organisation':r.key} if section=='verification' else {'market':r.key})) }}">{{ r.name }}</a><small class="activity-row-meta">{{ r.type if section=='verification' else r.key }}{% if r.organisation_id %} · <a href="/organisations/{{ r.organisation_id }}/activity?start={{ start }}&end={{ end }}">Organisation history →</a>{% endif %}</small>{% else %}{{ r.name }}{% endif %}</td><td class="numeric">{{ r.count|number }}</td><td class="numeric">{{ r.exceptions|number }}</td><td class="numeric">{{ '%.2f'|format(r.rate) ~ ' %' if r.rate is not none else '—' }}</td><td class="numeric">{{ '%+.1f'|format(r.delta) ~ ' %' if r.delta is not none else '—' }}</td></tr>
-{% else %}<tr><td colspan="5" class="empty">{% if selected_day_covered %}No activity reported for this selection.{% else %}No data imported for this selection.{% endif %}</td></tr>{% endfor %}
-</tbody></table></div>
 </section>
 {% if measurements %}<section class="panel"><div class="panel-heading"><div><h2>Pack metrics from bulk processing</h2><p class="subtle">Reported daily values. Pack counts are not transaction counts; daily averages are not added together.</p></div></div><div class="table-scroll"><table><thead><tr><th>Day (UTC)</th><th>Organisation</th><th>Metric</th><th class="numeric">Value</th></tr></thead><tbody>{% for m in measurements %}<tr><td>{{ m.activity_date.strftime('%Y-%m-%d') }}</td><td>{{ m.organisation_name }}</td><td>{{ m.business_process }}</td><td class="numeric">{{ '%.3f'|format(m.metric_value) if m.metric_kind=='mean_pack_count' else m.metric_value|int|number }}</td></tr>{% endfor %}</tbody></table></div>{% if more_measurements %}<p class="card-footnote">The latest 100 values for this selection. Narrow the period or organisation for more details.</p>{% endif %}</section>{% endif %}
 {% endif %}

@@ -1,8 +1,12 @@
 {% extends 'base.html' %}
-{% block heading %}
-<div class="heading"><div><div class="eyebrow">OPERATIONAL INTELLIGENCE</div><h1>Rules</h1><p>Review the catalogue, configure rule scope and preview retained evidence.</p></div></div>
-{% endblock %}
+{% import 'macros.html' as ui %}
+{% block heading %}{{ ui.list_heading('OPERATIONAL INTELLIGENCE', 'Rules', 'Review the operations catalogue, configure rule scope and preview retained evidence.') }}{% endblock %}
 {% block content %}
+{{ ui.list_metrics('Rules overview', [
+  ('Catalogue operations', operations|length|number, 'Supported by the repeat-operation evaluator'),
+  ('Rule scope version', scope.version|number, 'Current A7 rule configuration')
+]) }}
+
 <section class="panel review-body">
 <h2>Operations catalogue</h2>
 <div class="table-scroll"><table><thead><tr><th>Source operation</th><th>Operation</th><th>Expected transition</th></tr></thead>

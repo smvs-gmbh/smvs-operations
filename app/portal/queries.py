@@ -118,7 +118,17 @@ def paged(session, statement, page):
     }
 
 
-def products(session, publication, *, q="", status="", version="", page=1):
+PRODUCT_ORDER = (
+    case((ProductReferenceMatch.match_status == "matched_sai", 0), else_=1),
+    SAIPreparation.preparation_name,
+    Product.gtin14,
+    ProductSourceRecord.source_code,
+    ProductSourceRecord.id,
+)
+BATCH_ORDER = (Product.gtin14, Batch.batch_code, Batch.id)
+
+
+def product_statement(publication, *, q="", status="", version=""):
     statement = base_query(publication)
     if q:
         statement = statement.where(search_clause(q))
@@ -128,17 +138,12 @@ def products(session, publication, *, q="", status="", version="", page=1):
         statement = statement.where(
             ProductSourceRecord.reported_version_text == version
         )
-    rows, pagination = paged(
-        session,
-        statement.order_by(
-            case((ProductReferenceMatch.match_status == "matched_sai", 0), else_=1),
-            SAIPreparation.preparation_name,
-            Product.gtin14,
-            ProductSourceRecord.source_code,
-            ProductSourceRecord.id,
-        ),
-        page,
-    )
+    return statement
+
+
+def products(session, publication, *, q="", status="", version="", page=1):
+    statement = product_statement(publication, q=q, status=status, version=version)
+    rows, pagination = paged(session, statement.order_by(*PRODUCT_ORDER), page)
     return [product_view(r) for r in rows], pagination
 
 
@@ -160,9 +165,7 @@ def batch_states(session, publication):
     ).all()
 
 
-def batches(
-    session, publication, *, q="", source_id=None, version="", state="", page=1
-):
+def batch_statement(publication, *, q="", source_id=None, version="", state=""):
     statement = (
         base_query(publication)
         .add_columns(Batch, ProductVersion)
@@ -187,9 +190,16 @@ def batches(
         )
     if q:
         statement = statement.where(search_clause(q, batches=True))
-    rows, pagination = paged(
-        session, statement.order_by(Product.gtin14, Batch.batch_code, Batch.id), page
+    return statement
+
+
+def batches(
+    session, publication, *, q="", source_id=None, version="", state="", page=1
+):
+    statement = batch_statement(
+        publication, q=q, source_id=source_id, version=version, state=state
     )
+    rows, pagination = paged(session, statement.order_by(*BATCH_ORDER), page)
     output = []
     for row in rows:
         batch, version = row[6:8]

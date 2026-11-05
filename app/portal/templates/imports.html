@@ -1,10 +1,16 @@
 {% extends 'base.html' %}
 {% macro stamp(value) %}{{ value.strftime('%Y-%m-%d %H:%M:%S') ~ ' UTC' if value else 'Not recorded' }}{% endmacro %}
 {% macro state(value) %}{{ {'queued':'Queued','running':'Running','succeeded':'Succeeded','failed':'Failed','cancelled':'Cancelled','interrupted':'Interrupted','acquiring':'Retrieving','artifact_acquired':'Processing'}.get(value,value) }}{% endmacro %}
-{% block heading %}<div class="heading"><div><div class="eyebrow">OPERATIONS · DATA SOURCES</div><h1>Imports</h1><p>Manage automatic schedules, run imports and retrieve historical periods.</p></div></div>{% endblock %}
+{% import 'macros.html' as ui %}
+{% block heading %}{{ ui.list_heading('OPERATIONS · DATA SOURCES', 'Imports', 'Manage automatic schedules, run imports and retrieve historical periods.') }}{% endblock %}
 {% block content %}
 {% if notice %}<div class="notice" role="status">{{ notice }}</div>{% endif %}
 <section class="panel import-worker"><div><strong>{{ 'Scheduler connected' if workers else 'No recent scheduler heartbeat' }}</strong><p>{% if workers %}{{ workers|length }} active worker{{ 's' if workers|length!=1 }} · last heartbeat {{ stamp(workers[0].last_seen_at) }}{% elif last_heartbeat %}Last heartbeat {{ stamp(last_heartbeat.last_seen_at) }}. Queued work waits for an available worker.{% else %}The scheduler must be running to process automatic and queued imports.{% endif %}</p></div><a class="audit-link" href="/imports">Refresh status →</a></section>
+{{ ui.list_metrics('Import management overview', [
+  ('Scheduled sources', cards|selectattr('schedule')|selectattr('schedule.enabled')|list|length|number, 'Automatic imports enabled'),
+  ('Active workers', workers|length|number, 'With a recent scheduler heartbeat'),
+  ('Queued manual requests', requests|selectattr('0.status', 'equalto', 'queued')|list|length|number, 'Among the latest 20 manual requests')
+]) }}
 <div class="import-cards">
 {% for c in cards %}{% set s=c.schedule %}
 <section class="panel import-card" id="import-{{ c.key }}"><div class="panel-heading"><h2>{{ c.name }}</h2><span class="badge {{ 'matched_sai' if s and s.enabled else 'no_sai_match' }}">{{ 'Scheduled' if s and s.enabled else 'Paused' if s else 'Not configured' }}</span></div>

@@ -22,6 +22,8 @@ SMVS Operations is the central operational platform of SMVS for monitoring, anal
 
 ## Documentation
 
+The [portal UI conventions](docs/technical/PORTAL-UI-GUIDELINES.md) define the shared page layout, link styles and editing patterns.
+
 The [implementation list](docs/overview/IMPLEMENTATION-LIST.md) tracks completed work and the next priorities.
 
 Start with the [implementation status and handover](docs/overview/IMPLEMENTATION-STATUS.md)
@@ -100,3 +102,9 @@ See the [Shared investigation and CRM proposal](docs/architecture/Shared-Investi
 A dedicated Root cause analysis tab provides a cause catalogue, guided checks,
 assessment levels, local review status and to-do follow-up. Explicit selection supports a shared root cause for similar
 exceptions without changing source Alerts. See [local review](docs/integration/exception-review.md).
+
+### Optional CRM company logos
+
+Set `LOGO_DEV_PUBLISHABLE_KEY` in the local `.env` to the Logo.dev publishable
+key (`pk_…`) and restart the portal. The browser requests the company logo
+from Logo.dev using the MAH’s Domain field.

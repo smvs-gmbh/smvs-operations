@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% import 'macros.html' as ui %}
+{% block heading %}{{ ui.list_heading('CRM · AIRTABLE', 'Import review', 'Review staged source columns and candidate links before mapping CRM fields.') }}{% endblock %}
+{% block content %}
+{% if profiles %}
+{{ ui.crm_list_status(profiles.values()|map(attribute='received')|max) }}
+{{ ui.list_metrics('CRM import overview', [
+  ('Staged exports', profiles|length|number, 'Latest export per CRM table'),
+  ('Rows available for review', profiles.values()|sum(attribute='total')|number, 'Across the displayed exports')
+]) }}
+{% endif %}
+{% if relations %}
+<section class="panel">
+<div class="panel-heading"><h2>Relationship review</h2></div>
+<p class="review-body">Matches compare exact exported display values. A unique match is a candidate for review.</p>
+<div class="table-scroll"><table><thead><tr><th>Relationship</th><th>Unique match</th><th>Ambiguous</th><th>Missing</th></tr></thead>
+<tbody>{% for label, counts in relations %}<tr><td>{{ label }}</td><td>{{ counts['unique'] }}</td><td>{{ counts['ambiguous'] }}</td><td>{{ counts['missing'] }}</td></tr>{% endfor %}</tbody></table></div>
+</section>
+{% endif %}
+{% if end_user_review %}
+<section class="panel">
+<div class="panel-heading"><h2 id="end-user-review">End Users · NMVS organisation matching</h2></div>
+<div class="review-body">
+<p>Exact matches compare both Airtable names with the current NMVS organisation name. Duplicate names and differing source labels require review.</p>
+{% if end_user_review.snapshot_date %}<p>NMVS snapshot {{ end_user_review.snapshot_date.isoformat() }}</p>{% endif %}
+<p>{% for status, count in end_user_review.counts|dictsort %}{{ status }}: {{ count }}{{ ' · ' if not loop.last }}{% endfor %}</p>
+</div>
+<form action="/crm/imports#end-user-review" method="get" class="review-body review-form list-filters" role="search">
+<div class="review-controls">
+<label>Search End Users<input name="q" value="{{ end_user_review.query }}" maxlength="150" placeholder="Name, ID, software or match status"></label>
+<label class="resolve-confirm"><input type="checkbox" name="pending_only" value="true" {{ 'checked' if end_user_review.pending_only }}> Hide reviewed rows</label>
+<button type="submit">Filter</button>
+</div>
+</form>
+<div class="table-scroll"><table><thead><tr><th>Record ID</th><th>End User Name</th><th>Software Product</th><th>NMVS match</th><th>Reviewed</th></tr></thead>
+<tbody>{% for id, row, status, organisation in end_user_review.rows %}
+<tr><td>{{ row['Record Id'] }}</td><td>{% if id in end_user_review.end_user_ids %}<a href="/crm/end-users/{{ end_user_review.end_user_ids[id] }}">{{ row['End User Name'] }}</a>{% else %}{{ row['End User Name'] }}{% endif %}</td><td>{{ row.get('Software Product') or '—' }}</td><td>{{ status }}{% if organisation %} · <a href="/organisations/{{ organisation.id }}">Organisation {{ organisation.source_organisation_id }} →</a>{% endif %}</td>
+<td><form method="post" action="/crm/imports/end-users/{{ id }}/review">
+<input type="hidden" name="q" value="{{ end_user_review.query }}">
+<input type="hidden" name="pending_only" value="{{ 'true' if end_user_review.pending_only else 'false' }}">
+<input type="checkbox" name="reviewed" value="yes" aria-label="Reviewed: {{ row['End User Name'] }}" {{ 'checked' if id in end_user_review.reviewed }}>
+<button type="submit" aria-label="Save review for {{ row['End User Name'] }}">Save</button>
+</form></td></tr>
+{% else %}<tr><td colspan="5">No matching End Users.</td></tr>
+{% endfor %}</tbody></table></div>
+</section>
+{% endif %}
+{% for label, profile in profiles.items() %}
+<section class="panel">
+<div class="panel-heading"><h2>{{ label }} · {{ profile.total }} records</h2><span class="subtle">{{ profile.columns|length }} source columns</span></div>
+<p class="review-body">{{ profile.filename }} · {{ profile.received.strftime('%Y-%m-%d %H:%M') }} UTC</p>
+<div class="table-scroll"><table><thead><tr><th>Source column</th><th>Populated</th><th>Blank</th>{% if label == "MAH" %}<th>CRM mapping</th>{% endif %}</tr></thead>
+<tbody>{% for name, count in profile.columns %}<tr><td>{{ name }}</td><td>{{ count }}</td><td>{{ profile.total - count }}</td>{% if label == "MAH" %}<td>{{ 'Mapped' if name in mah_mapped_columns else 'Shown for review' if name in mah_review_columns else 'Original export only' }}</td>{% endif %}</tr>{% endfor %}</tbody></table></div>
+</section>
+{% else %}<p class="notice">No Airtable exports have been staged.</p>{% endfor %}
+{% endblock %}

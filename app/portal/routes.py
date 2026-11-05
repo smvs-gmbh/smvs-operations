@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.core.db.session import get_session
 from app.domain.models import Batch, ProductSourceRecord, ProductVersion
 from app.portal import queries
+from app.portal.record_navigation import filter_query, list_record_navigation
 
 DbSession = Annotated[Session, Depends(get_session)]
 
@@ -22,6 +23,7 @@ def number(value):
 
 
 templates.env.filters["number"] = number
+templates.env.globals["filter_query"] = filter_query
 
 
 @router.get("/", include_in_schema=False)
@@ -100,6 +102,26 @@ def batch_list(
     )
 
 
+def product_navigation(request, session, publication, identifier, *, suffix=""):
+    return list_record_navigation(
+        session,
+        queries.product_statement(
+            publication,
+            **{
+                key: request.query_params.get(key, "")
+                for key in ("q", "status", "version")
+            },
+        ),
+        ProductSourceRecord.id,
+        identifier,
+        queries.PRODUCT_ORDER,
+        "/products",
+        "Products",
+        suffix=suffix,
+        query=filter_query(request, "q", "status", "version"),
+    )
+
+
 @router.get("/products/{source_id}", include_in_schema=False)
 def product_detail(
     request: Request,
@@ -134,6 +156,9 @@ def product_detail(
             "active": "products",
             "title": product["name"] or product["gtin14"] or product["source_code"],
             "product": product,
+            "record_nav": product_navigation(
+                request, session, ctx["publication"], source_id
+            ),
             "rows": rows,
             "pagination": pagination,
             "versions": versions,
@@ -163,6 +188,9 @@ def product_source(request: Request, source_id: int, session: DbSession):
             "active": "products",
             "title": "NMVS Products · Original data",
             "product": product,
+            "record_nav": product_navigation(
+                request, session, ctx["publication"], source_id, suffix="/source"
+            ),
             "back_url": f"/products/{source_id}",
             "back_label": "Swiss product context",
         },
@@ -189,6 +217,8 @@ def batch_source(request: Request, batch_id: int, session: DbSession):
     if row is None:
         raise HTTPException(404, "Product not found in the current dataset.")
     product = queries.product_view(row)
+    related = request.query_params.get("related") == "true"
+
     return templates.TemplateResponse(
         request=request,
         name="source.html",
@@ -199,6 +229,27 @@ def batch_source(request: Request, batch_id: int, session: DbSession):
             "title": "NMVS Batches · Original data",
             "product": product,
             "batch_code": source.batch_code,
+            "record_nav": list_record_navigation(
+                session,
+                queries.batch_statement(
+                    ctx["publication"],
+                    q=request.query_params.get("q", ""),
+                    version=request.query_params.get("version", ""),
+                    state=""
+                    if related
+                    else request.query_params.get("state", "not_expired"),
+                    source_id=source.product_source_id if related else None,
+                ),
+                Batch.id,
+                batch_id,
+                queries.BATCH_ORDER,
+                "/batches",
+                "Product and related batches" if related else "Batches",
+                suffix="/source",
+                query=filter_query(request, "q", "version", "state", "related"),
+                back_path=f"/products/{product['id']}" if related else None,
+                back_query="" if related else None,
+            ),
             "back_url": f"/products/{product['id']}",
             "back_label": "Product and related batches",
         },

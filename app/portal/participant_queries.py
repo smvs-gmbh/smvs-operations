@@ -45,8 +45,12 @@ def organisations_query(publication):
     )
 
 
-def organisations(
-    session, publication, *, q="", status="not_deactivated", type_filter="", page=1
+ORGANISATION_ORDER = (LocalOrganisation.organisation_name, LocalOrganisation.id)
+LOCATION_ORDER = (LocalLocation.location_name, LocalLocation.id)
+
+
+def organisation_statement(
+    publication, *, q="", status="not_deactivated", type_filter=""
 ):
     statement = organisations_query(publication)
     if q:
@@ -67,11 +71,16 @@ def organisations(
         statement = statement.where(LocalOrganisation.organisation_status == status)
     if type_filter:
         statement = statement.where(LocalOrganisation.organisation_type == type_filter)
-    rows, pagination = paged(
-        session,
-        statement.order_by(LocalOrganisation.organisation_name, LocalOrganisation.id),
-        page,
+    return statement
+
+
+def organisations(
+    session, publication, *, q="", status="not_deactivated", type_filter="", page=1
+):
+    statement = organisation_statement(
+        publication, q=q, status=status, type_filter=type_filter
     )
+    rows, pagination = paged(session, statement.order_by(*ORGANISATION_ORDER), page)
     return [
         {"organisation": row[0], "location_count": row[1]} for row in rows
     ], pagination
@@ -91,7 +100,7 @@ def locations_query(publication):
     )
 
 
-def locations(session, publication, *, q="", status="", organisation_id=None, page=1):
+def location_statement(publication, *, q="", status="", organisation_id=None):
     statement = locations_query(publication)
     if organisation_id is not None:
         statement = statement.where(LocalLocation.organisation_id == organisation_id)
@@ -113,9 +122,14 @@ def locations(session, publication, *, q="", status="", organisation_id=None, pa
         )
     if status:
         statement = statement.where(LocalLocation.location_status == status)
-    rows, pagination = paged(
-        session, statement.order_by(LocalLocation.location_name, LocalLocation.id), page
+    return statement
+
+
+def locations(session, publication, *, q="", status="", organisation_id=None, page=1):
+    statement = location_statement(
+        publication, q=q, status=status, organisation_id=organisation_id
     )
+    rows, pagination = paged(session, statement.order_by(*LOCATION_ORDER), page)
     return [{"location": row[0], "organisation": row[1]} for row in rows], pagination
 
 

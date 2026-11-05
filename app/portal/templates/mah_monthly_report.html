@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% import 'macros.html' as ui %}
+{% block heading %}{{ ui.list_heading('INTERNAL REPORT DRAFTS', 'MAH monthly reports', 'Review retained A2 and A3 alerts by provisional SAI holder.') }}{% endblock %}
+{% block content %}
+{% macro month_filter() %}
+<form method="get" action="/reports/mah" class="review-body review-form list-filters">
+  <div class="review-controls">
+    <label>Completed month (UTC)<input type="month" name="month" value="{{ month }}" max="{{ latest_month }}" required></label>
+    <div><button type="submit">Show report drafts</button></div>
+  </div>
+</form>
+{% endmacro %}
+<p class="notice">{{ total|number }} retained A2/A3 alerts · Accepted exception reports cover {{ complete }}/{{ days }} complete UTC days.</p>
+{{ ui.list_metrics('Monthly report overview', [
+  ('Retained A2 and A3 alerts', total|number, 'In the selected UTC month'),
+  ('MAH drafts', reports|selectattr('id')|list|length|number, 'Based on current SAI assignment'),
+  ('Report coverage', complete ~ ' / ' ~ days, 'Complete UTC days')
+]) }}
+<p class="subtle">Holder assignment uses the current SAI match. Confirm MAH responsibility and contract status during review. Alerts without a usable timestamp are outside the monthly totals.</p>
+{% if selected %}
+<section class="panel">
+  <div class="panel-heading"><h2>{{ selected.name }} · {{ month }}</h2><a href="/reports/mah?month={{ month }}">All report drafts →</a></div>
+  {{ month_filter() }}
+  {% if not selected.id %}<p class="review-body">Review these assignments internally before preparing a recipient draft.</p>{% endif %}
+  {% for group in groups %}
+  <article class="review-body review-event">
+    <h3>{{ group.error }} · {{ group.name or group.product or 'Product not supplied' }}</h3>
+    <p>{{ group.product or 'Product code not supplied' }} · Batch {{ group.batch or 'Not supplied' }}</p>
+    <p>{{ group.members|length }} alerts · {{ group.locations }} known locations{% if group.unknown_locations %} · {{ group.unknown_locations }} alerts without a usable location{% endif %}{% if group.error == 'A3' %} · {{ group.serials }} distinct supplied serial numbers{% endif %}</p>
+    {% if group.error == 'A2' %}
+    <p>Review the batch upload timing and market. <a href="/exceptions/{{ group.members[0].record.id }}/uploads">Inspect upload history →</a></p>
+    {% else %}
+    <p>Review the individual pack and input data for each exception.</p>
+    {% endif %}
+    <details><summary>Inspect {{ group.members|length }} exceptions</summary>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Alert</th><th>Reported (UTC)</th><th>Market</th><th>Provided batch</th><th>Stored batch</th>{% if group.error == 'A3' %}<th>Supplied serial</th>{% endif %}<th>Local status</th></tr></thead>
+      <tbody>{% for row in group.members %}{% set record = row.record %}
+      <tr><td><a href="/exceptions/{{ record.id }}/analysis">{{ record.unique_alert_id }}</a></td><td>{{ record.alert_at.strftime('%Y-%m-%d %H:%M:%S') }}</td><td>{{ record.source_market or '—' }}</td><td>{{ record.provided_batch or '—' }}</td><td>{{ record.stored_batch or '—' }}</td>{% if group.error == 'A3' %}<td>{{ record.serial_number or '—' }}</td>{% endif %}<td>{{ 'Needs review' if row.review and row.review.basis_payload_hash != record.payload_hash else row.review.status|replace('_',' ')|title if row.review else 'Open' }}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    </details>
+  </article>
+  {% endfor %}
+</section>
+{% else %}
+<section class="panel">
+  <div class="panel-heading"><h2>Report drafts · {{ month }}</h2></div>
+  {{ month_filter() }}
+  <div class="table-scroll"><table><thead><tr><th>MAH assignment</th><th>A2</th><th>A3</th><th>Review</th></tr></thead><tbody>
+  {% for report in reports %}
+  <tr><td>{{ report.name }}</td><td>{{ report.counts.get('A2',0) }}</td><td>{{ report.counts.get('A3',0) }}</td><td><a href="/reports/mah?month={{ month }}&amp;holder={{ report.id }}">{{ 'Open draft' if report.id else 'Review unassigned alerts' }} →</a></td></tr>
+  {% else %}<tr><td colspan="4">No retained A2 or A3 alerts in this month.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+{% endif %}
+{% endblock %}

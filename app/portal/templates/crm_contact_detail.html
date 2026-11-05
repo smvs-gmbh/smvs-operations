@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import record_bar %}
+{% block heading %}
+{{ record_bar(record_nav, not edit) }}
+<div class="heading"><div><div class="eyebrow">CRM · Contact</div><h1>{{ contact.display_name }}</h1></div></div>
+{% endblock %}
+{% block content %}
+{% macro field(label, value) %}
+<div><dt>{{ label }}</dt><dd>{{ value or '—' }}</dd></div>
+{% endmacro %}
+{% macro section_heading(label, section) %}
+<div class="mah-section-heading"><h2 id="{{ section }}">{{ label }}</h2>
+{% if not edit %}<a class="preview-label" href="{{ filter_query(request, 'q') ~ '&' if request.query_params.get('q') else '?' }}edit={{ section }}#{{ section }}" aria-label="Edit {{ label|lower }}">Edit</a>{% endif %}
+</div>
+{% endmacro %}
+{% macro form_start(section) %}
+<form method="post" action="/crm/contacts/{{ contact.id }}{{ filter_query(request, 'q') }}" class="review-form mah-profile">
+<input type="hidden" name="section" value="{{ section }}">
+<input type="hidden" name="version" value="{{ contact.version }}">
+{% endmacro %}
+{% macro form_end(section) %}
+<div class="mah-section-heading"><button type="submit">Save changes</button><a href="/crm/contacts/{{ contact.id }}{{ filter_query(request, 'q') }}#{{ section }}">Cancel</a></div>
+</form>
+{% endmacro %}
+<div class="review-form">
+<section class="panel review-body review-form">
+{{ section_heading('General', 'general') }}
+{% if edit == 'general' %}
+{{ form_start('general') }}
+<div class="review-controls">
+<label>First name<input name="first_name" maxlength="150" value="{{ profile.first_name or '' }}"></label>
+<label>Last name<input name="last_name" maxlength="150" value="{{ profile.last_name or '' }}"></label>
+<label>Address type<select name="address_type">
+<option value="">Not specified</option>
+{% for code, label in address_types.items() %}<option value="{{ code }}" {{ 'selected' if profile.address_type == code }}>{{ label }}</option>{% endfor %}
+</select></label>
+</div>
+<fieldset class="analysis-edit-fields"><legend>Function</legend>
+<div class="review-controls">
+{% for role in function_options %}
+<label class="resolve-confirm"><input type="checkbox" name="function:{{ role }}" value="yes" {{ 'checked' if role in roles }}> {{ role }}</label>
+{% endfor %}
+</div></fieldset>
+{{ form_end('general') }}
+{% else %}
+<dl class="mah-values">
+{{ field('First name', profile.first_name) }}
+{{ field('Last name', profile.last_name) }}
+{{ field('Address type', address_types.get(profile.address_type)) }}
+<div class="mah-wide"><dt>Function</dt><dd>{% for role in roles %}<span class="mah-association">{{ role }}</span>{% else %}—{% endfor %}</dd></div>
+</dl>
+{% endif %}
+</section>
+<section class="panel review-body review-form">
+{{ section_heading('Communication', 'communication') }}
+{% if edit == 'communication' %}
+{{ form_start('communication') }}
+<div class="review-controls">
+<label>Email<input type="email" name="email" maxlength="254" value="{{ profile.email }}"></label>
+<label>Mailbox type<select name="mailbox_type">
+<option value="">Not specified</option>
+{% for mailbox in mailbox_types %}<option value="{{ mailbox }}" {{ 'selected' if profile.mailbox_type == mailbox }}>{{ mailbox }}</option>{% endfor %}
+</select></label>
+<label>Phone<input type="tel" name="phone" maxlength="100" value="{{ profile.phone or '' }}"></label>
+</div>
+{{ form_end('communication') }}
+{% else %}
+<dl class="mah-values">{{ field('Email', profile.email) }}{{ field('Phone', profile.phone) }}{{ field('Mailbox type', profile.mailbox_type) }}</dl>
+{% endif %}
+</section>
+<section class="panel review-body review-form">
+<h2>Organisation</h2>
+{% if organisations or suppliers or end_users %}
+<dl class="mah-values">
+{% for mah, origin in organisations %}
+<div><dt>MAH · {{ origin }}</dt><dd><a href="/crm/mahs/{{ mah.id }}">{{ mah.name }} →</a>{{ ' (archived)' if mah.archived_at }}</dd></div>
+{% endfor %}
+{% for supplier, spoc in suppliers %}
+<div><dt>IT Supplier{{ ' · SPOC' if spoc }}</dt><dd><a href="/crm/it-suppliers/{{ supplier.id }}">{{ supplier.raw_row_json['IT Supplier Name'] }} →</a></dd></div>
+{% endfor %}
+{% for user in end_users %}
+<div><dt>End User</dt><dd><a href="/crm/end-users/{{ user.id }}">{{ user.name }} →</a></dd></div>
+{% endfor %}
+</dl>
+{% elif not pending and not pending_suppliers %}<p>No organisation linked.</p>{% endif %}
+{% if pending_suppliers %}<p>IT supplier references awaiting review · {{ pending_suppliers|join(', ') }}</p>{% endif %}
+{% if pending %}<p>Airtable organisation references awaiting review · {{ pending|join(', ') }}</p>{% endif %}
+</section>
+</div>
+{% endblock %}

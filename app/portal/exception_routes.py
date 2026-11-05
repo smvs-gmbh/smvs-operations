@@ -13,6 +13,7 @@ from app.domain.exceptions import review as work
 from app.domain.models import ExceptionReview, ExceptionReviewEvent, NMVSException
 from app.portal import exception_queries as queries
 from app.portal.queries import paged
+from app.portal.record_navigation import list_record_navigation
 from app.portal.routes import DbSession, templates
 
 router = APIRouter()
@@ -67,6 +68,18 @@ def exception_list(
             "active": "exceptions",
             "rows": rows,
             "pagination": pagination,
+            "record_query": "?"
+            + urlencode(
+                {
+                    "nav_start": start.isoformat(),
+                    "nav_end": end.isoformat(),
+                    **{
+                        key: request.query_params[key]
+                        for key in EXCEPTION_NAV_FILTERS
+                        if key in request.query_params
+                    },
+                }
+            ),
             "start": start,
             "end": end,
             "q": q,
@@ -89,6 +102,60 @@ def current(session, identifier):
     return record
 
 
+EXCEPTION_NAV_FILTERS = (
+    "q",
+    "error",
+    "market",
+    "organisation",
+    "location",
+    "process",
+    "date_quality",
+    "intermarket",
+    "work_status",
+)
+
+
+def exception_record_navigation(request, session, record):
+    params = request.query_params
+    filters = {key: params[key] for key in EXCEPTION_NAV_FILTERS if key in params}
+    if "nav_start" in params or "nav_end" in params:
+        try:
+            start = date.fromisoformat(params.get("nav_start", ""))
+            end = date.fromisoformat(params.get("nav_end", ""))
+            if end < start or (end - start).days > 366 or end == date.max:
+                raise ValueError()
+        except ValueError:
+            raise HTTPException(422, "Select a valid exception period.") from None
+    else:
+        end = record.alert_at.date() if record.alert_at else datetime.now(UTC).date()
+        start = end - timedelta(days=29)
+        if not filters:
+            filters["work_status"] = "all"
+            if not record.alert_at:
+                filters["date_quality"] = "unresolved"
+    if filters.get("work_status") == "to_do":
+        filters["date_quality"] = ""
+    statement, ordering = queries.listing_statement(
+        session, start=start, end=end, **filters
+    )
+    query = "?" + urlencode({"nav_start": start, "nav_end": end, **filters})
+    suffix = request.url.path.removeprefix(f"/exceptions/{record.id}")
+    navigation = list_record_navigation(
+        session,
+        statement,
+        NMVSException.id,
+        record.id,
+        ordering,
+        "/exceptions",
+        "Exceptions",
+        suffix=suffix,
+        query=query,
+        back_query="?" + urlencode({"start": start, "end": end, **filters}),
+    )
+    navigation["query"] = query
+    return navigation
+
+
 @router.get("/exceptions/{identifier}", include_in_schema=False)
 def exception_detail(request: Request, identifier: int, session: DbSession):
     record = current(session, identifier)
@@ -99,6 +166,7 @@ def exception_detail(request: Request, identifier: int, session: DbSession):
             **queries.context(session),
             **queries.detail(session, record),
             "review": session.get(ExceptionReview, identifier),
+            "record_nav": exception_record_navigation(request, session, record),
             "title": record.unique_alert_id,
             "active": "exceptions",
         },
@@ -114,6 +182,7 @@ def exception_analysis(request: Request, identifier: int, session: DbSession):
         request=request,
         name="exception_analysis.html",
         context={
+            "record_nav": exception_record_navigation(request, session, record),
             **queries.context(session),
             **queries.detail(session, record),
             "review": review,
@@ -160,6 +229,7 @@ def exception_work_audit(
         request=request,
         name="exception_work_audit.html",
         context={
+            "record_nav": exception_record_navigation(request, session, record),
             **queries.context(session),
             "record": record,
             "events": [event for (event,) in rows],
@@ -187,6 +257,7 @@ def exception_source(request: Request, identifier: int, session: DbSession):
         request=request,
         name="exception_source.html",
         context={
+            "record_nav": exception_record_navigation(request, session, record),
             **queries.context(session),
             **queries.detail(session, record),
             "title": "Exception · Original data",

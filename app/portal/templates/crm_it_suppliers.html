@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% import 'macros.html' as ui %}
+{% block heading %}{{ ui.list_heading('CRM · SOFTWARE PROVIDERS', 'IT Suppliers', 'Browse IT suppliers and their software and contact references.') }}{% endblock %}
+{% block content %}
+
+{{ ui.crm_list_status(imported_at) }}
+{{ ui.list_metrics('IT Supplier overview', [('IT suppliers', directory_total|number, 'In the latest Airtable export'), ('Qualified', qualified_total|number, 'Checked in Airtable'), ('Matching results', rows|length|number, 'With the current search')]) }}
+<section class="panel">
+<div class="panel-heading"><h2>IT supplier directory</h2><span class="subtle">{{ rows|length|number }} results</span></div>
+<form method="get" class="review-body review-form list-filters" role="search">
+<div class="review-controls">
+<label>Name, software or status<input name="q" maxlength="150" value="{{ q }}"></label>
+<button type="submit">Search</button>
+</div>
+</form>
+<div class="table-scroll"><table>
+<thead><tr><th>IT Supplier</th><th>Status</th><th>Qualified</th><th>End-user software</th></tr></thead>
+<tbody>
+{% for row in rows %}{% set supplier = row.raw_row_json %}
+<tr><td><a href="/crm/it-suppliers/{{ row.id }}{{ filter_query(request, 'q') }}">{{ supplier['IT Supplier Name'] }}</a></td>
+<td>{{ supplier.get('Status') or '—' }}</td><td>{{ 'Checked' if supplier.get('Qualified') == 'checked' else '—' }}</td>
+<td>{{ supplier.get('End User Software') or '—' }}</td></tr>
+{% else %}<tr><td colspan="4">No matching IT suppliers.</td></tr>{% endfor %}
+</tbody>
+</table></div>
+</section>
+{% endblock %}

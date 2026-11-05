@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 
 from app.domain.models import LocalLocation, LocalOrganisation
 from app.portal import participant_queries as queries
+from app.portal.record_navigation import filter_query, list_record_navigation
 from app.portal.routes import DbSession, templates
 
 router = APIRouter()
@@ -59,6 +60,25 @@ def organisation_list(
     )
 
 
+def organisation_navigation(request, session, publication, identifier, *, suffix=""):
+    return list_record_navigation(
+        session,
+        queries.organisation_statement(
+            publication,
+            q=request.query_params.get("q", ""),
+            status=request.query_params.get("status", "not_deactivated"),
+            type_filter=request.query_params.get("type", ""),
+        ),
+        LocalOrganisation.id,
+        identifier,
+        queries.ORGANISATION_ORDER,
+        "/organisations",
+        "Organisations",
+        suffix=suffix,
+        query=filter_query(request, "q", "status", "type"),
+    )
+
+
 @router.get("/organisations/{organisation_id}", include_in_schema=False)
 def organisation_detail(
     request: Request,
@@ -81,6 +101,9 @@ def organisation_detail(
             "title": org.organisation_name or org.source_organisation_id,
             "active": "organisations",
             "organisation": org,
+            "record_nav": organisation_navigation(
+                request, session, ctx["publication"], org.id
+            ),
             "rows": rows,
             "pagination": pagination,
         },
@@ -102,6 +125,9 @@ def organisation_source(request: Request, organisation_id: int, session: DbSessi
             "title": "NMVS Organisations · Original data",
             "active": "organisations",
             "product": {"source_code": org.source_organisation_id, "gtin14": None},
+            "record_nav": organisation_navigation(
+                request, session, ctx["publication"], org.id, suffix="/source"
+            ),
             "back_url": f"/organisations/{org.id}",
             "back_label": "Organisation details",
         },
@@ -137,6 +163,30 @@ def location_list(
     )
 
 
+def location_navigation(
+    request, session, publication, identifier, organisation_id, *, suffix=""
+):
+    related = organisation_id and request.query_params.get("related") == "true"
+    return list_record_navigation(
+        session,
+        queries.location_statement(
+            publication,
+            q=request.query_params.get("q", ""),
+            status=request.query_params.get("status", ""),
+            organisation_id=organisation_id if related else None,
+        ),
+        LocalLocation.id,
+        identifier,
+        queries.LOCATION_ORDER,
+        "/locations",
+        "Organisation and related locations" if related else "Locations",
+        suffix=suffix,
+        query=filter_query(request, "q", "status", "related"),
+        back_path=f"/organisations/{organisation_id}" if related else None,
+        back_query="" if related else None,
+    )
+
+
 @router.get("/locations/{location_id}", include_in_schema=False)
 def location_detail(request: Request, location_id: int, session: DbSession):
     ctx = queries.context(session)
@@ -154,6 +204,13 @@ def location_detail(request: Request, location_id: int, session: DbSession):
             "title": location.location_name or location.source_location_id,
             "active": "locations",
             "location": location,
+            "record_nav": location_navigation(
+                request,
+                session,
+                ctx["publication"],
+                location.id,
+                location.organisation_id,
+            ),
             "organisation": org,
         },
     )
@@ -172,6 +229,14 @@ def location_source(request: Request, location_id: int, session: DbSession):
             "title": "NMVS Locations · Original data",
             "active": "locations",
             "product": {"source_code": location.source_location_id, "gtin14": None},
+            "record_nav": location_navigation(
+                request,
+                session,
+                ctx["publication"],
+                location.id,
+                location.organisation_id,
+                suffix="/source",
+            ),
             "back_url": f"/locations/{location.id}",
             "back_label": "Location details",
         },

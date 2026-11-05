@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% import 'macros.html' as ui %}
+{% block heading %}{{ ui.list_heading('CRM · MASTER DATA', 'MAHs', 'Maintain marketing authorisation holders, registration checks and contract status.', action_url='/crm/mahs/new', action_label='New MAH') }}{% endblock %}
+{% block content %}
+
+{{ ui.crm_list_status(imported_at) }}
+{{ ui.list_metrics('MAH overview', [('MAHs in this directory', directory_total|number, 'Archived records' if archived else 'Current records'), ('Registration checked', checked_total|number, 'In this directory'), ('Matching results', pagination.total|number, 'With the current filters')]) }}
+<section class="panel">
+<div class="panel-heading"><h2>{{ 'Archived MAHs' if archived else 'Current MAHs' }}</h2><span class="subtle">{{ pagination.total|number }} results · <a href="/crm/imports">Airtable import review →</a></span></div>
+<form method="get" class="review-body review-form list-filters" role="search">
+  <div class="review-controls">
+    <label>Name, GLN or UID<input name="q" maxlength="150" value="{{ q }}"></label>
+    <label>Directory<select name="archived"><option value="false" {{ 'selected' if not archived }}>Current MAHs</option><option value="true" {{ 'selected' if archived }}>Archived MAHs</option></select></label>
+    <button type="submit">Filter</button>
+  </div>
+</form>
+<div class="table-scroll"><table>
+<thead><tr><th>MAH</th><th>GLN</th><th>UID</th><th>Registration check</th><th>SMVS contract</th></tr></thead>
+<tbody>{% for mah in rows %}<tr>
+<td><a class="mah-name-link" href="/crm/mahs/{{ mah.id }}{{ filter_query(request, 'q') }}">{% if logos.get(mah.id) %}<img class="mah-logo-icon" src="{{ logos[mah.id] }}" alt="" loading="lazy" referrerpolicy="no-referrer">{% endif %}<span>{{ mah.name }}</span></a></td><td>{{ mah.gln or '—' }}</td><td>{{ mah.uid or '—' }}</td>
+<td>{{ 'Checked' if mah.registration_checked == 1 else 'Not checked' if mah.registration_checked == 0 else 'Unknown' }}</td>
+<td>{{ contract_statuses[mah.contract_status] }}</td>
+</tr>{% else %}<tr><td colspan="5">No MAHs for this selection.</td></tr>{% endfor %}</tbody>
+</table></div>{{ ui.pagination(pagination, request) }}
+</section>
+{% endblock %}

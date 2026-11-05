@@ -12,7 +12,7 @@ from app.domain.pack_audit.service import record_signature, request_report
 from app.domain.pack_audit.timeline import summarize
 from app.integration.sources.nmvs.pack_audit.parsing import details
 from app.portal import exception_queries
-from app.portal.exception_routes import current
+from app.portal.exception_routes import current, exception_record_navigation
 from app.portal.routes import DbSession, templates
 
 router = APIRouter()
@@ -83,6 +83,9 @@ def render(
         request=request,
         name="pack_audit.html",
         context={
+            "record_nav": exception_record_navigation(request, session, record)
+            if record
+            else None,
             **exception_queries.context(session),
             "pack_audit_section": True,
             "title": "Pack audit trail",
@@ -131,9 +134,7 @@ def request_audit(
     # An explicit local same-origin action queues evidence; GET never requests a source report.
     origin = urlsplit(str(request.url))
     if request.headers.get("origin") != f"{origin.scheme}://{origin.netloc}":
-        raise HTTPException(
-            403, "Request the report from the local detail view."
-        )
+        raise HTTPException(403, "Request the report from the local detail view.")
     current(session, identifier)
     try:
         request_report(SessionFactory, identifier, refresh=refresh)

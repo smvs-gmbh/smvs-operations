@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     nmvs_exceptions_authority: str | None = None
     nmvs_scope: str | None = None
     nmvs_api_version: str | None = None
+    logo_dev_publishable_key: str | None = None
     openai_api_key: SecretStr | None = None
     openai_search_model: str | None = None
 

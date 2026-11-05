@@ -626,3 +626,73 @@ class IntelligenceRuleRevision(Base):
     operation: Mapped[str] = mapped_column(String(20))
     market: Mapped[str] = mapped_column(String(10))
     created_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+DOMAIN_TABLES.update({"crm_mahs", "crm_contacts", "end_user_import_reviews", "crm_end_users"})
+
+
+class CRMMah(Base):
+    __tablename__ = "crm_mahs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    airtable_id: Mapped[str | None] = mapped_column(String(100), unique=True)
+    name: Mapped[str] = mapped_column(String(255))
+    gln: Mapped[str | None] = mapped_column(String(100))
+    uid: Mapped[str | None] = mapped_column(String(100))
+    registration_checked: Mapped[int | None] = mapped_column(Integer)
+    contract_status: Mapped[str] = mapped_column(String(20))
+    profile: Mapped[dict[str, Any] | None] = mapped_column(JSON(none_as_null=True))
+    parent_company_id: Mapped[int | None] = mapped_column(
+        ForeignKey("crm_mahs.id", name="fk_crm_mahs_parent_company", ondelete="SET NULL")
+    )
+    source_row_id: Mapped[int | None] = evidence_row()
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    updated_at: Mapped[datetime] = mapped_column(DateTime)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+
+    __mapper_args__: ClassVar[dict] = {"version_id_col": version}
+
+
+class CRMContact(Base):
+    __tablename__ = "crm_contacts"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    airtable_id: Mapped[str] = mapped_column(String(100), unique=True)
+    label: Mapped[str] = mapped_column(Text)
+    function: Mapped[str | None] = mapped_column(Text)
+    source_row_id: Mapped[int | None] = evidence_row()
+    profile: Mapped[dict[str, Any] | None] = mapped_column(JSON(none_as_null=True))
+    version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+
+    __mapper_args__: ClassVar[dict] = {"version_id_col": version}
+
+    @property
+    def display_name(self):
+        profile = self.profile or {}
+        return " ".join(filter(None, (profile.get("first_name"), profile.get("last_name")))) or self.label
+
+
+class EndUserImportReview(Base):
+    __tablename__ = "end_user_import_reviews"
+
+    staging_row_id: Mapped[int] = mapped_column(
+        ForeignKey("staging_rows.id", ondelete="CASCADE"), primary_key=True
+    )
+
+
+class CRMEndUser(Base):
+    __tablename__ = "crm_end_users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(Text)
+    source_row_id: Mapped[int | None] = mapped_column(ForeignKey("staging_rows.id"), unique=True)
+    organisation_id: Mapped[int | None] = mapped_column(
+        ForeignKey("local_organisations.id"), unique=True
+    )
+    link_origin: Mapped[str | None] = mapped_column(String(20))
+    profile: Mapped[dict[str, Any] | None] = mapped_column(JSON(none_as_null=True))
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime)
+    version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+
+    __mapper_args__: ClassVar[dict] = {"version_id_col": version}

@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import record_bar %}
+{% block heading %}
+{{ record_bar(record_nav, mah and not edit_section) }}
+<div class="heading"><div><div class="eyebrow">CRM · MAH</div><h1 class="mah-title">{% if logo_url %}<img class="mah-logo" src="{{ logo_url }}" alt="" referrerpolicy="no-referrer">{% endif %}<span>{{ mah.name if mah else 'New MAH' }}</span></h1></div>
+</div>
+{% endblock %}
+{% block content %}
+{% macro value_row(label, value, style="") %}
+<div{% if style %} class="{{ style }}"{% endif %}><dt>{{ label }}</dt><dd>{{ value or '—' }}</dd></div>
+{% endmacro %}
+{% macro section_heading(label, section) %}
+<div class="mah-section-heading">
+<h2 id="{{ section }}">{{ label }}</h2>
+{% if mah and not mah.archived_at and not edit_section %}
+<a class="preview-label" href="/crm/mahs/{{ mah.id }}{{ filter_query(request, 'q') ~ '&' if request.query_params.get('q') else '?' }}edit={{ section }}#{{ section }}" aria-label="Edit {{ label|lower }}">Edit</a>
+{% endif %}
+</div>
+{% endmacro %}
+{% macro section_actions(section) %}
+{% if edit_section == section %}
+<div class="mah-section-heading"><button name="command" value="save" type="submit">Save changes</button>
+<a href="/crm/mahs/{{ mah.id }}{{ filter_query(request, 'q') }}#{{ section }}">Cancel</a></div>
+{% endif %}
+{% endmacro %}
+{% from "crm_contact_picker.html" import contact_picker, contact_labels with context %}
+{% macro profile_inputs(group, editing) %}
+{% if editing %}
+<div class="review-controls">
+{% for field, label, _ in profile_groups[group] if field != 'company_summary' %}
+<label>{{ label }}<input id="{{ field }}" name="{{ field }}" value="{{ profile[field] }}"></label>
+{% endfor %}
+</div>
+{% else %}
+<dl class="mah-values">
+{% for field, label, _ in profile_groups[group] if field != 'company_summary' %}
+{{ value_row(label, profile[field], "mah-wide" if field in ("invoice_email", "payment_platform_url") else "") }}
+{% endfor %}
+</dl>
+{% endif %}
+{% endmacro %}
+{% if mah and mah.archived_at %}<p class="notice">Archived MAH · {{ mah.archived_at.strftime('%Y-%m-%d %H:%M') }} UTC</p>{% endif %}
+{% set form_open = not mah or edit_section %}
+{% if form_open %}
+<form method="post" action="{{ '/crm/mahs/' ~ mah.id ~ filter_query(request, 'q') if mah else '/crm/mahs' }}" class="review-form">
+{% if mah %}<input type="hidden" name="version" value="{{ mah.version }}">{% endif %}
+{% if edit_section %}<input type="hidden" name="section" value="{{ edit_section }}">{% endif %}
+<fieldset class="analysis-edit-fields mah-profile">
+{% else %}<div class="review-form">{% endif %}
+<section class="panel review-body review-form">
+{{ section_heading('General', 'general') }}
+{% set editing = not mah or edit_section == 'general' %}
+{% if editing %}
+<label>MAH name<input name="name" required maxlength="255" value="{{ mah.name if mah else '' }}"></label>
+<label>Company summary<textarea name="company_summary" rows="5">{{ profile.company_summary }}</textarea></label>
+{{ profile_inputs('General', editing) }}
+<fieldset class="analysis-edit-fields">
+<legend>Industry association memberships</legend>
+<input type="hidden" name="associations_present" value="yes">
+<div class="review-controls">
+{% for association in association_options %}
+<label class="resolve-confirm"><input type="checkbox" name="association:{{ association }}" value="yes" {{ 'checked' if association in profile.associations }}> {{ association }}</label>
+{% endfor %}
+</div>
+</fieldset>
+<div class="review-controls">
+<label>GLN<input name="gln" maxlength="100" value="{{ mah.gln or '' if mah else '' }}"></label>
+<label>UID<input name="uid" maxlength="100" value="{{ mah.uid or '' if mah else '' }}"></label>
+<label>Registration check<select name="registration_checked">
+<option value="unknown" {{ 'selected' if not mah or mah.registration_checked is none }}>Unknown</option>
+<option value="yes" {{ 'selected' if mah and mah.registration_checked == 1 }}>Checked</option>
+<option value="no" {{ 'selected' if mah and mah.registration_checked == 0 }}>Not checked</option>
+</select></label>
+<label>Parent company<select name="parent_company_id">
+<option value="">None selected</option>
+{% for id, name, archived in companies %}
+<option value="{{ id }}" {{ 'selected' if mah and mah.parent_company_id == id }}>{{ name }}{{ ' (archived)' if archived }}</option>
+{% endfor %}
+</select></label>
+</div>
+{% else %}
+<dl class="mah-values">
+<div class="mah-summary"><dt>Company summary</dt><dd>{{ profile.company_summary or '—' }}</dd></div>
+{{ value_row('GLN', mah.gln, 'mah-identifier') }}
+{{ value_row('UID', mah.uid, 'mah-identifier') }}
+{{ value_row('Registration check', 'Checked' if mah.registration_checked == 1 else 'Not checked' if mah.registration_checked == 0 else 'Unknown') }}
+<div><dt>Industry association memberships</dt><dd>
+{% for association in profile.associations %}<span class="mah-association">{{ association }}</span>{% else %}—{% endfor %}
+</dd></div>
+<div><dt>Parent company</dt><dd>{% if parent_company %}<a href="/crm/mahs/{{ parent_company.id }}">{{ parent_company.name }}</a>{{ ' (archived)' if parent_company.archived_at }}{% else %}—{% endif %}</dd></div>
+</dl>
+{{ profile_inputs('General', editing) }}
+{% endif %}
+{% if source and source.get('Parent Company') %}
+<p class="muted">Imported parent company · {{ source['Parent Company'] }}</p>
+{% endif %}
+{{ section_actions('general') }}
+</section>
+<section class="panel review-body review-form">
+{{ section_heading('Address', 'address') }}
+{% set editing = not mah or edit_section == 'address' %}
+{% if editing %}
+{{ profile_inputs('Address', editing) }}
+{% else %}
+<dl class="mah-values">
+<div class="mah-wide"><dt>Postal address</dt><dd class="preserve-lines">{{ [profile.street, profile.additional_address, ([profile.postal_code, profile.city]|select|join(' ')), profile.country]|select|join('\n') or '—' }}</dd></div>
+{{ value_row('Phone', profile.phone) }}
+</dl>
+{% endif %}
+{{ section_actions('address') }}
+</section>
+<section class="panel review-body review-form">
+{{ section_heading('Contacts', 'contacts') }}
+{% set spoc_ids = [profile.spoc_id] if profile.spoc_id else [] %}
+{% set alert_ids = profile.alert_contact_ids or [] %}
+{% if edit_section == 'contacts' %}
+<script src="{{ request.url_for('portal_static', path='crm-contacts.js') }}" defer></script>
+<div class="review-controls">
+{{ contact_picker('spoc_id', 'SPOC', spoc_ids) }}
+{{ contact_picker('alert_contact_ids', 'Alert contacts', alert_ids, true) }}
+</div>
+{% else %}
+<dl class="mah-values">
+{{ value_row('SPOC', contact_labels(spoc_ids)) }}
+{{ value_row('Alert contacts', contact_labels(alert_ids)) }}
+<div class="mah-wide"><dt>Invoice email</dt><dd>{% if not mah or edit_section == "invoice" %}<a href="#invoice_email">{{ profile.invoice_email or 'Set invoice email' }}</a>{% else %}{{ profile.invoice_email or '—' }}{% endif %}</dd></div>
+</dl>
+{% endif %}
+{% if source and (source.get('SPOC') or source.get('Alert contacts')) %}
+<details><summary>Imported contact references</summary>
+<dl class="mah-values">
+{{ value_row('Imported SPOC', source.get('SPOC')) }}
+{{ value_row('Imported alert contacts', source.get('Alert contacts')) }}
+</dl>
+</details>
+{% endif %}
+{{ section_actions('contacts') }}
+</section>
+<section class="panel review-body review-form">
+{{ section_heading('Invoice information', 'invoice') }}
+{% set editing = not mah or edit_section == 'invoice' %}
+{% if editing %}
+<input type="hidden" name="invoice_routing_present" value="yes">
+<div><label class="resolve-confirm"><input type="checkbox" name="eligible_for_invoicing" value="yes" {{ 'checked' if profile.eligible_for_invoicing }}> Send invoices directly to this MAH</label></div>
+{% else %}
+<dl class="mah-values">
+{{ value_row('Send invoices directly to this MAH', 'Yes' if profile.eligible_for_invoicing else 'No') }}
+{{ value_row('Submit invoices via a payment platform', 'Yes' if profile.payment_platform else 'No') }}
+</dl>
+{% endif %}
+{% if billing_parent %}
+<p>Invoice recipient · <a href="/crm/mahs/{{ billing_parent.id }}">{{ billing_parent.name }}</a> (parent company{{ ', archived' if billing_parent.archived_at }})</p>
+{% elif not profile.eligible_for_invoicing %}
+<p>Link a parent company to record who receives invoices on behalf of this MAH.</p>
+{% endif %}
+{{ profile_inputs('Invoice information', editing) }}
+{% if editing %}<div><label class="resolve-confirm"><input type="checkbox" name="payment_platform" value="yes" {{ 'checked' if profile.payment_platform }}> Submit invoices via a payment platform</label></div>{% endif %}
+{{ section_actions('invoice') }}
+</section>
+<section class="panel review-body review-form">
+{{ section_heading('Contract', 'contract') }}
+{% set editing = not mah or edit_section == 'contract' %}
+{% if editing %}
+<div class="review-controls">
+<label>SMVS contract status<select name="contract_status">
+{% for code, label in contract_statuses.items() %}<option value="{{ code }}" {{ 'selected' if mah and mah.contract_status == code }}>{{ label }}</option>{% endfor %}
+</select></label>
+<label>Signing date<input type="date" name="signing_date" value="{{ profile.signing_date }}"></label>
+</div>
+{% else %}
+<dl class="mah-values">
+{{ value_row('SMVS contract status', contract_statuses[mah.contract_status]) }}
+{{ value_row('Signing date', profile.signing_date) }}
+</dl>
+{% endif %}
+<p>Contract document · Planned</p>
+{% if source %}
+<dl class="mah-values">
+{{ value_row('Imported contract status', source.get('Contract Status (from Agreements)') or 'Not supplied') }}
+{{ value_row('Imported signing date', source.get('Signing Date (from Contract)') or 'Not supplied') }}
+</dl>
+{% endif %}
+{{ section_actions('contract') }}
+</section>
+{% if form_open %}
+{% if not mah %}<div class="mah-section-heading"><button name="command" value="save" type="submit">Create MAH</button>
+<a href="/crm/mahs">Cancel</a></div>{% endif %}
+</fieldset>
+</form>
+{% else %}</div>{% endif %}
+<section class="panel review-body">
+<h2>Related records</h2>
+<p>Self-declarations · Planned</p>
+<p>Invoices · Bexio planned from 2027-01-01</p>
+<p>Agreements · Mapping pending</p>
+{% if source %}
+<details><summary>Original Airtable fields</summary>
+<dl>{% for label, value in source.items() %}<dt>{{ label }}</dt><dd>{{ value or 'Not supplied' }}</dd>{% endfor %}</dl>
+</details>
+{% endif %}
+</section>
+{% if mah and not edit_section %}
+<section class="panel review-body">
+{% if not mah.archived_at %}<details><summary>Archive MAH</summary><p>Move this record to the archived directory. It can be restored there.</p>{% endif %}
+<form method="post" action="/crm/mahs/{{ mah.id }}{{ filter_query(request, 'q') }}" class="review-form">
+<input type="hidden" name="version" value="{{ mah.version }}">
+<div><button name="command" value="{{ 'restore' if mah.archived_at else 'archive' }}" type="submit">{{ 'Restore MAH' if mah.archived_at else 'Archive MAH' }}</button></div>
+</form>
+{% if not mah.archived_at %}</details>{% endif %}
+</section>
+{% endif %}
+{% endblock %}

@@ -15,3 +15,9 @@ exclusively from SAI; changing the UI language must not change data selection.
 
 Keep tests for application text in English. Test fixtures may contain German or
 French source values to verify that original evidence is preserved.
+
+# Portal UI design
+
+Follow the [portal UI conventions](docs/technical/PORTAL-UI-GUIDELINES.md)
+when adding or changing portal pages. Use a trailing `→` for contextual links
+to related records, evidence or workflows, and a leading `←` for back links.

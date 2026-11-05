@@ -16,7 +16,7 @@ from app.integration.sources.nmvs.parsing import record_hash
 from app.integration.sources.nmvs.uploads.parsing import instant
 from app.integration.sources.sai.parsing import normalize_gtin14
 from app.portal import exception_queries
-from app.portal.exception_routes import current
+from app.portal.exception_routes import current, exception_record_navigation
 from app.portal.pack_audit_routes import state as pack_audit_state
 from app.portal.routes import DbSession, templates
 
@@ -283,6 +283,9 @@ def uploads(
         request=request,
         name="uploads.html",
         context={
+            "record_nav": exception_record_navigation(request, session, record)
+            if record
+            else None,
             **exception_queries.context(session),
             **result,
             "upload_section": True,

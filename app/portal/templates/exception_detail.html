@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% macro value(label,content) %}<div><dt>{{ label }}</dt><dd>{{ content if content is not none and content!='' else 'Not supplied' }}</dd></div>{% endmacro %}
-{% block heading %}<a class="back-link" href="/exceptions">← Exceptions</a><div class="heading"><div><div class="eyebrow">NMVS EXCEPTION · {{ record.error_code or 'NO ERROR CODE' }}</div><h1 class="exception-id-heading">{{ record.unique_alert_id }}</h1><p>{{ record.alert_at.strftime('%Y-%m-%d %H:%M:%S.%f') ~ ' UTC' if record.alert_at else 'Invalid source timestamp' }} · {{ record.error_message or 'Error message not supplied' }}</p></div></div>{% endblock %}
+{% from 'macros.html' import record_bar %}
+{% block heading %}{{ record_bar(record_nav) }}<div class="heading"><div><div class="eyebrow">NMVS EXCEPTION · {{ record.error_code or 'NO ERROR CODE' }}</div><h1 class="exception-id-heading">{{ record.unique_alert_id }}</h1><p>{{ record.alert_at.strftime('%Y-%m-%d %H:%M:%S.%f') ~ ' UTC' if record.alert_at else 'Invalid source timestamp' }} · {{ record.error_message or 'Error message not supplied' }}</p></div></div>{% endblock %}
 {% block content %}
 {% set exception_tab='context' %}{% include 'exception_tabs.html' %}
 <section class="detail-grid">
