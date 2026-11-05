@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block heading %}<a class="back-link" href="/exceptions/{{ record.id }}/analysis">← Root cause analysis</a><div class="heading"><div><div class="eyebrow">LOCAL REVIEW</div><h1>Resolve similar exceptions</h1><p>{{ record.unique_alert_id }}</p></div></div>{% endblock %}
+{% block content %}
+<section class="panel"><div class="panel-heading"><h2>Resolve selected exceptions with a shared root cause</h2></div><div class="review-body">
+<p>Candidates share the exact product identifiers, provided/stored batch roles, error code, requesting market, intermarket flag, business process and attempted operation. A match does not prove a shared cause. Check each selected exception before applying.</p>
+{% if can_transfer %}
+<p><strong>Root cause:</strong> {{ review.cause }}</p>
+<form method="post" class="review-form"><input type="hidden" name="command" value="resolve_similar"><input type="hidden" name="version" value="{{ review.version }}:{{ record.payload_hash }}">
+<div class="table-scroll"><table><thead><tr><th>Select</th><th>Alert</th><th>Timestamp UTC</th><th>Serial</th><th>Market / operation</th><th>Local status / existing assessment</th></tr></thead><tbody>
+{% for other, assessment in candidates %}<tr><td><input aria-label="Select {{ other.unique_alert_id }}" type="checkbox" name="target_{{ other.id }}" value="{{ assessment.version if assessment else 0 }}:{{ other.payload_hash }}" {{ 'disabled' if assessment and (assessment.status=='to_do' or assessment.next_action or assessment.due_date) }}></td><td><a href="/exceptions/{{ other.id }}" target="_blank" rel="noopener">{{ other.unique_alert_id }}</a></td><td>{{ other.alert_at or 'Unresolved' }}</td><td>{{ other.serial_number or 'Not supplied' }}</td><td>{{ other.source_market or 'Not supplied' }} · {{ other.evidence.get('attemptedOperation') or 'Not supplied' }}</td><td>{{ assessment.status|replace('_',' ')|title if assessment else 'Open' }}{% if assessment and assessment.cause %}<small class="activity-row-meta">{{ assessment.cause }}</small>{% endif %}{% if assessment and assessment.next_action %}<small class="activity-row-meta">Pending: {{ assessment.next_action }}</small>{% endif %}{% if assessment and assessment.due_date %}<small class="activity-row-meta">Follow-up: {{ assessment.due_date }}</small>{% endif %}</td></tr>{% else %}<tr><td colspan="6">No eligible similar exceptions found.</td></tr>{% endfor %}
+</tbody></table></div>
+<p class="card-footnote">Up to 50 candidates, across all retained dates. Items with pending follow-up must be resolved individually. Existing findings and follow-up are preserved. The category is copied as a working hypothesis; individual checks are not copied. Each selected exception receives a separate history entry referencing this assessment.</p>
+<label>Why does this root cause apply to the selected exceptions?<textarea name="reason" maxlength="4000" rows="3" required></textarea></label>
+<button type="submit">Resolve selected exceptions</button></form>
+{% else %}<p>Resolve the original exception with a confirmed, classified root cause and evidence first.</p>{% endif %}
+<p class="card-footnote">Only explicitly selected exceptions are changed. No source Alert is closed or changed.</p>
+</div></section>
+{% endblock %}

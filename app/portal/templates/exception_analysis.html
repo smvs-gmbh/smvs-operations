@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% macro value(label,content) %}<div><dt>{{ label }}</dt><dd>{{ content if content is not none and content!='' else 'Not supplied' }}</dd></div>{% endmacro %}
+{% set analysis=review.analysis if review and review.analysis else {} %}
+{% block heading %}<a class="back-link" href="/exceptions">← Exceptions</a><div class="heading"><div><div class="eyebrow">INVESTIGATION · {{ record.error_code or 'NO ERROR CODE' }}</div><h1>Root cause analysis</h1><p>{{ record.unique_alert_id }} · {{ name or record.gtin14 or record.product_code or 'No product matched' }}</p></div></div>{% endblock %}
+{% block content %}
+{% set exception_tab='analysis' %}{% include 'exception_tabs.html' %}
+<div class="rca-context"><strong>{{ record.error_code or 'No error code' }} · {{ record.error_message or 'Message not supplied' }}</strong><p>Batch {{ record.provided_batch or 'Not supplied' }} · Serial {{ record.serial_number or 'Not supplied' }} · Requesting market {{ record.source_market or 'Not supplied' }} · {{ record.evidence.get('attemptedOperation') or 'Operation not supplied' }}</p></div>
+{% if review and not review.analysis %}<div class="notice">An earlier free-text assessment is retained below. It has not been classified or automatically confirmed.</div>{% endif %}
+{% if repeat_operation %}
+<section class="panel review-body intelligence-evidence">
+<p class="source-tag">Intelligence · Automatic analysis</p>
+<h2>Repeated {{ repeat_operation[0] }} evidence</h2>
+{% if repeat_sequence %}
+<p>The pack changed from Active to {{ repeat_operation[1] }} at {{ repeat_sequence.previous.at.strftime('%Y-%m-%d %H:%M:%S') }} UTC. A second {{ repeat_operation[0] }} ({{ repeat_sequence.repeat.codes|join(" / ") }}) was rejected at {{ repeat_sequence.repeat.at.strftime('%Y-%m-%d %H:%M:%S') }} UTC at the same reported location in {{ repeat_sequence.repeat.market }}. The reason for the second request remains open.</p>
+<p><a href="/exceptions/{{ record.id }}/audit-trail">Inspect pack audit trail →</a> · Report {{ repeat_sequence.report_id }}</p>
+{% else %}
+<p>The retained pack audit trail does not establish a same-location repeat for this exception. <a href="/exceptions/{{ record.id }}/audit-trail">Inspect pack audit trail →</a></p>
+{% endif %}
+{% if repeat_history %}<p>At this location, retained A7 {{ repeat_operation[0] }} alerts refer to {{ repeat_history.packs }} distinct packs across products and batches. {% if batch_identity %}This batch accounts for {{ repeat_history.batch_alerts }} alerts and {{ repeat_history.batch_packs }} distinct serial numbers.{% endif %}</p>
+{% if repeat_history.first %}<p class="subtle">Observed alerts from {{ repeat_history.first.date() }} to {{ repeat_history.last.date() }} UTC. Counts describe retained alerts. Each pack's sequence requires its own audit evidence.</p>{% endif %}{% endif %}
+{% if repeat_sequence and not pending_work and (not review or review.status != 'resolved') %}
+<form method="post" action="/exceptions/{{ record.id }}/resolve-repeat" class="review-form">
+<input type="hidden" name="version" value="{{ review.version if review else 0 }}:{{ record.payload_hash }}">
+<input type="hidden" name="report_id" value="{{ repeat_sequence.report_id }}">
+<label>Local resolution reason<textarea name="reason" required maxlength="4000" rows="2">The pack was already {{ repeat_operation[1] }}. The audit trail records the earlier successful {{ repeat_operation[0] }} and the rejected repeat at the same location.</textarea></label>
+<div class="review-controls"><button type="submit">Resolve locally</button>{% if batch_identity and repeat_operation[0] == "Export" %}<a class="resolve-batch-link" href="/exceptions/{{ record.id }}/resolve-export-batch">Resolve matching batch exceptions →</a>{% endif %}</div>
+</form>
+{% endif %}
+{% if repeat_sequence and batch_identity and repeat_operation[0] == "Export" and review and (review.status == "resolved" or pending_work) %}<p><a class="resolve-batch-link" href="/exceptions/{{ record.id }}/resolve-export-batch">Resolve matching batch exceptions →</a></p>{% endif %}
+</section>
+{% endif %}
+{% if batch_identity %}<p><a href="/exceptions/{{ record.id }}/reopen-batch">Reopen batch exceptions →</a></p>{% endif %}
+<div class="panel investigation-card" id="root-cause">
+<div class="panel-heading"><h2>Root cause analysis</h2><span class="source-tag">LOCAL REVIEW</span></div>
+<div class="review-body">
+{% set notices={'saved':'Analysis saved. The exception remains open for work.','resolved':'Exception resolved locally.','reopened':'Exception reopened.','similar_resolved':'Selected similar exceptions resolved locally.','batch_resolved':'Matching batch exceptions resolved locally.'} %}{% if request.query_params.get('notice') in notices %}<p class="notice" role="status">{{ notices[request.query_params.get('notice')] }}</p>{% endif %}
+<p><strong>Work status: {{ review.status|replace('_',' ')|title if review else 'Open' }}</strong></p>
+{% if review and review.status=='resolved' %}<div class="notice">Resolved locally. {{ review.resolution.get('reason',review.review_reason) if review.resolution else review.review_reason }}{% if review.resolution and review.resolution.get('basis')=='legacy_reviewed' %} · Migrated from the earlier Reviewed status.{% endif %}</div>
+<form method="post" action="/exceptions/{{ record.id }}/review" class="review-form"><input type="hidden" name="version" value="{{ review.version }}:{{ record.payload_hash }}"><label>Reopening reason<textarea name="reopen_reason" maxlength="4000" rows="2" required></textarea></label><button type="submit" name="command" value="reopen">Reopen exception</button></form>{% endif %}
+{% if review and review.basis_payload_hash != record.payload_hash %}<p class="notice">Source data changed since the last review. Check the updated evidence before reviewing again.</p>{% endif %}
+<form method="post" action="/exceptions/{{ record.id }}/review" class="review-form" id="analysis-form" data-pending="{{ 'yes' if review and (review.status=='to_do' or review.next_action or review.due_date) else 'no' }}">
+<input type="hidden" name="version" value="{{ review.version if review else 0 }}:{{ record.payload_hash }}">
+<fieldset class="analysis-edit-fields" {{ 'disabled' if review and review.status=='resolved' }}>
+<fieldset class="rca-step"><legend><span>1</span> Classify the cause</legend>
+<label>Cause category<select name="category" id="cause-category">{% for code,item in categories.items() %}<option value="{{ code }}" {{ 'selected' if analysis.get('category','unknown')==code }}>{{ item.label }}</option>{% endfor %}</select></label>
+<p class="subtle">Choose the explanation supported by evidence, not just the error code.</p>
+</fieldset>
+<fieldset class="rca-step"><legend><span>2</span> Check the evidence</legend>
+{% for code,item in categories.items() %}<div class="cause-guidance" data-category="{{ code }}"><h3>{{ item.label }}</h3><p>{{ item.hint }}</p><div class="review-controls"><a href="/exceptions/{{ record.id }}/audit-trail">Inspect pack audit trail →</a><a href="/exceptions/{{ record.id }}/uploads">Inspect upload history →</a><a href="/exceptions/{{ record.id }}/source">Original source data →</a></div>
+{% for key,question in item.checks %}<label>{{ question }}<select name="check_{{ code }}_{{ key }}">{% for result,label in check_labels.items() %}<option value="{{ result }}" {{ 'selected' if analysis.get('category')==code and analysis.get('checks',{}).get(key)==result }}>{{ label }}</option>{% endfor %}</select></label>{% endfor %}</div>{% endfor %}
+<label>Findings &amp; evidence<textarea name="findings" maxlength="4000" rows="4" placeholder="Record what you checked, supporting evidence, and why any check was not applicable">{{ review.findings if review else '' }}</textarea></label>
+</fieldset>
+<fieldset class="rca-step"><legend><span>3</span> Record the assessment</legend>
+<label>Assessment level<select name="confidence" id="cause-confidence">{% for code,label in confidence_labels.items() %}<option value="{{ code }}" {{ 'selected' if analysis.get('confidence','unassessed')==code }}>{{ label }}</option>{% endfor %}</select></label>
+<p class="subtle">A completed check does not establish the cause. Confirmation is your assessment of the supporting evidence.</p>
+<label>Conclusion<textarea name="cause" maxlength="4000" rows="3" placeholder="What explains this exception?">{{ review.cause if review else '' }}</textarea></label>
+
+</fieldset><fieldset class="rca-step"><legend><span>4</span> Decide the next step</legend><label>Next action / open question<textarea name="next_action" maxlength="4000" rows="2">{{ review.next_action if review else '' }}</textarea></label>
+<div class="review-controls"><label>Work status<select name="status">{% for code,label in [('open','Open'),('to_do','To do')] %}<option value="{{ code }}" {{ 'selected' if review and review.status==code }}>{{ label }}</option>{% endfor %}</select></label><label>Follow-up date (UTC)<input type="date" name="due_date" value="{{ review.due_date if review and review.due_date else '' }}"></label></div>
+<label>Resolution reason<textarea name="review_reason" maxlength="4000" rows="2" placeholder="Required to resolve; explain the outcome, any completed follow-up, or why no further local action is needed">{{ review.review_reason if review else '' }}</textarea></label>
+<label>Resolution basis<select name="resolution_basis"><option value="">Choose when resolving</option><option value="confirmed_cause">Confirmed root cause</option><option value="no_further_action">No further local action required · explain why</option></select></label>
+<label class="resolve-confirm"><input type="checkbox" name="complete_pending" value="yes">Any pending follow-up is completed or superseded, as explained above.</label>
+</fieldset><div class="review-controls"><button type="submit" name="command" value="save">Save analysis</button><button type="submit" name="command" value="resolve" class="resolve-button">Resolve exception</button><a href="/exceptions?work_status=to_do">To-do list →</a></div>
+</fieldset></form>
+<p class="card-footnote">Resolve hides this exception from the open list. Use Reopen exception to resume work. This is a local work status; no NMVS or AMS-Hub alert is closed.</p>
+{% if can_transfer %}<p><a href="/exceptions/{{ record.id }}/similar">Resolve similar exceptions →</a></p>{% endif %}
+<p><a href="/exceptions/{{ record.id }}/work-audit">View local audit trail →</a></p>
+<p class="card-footnote"><a href="/exceptions/{{ record.id }}/audit-trail">Pack audit trail →</a> · No audit trail is requested automatically.</p>
+</div></div>
+<script src="{{ request.url_for('portal_static', path='root-cause.js') }}" defer></script>
+{% endblock %}

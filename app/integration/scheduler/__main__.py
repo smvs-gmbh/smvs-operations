@@ -7,7 +7,8 @@ from sqlalchemy import select
 
 from app.core.db.models import ImportSchedule
 from app.core.db.session import SessionFactory
-from app.integration.scheduler.handlers import default_handlers
+from app.integration.scheduler.handlers import default_handlers, import_backfill
+from app.integration.scheduler.heartbeat import worker_heartbeat
 from app.integration.scheduler.service import ImportScheduler
 
 
@@ -20,10 +21,13 @@ def main():
     actions.add_argument("--serve", action="store_true")
     actions.add_argument("--list", action="store_true")
     parser.add_argument("--at", default="04:00")
+    parser.add_argument("--every-hours", type=int)
     parser.add_argument("--timezone", default="Europe/Zurich")
     parser.add_argument("--enable", action="store_true")
     args = parser.parse_args()
-    scheduler = ImportScheduler(SessionFactory, default_handlers())
+    scheduler = ImportScheduler(
+        SessionFactory, default_handlers(), backfill_handler=import_backfill
+    )
     try:
         if args.configure:
             identifier = scheduler.configure(
@@ -31,6 +35,9 @@ def main():
                 daily_time=args.at,
                 timezone=args.timezone,
                 enabled=args.enable,
+                interval_seconds=args.every_hours * 3600
+                if args.every_hours is not None
+                else None,
             )
             print(json.dumps({"schedule_id": identifier, "enabled": args.enable}))
         elif args.list:
@@ -46,7 +53,10 @@ def main():
                                 "import_key": s.import_key,
                                 "enabled": bool(s.enabled),
                                 "timezone": s.timezone,
-                                "daily_time": s.daily_time,
+                                "daily_time": s.daily_time
+                                if s.interval_seconds is None
+                                else None,
+                                "interval_seconds": s.interval_seconds,
                                 "next_run_utc": s.next_run_at.isoformat(),
                             }
                             for s in schedules
@@ -63,14 +73,24 @@ def main():
             stop = threading.Event()
             signal.signal(signal.SIGINT, lambda *_: stop.set())
             signal.signal(signal.SIGTERM, lambda *_: stop.set())
-            while not stop.is_set():
-                try:
-                    scheduler.tick()
-                except Exception:  # noqa: BLE001 - retry infrastructure on next poll, without leaking driver text
-                    print(
-                        "Scheduler tick failed; inspect database readiness.", flush=True
-                    )
-                stop.wait(15)
+            with worker_heartbeat(SessionFactory):
+                while not stop.is_set():
+                    try:
+                        scheduler.tick()
+                        from app.domain.pack_audit.service import (
+                            tick as pack_audit_tick,
+                        )
+
+                        pack_audit_tick(SessionFactory)
+                        from app.domain.uploads.service import tick as upload_tick
+
+                        upload_tick(SessionFactory)
+                    except Exception:  # noqa: BLE001 - retry infrastructure on next poll, without leaking driver text
+                        print(
+                            "Scheduler tick failed; inspect database readiness.",
+                            flush=True,
+                        )
+                    stop.wait(15)
     except Exception:  # noqa: BLE001 - do not expose configuration or SQL parameter values
         parser.exit(
             1,

@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block heading %}
+<a class="back-link" href="/intelligence/rules">← Rules</a>
+<div class="heading"><div><h1>Search interpretation</h1><p>{{ question }}</p></div></div>
+{% endblock %}
+{% block content %}
+<section class="panel review-body">
+{% if draft %}
+<p><strong>A7 repeated operation</strong> · {{ start }} to {{ end }} UTC · {{ draft.operation or 'All supported operations' }} · {{ draft.market or 'All markets' }} · {{ 'Evidence matches only' if draft.matched_only else 'All evaluated candidates' }}</p>
+<form action="/intelligence/rules" method="get" class="review-form">
+<input type="hidden" name="preview" value="true">
+<input type="hidden" name="start" value="{{ start }}">
+<input type="hidden" name="end" value="{{ end }}">
+<input type="hidden" name="operation" value="{{ draft.operation }}">
+<input type="hidden" name="market" value="{{ draft.market }}">
+<input type="hidden" name="matched_only" value="{{ 'true' if draft.matched_only else 'false' }}">
+<div><button type="submit">Run local search</button></div>
+</form>
+{% else %}<p>This question needs conditions outside the current A7 search. Use an operation, requesting market and relative date range.</p>{% endif %}
+</section>
+{% endblock %}

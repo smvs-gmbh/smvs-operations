@@ -127,3 +127,11 @@ The additive migration backfills existing numeric version text. Downgrade refuse
 before DDL when unresolved numeric-null values would be lost. The input-key record retains its retry count; its status and last failure
 are updated on retry. This first mapper does not provide a separate full history
 of mapping attempts. No partial current working set was published.
+
+## Original NMVS source view
+
+Mapping `product-batch-sai-2` retains all supplied Product and Batch source fields
+in operational evidence, rather than only the selected display/context subset.
+This is not a full Hub PMD acquisition. Source Name/MAH fields remain attributed
+NMVS values; the Swiss-facing display still exclusively uses SAI. The portal
+exposes these originals through explicitly labelled read-only source pages.

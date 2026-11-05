@@ -88,11 +88,12 @@ acquisition with explicit settings (environment or `.env`):
 
 Credentials are not stored in schedule/execution rows. Both configured endpoints
 must pass HTTPS validation. Token requests do not follow redirects; sensitive
-HTTP logging is suppressed. Missing settings fail before contacting NMVS. This
-change does not provision credentials, start a live NMVS schedule or alter NMVS.
+HTTP logging is suppressed. Missing settings fail before contacting NMVS. It does not provision credentials or alter medicines state in NMVS. Current
+enabled/disabled schedules are recorded in the dated implementation status.
 
-A platform management screen and richer calendar/interval schedules are future
-extensions. Schedule and execution records are already available for that UI.
+The local management screen is implemented at `/imports`; see
+[Import management](import-management.md). Richer calendar rules remain future work.
+Elapsed interval schedules are implemented (see Exceptions below). Schedule and execution records are already available for that UI.
 
 ## Idempotency and DB inspection
 
@@ -107,3 +108,51 @@ versions remain distinguishable. Do not sum different snapshots or interpretatio
 as business entities. Historical duplicate extractions made before migration 0004
 are not deleted. Source-to-domain mapping and accepted business publication remain
 separate from this import/scheduling slice.
+
+## User Activity Report
+
+`user_activity` adds daily genuine-only Verification and IMT Fulfilment data. At
+05:00 Europe/Zurich it requests yesterday's complete UTC day, fills missing days
+(initially 90), and refreshes seven recent days for corrections. Its handler
+performs date-aware catch-up independently of the scheduler's coalesced triggers.
+See [User Activity Report](user-activity.md) for parameters and manual backfill.
+
+## Elapsed intervals and Exceptions
+
+An optional `interval_seconds` supports platform-independent interval schedules.
+`--configure exceptions --every-hours 2 --enable` configures 7200 seconds. The next
+normal run is two hours after completion; failed attempts use the existing bounded
+five-minute retry policy. Daily schedules keep this column NULL and retain their
+existing wall-clock/DST behavior. The Exceptions handler catches up missed days
+and revisits seven days through the present UTC instant. See [Exceptions](exceptions.md).
+
+## On-demand pack evidence
+
+The serve loop also checks the durable Pack Audit Trail request queue. It processes
+one explicitly requested pack at a time under an independent mutex. This is not a
+periodic per-Alert import and does not change the existing import schedules.
+
+## Product Pack Upload Audit Trail
+
+`pack_uploads` runs daily at 05:15 Europe/Zurich, for completed UTC days only.
+It fills gaps since the first retained window and refreshes the last three days.
+The serve loop additionally processes explicit upload-window requests independently
+of the daily cadence. Those requests are shared across Exceptions with the same
+source and window; no request is made by viewing a page. This client uses Reporting
+API 3.6 for its confirmed genuine-only filter. See [upload evidence](product-pack-uploads.md).
+
+## Verified local configuration
+
+See [implementation status](../overview/IMPLEMENTATION-STATUS.md) for the schedule
+configuration verified on 2026-11-04. SAI (04:00) and Snapshot (04:15) are configured
+but disabled. User Activity (05:00), Exceptions (every two hours) and Pack Uploads
+(05:15) are enabled. Daily times are Europe/Zurich; imported periods are UTC. This
+record does not enable any schedule or install an OS service.
+
+## UI command queue and worker heartbeat
+
+Migration 0015 adds durable manual requests/attempt links and scheduler heartbeats.
+The serve loop processes manual requests through the same source mutexes as automatic
+imports. Pause does not interrupt an active import; Backfill leaves its schedule
+unchanged. A separate heartbeat thread remains active during long source calls.
+See [Import management](import-management.md) for controls, limits and recovery.

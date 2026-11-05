@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% macro value(label,content) %}<div><dt>{{ label }}</dt><dd>{{ content if content is not none and content!='' else 'Not supplied' }}</dd></div>{% endmacro %}
+{% block heading %}<a class="back-link" href="/exceptions">← Exceptions</a><div class="heading"><div><div class="eyebrow">NMVS EXCEPTION · {{ record.error_code or 'NO ERROR CODE' }}</div><h1 class="exception-id-heading">{{ record.unique_alert_id }}</h1><p>{{ record.alert_at.strftime('%Y-%m-%d %H:%M:%S.%f') ~ ' UTC' if record.alert_at else 'Invalid source timestamp' }} · {{ record.error_message or 'Error message not supplied' }}</p></div></div>{% endblock %}
+{% block content %}
+{% set exception_tab='context' %}{% include 'exception_tabs.html' %}
+<section class="detail-grid">
+<div class="panel detail-card"><div class="panel-heading"><h2>Pack & product</h2><span class="source-tag">SAI / NMVS</span></div><dl>
+{{ value('Swiss product name · SAI',name or 'No Swiss name matched') }}{{ value('Swiss marketing authorisation holder · SAI',holder or 'No match') }}{{ value('GTIN14',record.gtin14) }}{{ value('Product Code / Scheme', (record.product_code or '—') ~ ' / ' ~ (record.product_code_scheme or '—')) }}{{ value('Serial number',record.serial_number) }}
+<div><dt>Provided Batch / Expiry</dt><dd>{{ record.provided_batch or 'Not supplied' }} / {{ record.evidence.get('providedExpiryDate') or 'Not supplied' }}{% if batch_links.get('provided_batch') %} · <a href="/batches/{{ batch_links.provided_batch.id }}/source">Snapshot batch →</a>{% endif %}</dd></div>
+<div><dt>Stored Batch / Expiry</dt><dd>{{ record.stored_batch or 'Not supplied' }} / {{ record.evidence.get('storedExpiryDate') or 'Not supplied' }}{% if batch_links.get('stored_batch') %} · <a href="/batches/{{ batch_links.stored_batch.id }}/source">Snapshot batch →</a>{% endif %}</dd></div>
+{{ value('Pack state · source observation',record.evidence.get('currentPackState')) }}
+</dl>{% if product %}<p class="card-footnote"><a href="/products/{{ product.id }}">Product in the current dataset →</a></p>{% endif %}<p class="card-footnote">{{ sai_status }}. A missing SAI match does not establish that a pack is foreign.</p></div>
+<div class="panel detail-card"><div class="panel-heading"><h2>Request & participants</h2></div><dl>
+{{ value('Requesting market',record.source_market) }}{{ value('Is Intermarket', 'Yes' if record.is_intermarket else 'No' if record.is_intermarket is not none else None) }}
+<div><dt>Organisation ID</dt><dd>{{ record.organisation_id or 'Not supplied' }}{% if organisation %} · <a href="/organisations/{{ organisation.id }}">{{ organisation.organisation_name }} →</a>{% endif %}</dd></div>
+<div><dt>Source Location ID</dt><dd>{{ record.source_location_id or 'Not supplied' }}{% if location %} · <a href="/locations/{{ location.id }}">{{ location.location_name }} →</a>{% else %}<small class="activity-row-meta">Not linked to a local Location.</small>{% endif %}</dd></div>
+{{ value('Business Process',record.business_process) }}{{ value('Attempted Operation',record.evidence.get('attemptedOperation')) }}{{ value('Transaction ID',record.transaction_id) }}{{ value('Client ID',record.evidence.get('clientID')) }}{{ value('API Version',record.evidence.get('apiVersion')) }}
+</dl></div>
+<div class="panel detail-card"><div class="panel-heading"><h2>Technical source observation</h2></div><dl>{{ value('Operation Code',record.evidence.get('operationCode')) }}{{ value('Event Message',record.evidence.get('eventMessage')) }}{{ value('Manual Entry',record.evidence.get('manualEntry')) }}{{ value('Pack Last Update Timestamp',record.evidence.get('packLastUpdateTimestamp')) }}{{ value('Pack Last Update Market',record.evidence.get('packLastUpdateMarket')) }}{{ value('Pack Last Update Location ID',record.last_update_location_id) }}</dl><p class="card-footnote">The last pack update is a separate context from the requesting Location.</p></div>
+
+</section>
+{% if related %}<section class="panel"><div class="panel-heading"><h2>Other exceptions with the same pack identifiers</h2><span class="subtle">Up to 20 most recently reported</span></div><div class="table-scroll"><table><thead><tr><th>Alert ID</th><th>Timestamp (UTC)</th><th>Error Code</th><th>Provided Batch</th></tr></thead><tbody>{% for other in related %}<tr><td><a href="/exceptions/{{ other.id }}">{{ other.unique_alert_id }}</a></td><td>{{ other.alert_at.strftime('%Y-%m-%d %H:%M:%S') if other.alert_at else 'Unresolved' }}</td><td>{{ other.error_code or '—' }}</td><td>{{ other.provided_batch or '—' }}</td></tr>{% endfor %}</tbody></table></div><p class="card-footnote">Matching source identifiers indicate a correlation; they do not establish a common cause or pack authenticity.</p></section>{% endif %}
+{% endblock %}

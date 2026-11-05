@@ -35,7 +35,7 @@ from app.integration.artifacts.storage import utcnow
 from app.integration.idempotency import result_run_id
 from app.integration.sources.sai.parsing import normalize_gtin14
 
-MAPPING_VERSION = "product-batch-sai-1"
+MAPPING_VERSION = "product-batch-sai-2"
 MUTEX = "mapping:product-batch"
 
 
@@ -482,22 +482,7 @@ def _map(session, run, data):
                 "pack_count": integer(r.get("Number Of Packs")),
                 "active_pack_count": integer(r.get("Number Of Active Packs")),
                 "source_row_id": rid,
-                "evidence": selected(
-                    r,
-                    (
-                        "Product Code Scheme",
-                        "Product Code",
-                        "Product Version Number",
-                        "Product Name",
-                        "MAH Name",
-                        "EMVS MAH Id",
-                        "OBP Id",
-                        "OBP Name",
-                        "Product State",
-                        "Number Of Packs",
-                        "Number Of Active Packs",
-                    ),
-                ),
+                "evidence": dict(r),
             }
         )
     upsert(session, ProductSourceRecord, source_records, ["source_key"])
@@ -516,20 +501,7 @@ def _map(session, run, data):
             if version is not None
             else "unresolved_source_value",
             "source_row_id": rid,
-            "evidence": selected(
-                r,
-                (
-                    "Product Code Scheme",
-                    "Product Code",
-                    "Product Version Number",
-                    "Product Name",
-                    "MAH Name",
-                    "EMVS MAH Id",
-                    "OBP Id",
-                    "OBP Name",
-                    "Product State",
-                ),
-            ),
+            "evidence": dict(r),
             "last_mapping_run_id": run.id,
         }
     pmd_keys = set(versions)
@@ -588,20 +560,7 @@ def _map(session, run, data):
                 "pack_count": integer(r.get("Number Of Packs")),
                 "active_pack_count": integer(r.get("Number Of Active Packs")),
                 "source_row_id": rid,
-                "evidence": selected(
-                    r,
-                    (
-                        "Product Code Scheme",
-                        "Product Code",
-                        "Batch Id",
-                        "Product Version Number",
-                        "Batch Expiry Date",
-                        "Batch State",
-                        "Number Of Packs",
-                        "Number Of Active Packs",
-                        "Manufacturer Name",
-                    ),
-                ),
+                "evidence": dict(r),
             }
         )
     upsert(session, Batch, batches, ["batch_key"])

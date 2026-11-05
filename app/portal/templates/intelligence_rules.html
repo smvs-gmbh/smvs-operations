@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block heading %}
+<div class="heading"><div><div class="eyebrow">OPERATIONAL INTELLIGENCE</div><h1>Rules</h1><p>Review the catalogue, configure rule scope and preview retained evidence.</p></div></div>
+{% endblock %}
+{% block content %}
+<section class="panel review-body">
+<h2>Operations catalogue</h2>
+<div class="table-scroll"><table><thead><tr><th>Source operation</th><th>Operation</th><th>Expected transition</th></tr></thead>
+<tbody>{% for code, operation in operations.items() %}<tr><td>{{ code }}</td><td>{{ operation[0] }}</td><td>Active → {{ operation[1] }}</td></tr>{% endfor %}</tbody></table></div>
+</section>
+<section class="panel review-body">
+<h2>A7 repeated operation</h2>
+<p>{{ rule_id }} · Scope version {{ scope.version }} · Evaluator version {{ evaluator_version }}</p>
+<p>Requires a successful state change and a rejected repeat for the same pack, operation, market and location. Eligible exceptions can be resolved locally after a preview and confirmation.</p>
+<form method="post" action="/intelligence/rules" class="review-form">
+<input type="hidden" name="version" value="{{ scope.version }}">
+<div class="review-controls">
+<label>Rule operation<select name="operation"><option value="">All supported operations</option>{% for code,item in operations.items() %}<option value="{{ code }}" {{ 'selected' if scope.operation==code }}>{{ item[0] }}</option>{% endfor %}</select></label>
+<label>Rule market<input name="market" maxlength="3" value="{{ scope.market }}" placeholder="All markets"></label>
+<button type="submit">Save rule scope</button>
+</div></form>
+</section>
+<section class="panel review-body">
+<h2>Preview on saved alerts</h2>
+<form method="get" action="/intelligence/rules" class="review-form">
+<input type="hidden" name="preview" value="true">
+<div class="review-controls">
+<label>From (UTC)<input type="date" name="start" value="{{ start }}" required></label>
+<label>To (UTC)<input type="date" name="end" value="{{ end }}" required></label>
+<label>Search operation<select name="operation"><option value="">All supported operations</option>{% for code,item in operations.items() %}<option value="{{ code }}" {{ 'selected' if operation==code }}>{{ item[0] }}</option>{% endfor %}</select></label>
+<label>Search market<input name="market" maxlength="3" value="{{ market }}" placeholder="All markets"></label>
+<button type="submit">Preview rule</button>
+</div>
+<label class="resolve-confirm"><input type="checkbox" name="matched_only" value="true" {{ 'checked' if matched_only }}>Show only evidence matches</label>
+</form>
+{% if preview %}<p>{{ results|length }} results shown. {% if limited %}The preview evaluated the latest 100 candidates. Narrow the filters to inspect a smaller set.{% endif %}</p>
+{% include 'intelligence_results.html' %}{% endif %}
+</section>
+<section class="panel review-body">
+<h2>Search in natural language</h2>
+{% if search_enabled %}
+<form method="post" action="/intelligence/interpret" class="review-form">
+<label>Search question<textarea name="question" maxlength="500" required rows="2" placeholder="Show proven A7 Destroy repeats in the last 30 days"></textarea></label>
+<p class="subtle">OpenAI receives the question to propose filters. Use general search criteria.</p>
+<div><button type="submit">Interpret search with OpenAI</button></div>
+</form>
+{% else %}<p>Configure <code>OPENAI_API_KEY</code> and <code>OPENAI_SEARCH_MODEL</code> to enable search interpretation.</p>{% endif %}
+</section>
+{% endblock %}

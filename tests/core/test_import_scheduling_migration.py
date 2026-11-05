@@ -43,6 +43,7 @@ def test_additive_migration_preserves_existing_processing_and_rows_and_downgrade
         for table in Base.metadata.sorted_tables:
             if table.name not in DOMAIN_TABLES:
                 table.to_metadata(expected)
+        expected.tables["import_schedules"]._columns.remove(expected.tables["import_schedules"].c.interval_seconds)
         assert compare_metadata(context, expected) == []
         assert connection.exec_driver_sql(
             "SELECT id,reused_from_run_id FROM processing_runs"

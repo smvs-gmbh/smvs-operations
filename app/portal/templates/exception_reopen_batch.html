@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block heading %}
+<a class="back-link" href="/exceptions/{{ record.id }}/analysis">← Root cause analysis</a>
+<div class="heading"><div><h1>Reopen batch exceptions</h1><p>{{ record.product_code }} · Batch {{ batch }}</p></div></div>
+{% endblock %}
+{% block content %}
+<section class="panel review-body">
+{% if request.query_params.get('reopened') %}
+<p class="notice" role="status">Selected exceptions reopened. <a href="/exceptions?work_status=open&amp;q={{ batch|urlencode }}">View open exceptions →</a> · The date and other list filters still apply.</p>
+{% endif %}
+<p>Select local resolutions to reopen. The original resolution remains in the history.</p>
+{% if candidates %}
+<form method="post" class="review-form">
+<div class="table-scroll"><table>
+<thead><tr><th>Select</th><th>Alert</th><th>Reported at (UTC)</th><th>Error</th><th>Local resolution reason</th></tr></thead>
+<tbody>{% for candidate, review in candidates %}<tr>
+<td><input type="checkbox" name="target_{{ candidate.id }}" value="{{ review.version }}:{{ candidate.payload_hash }}" aria-label="Select {{ candidate.unique_alert_id }}"></td>
+<td><a href="/exceptions/{{ candidate.id }}/analysis">{{ candidate.unique_alert_id }}</a></td>
+<td>{{ candidate.alert_at or 'Not supplied' }}</td><td>{{ candidate.error_code or '—' }}</td><td>{{ review.review_reason }}</td>
+</tr>{% endfor %}</tbody>
+</table></div>
+<label>Reopening reason<textarea name="reason" required maxlength="4000" rows="2"></textarea></label>
+<div><button type="submit">Reopen selected exceptions</button></div>
+</form>
+{% if more %}<p><a href="?after={{ candidates[-1][0].id }}">Next resolved exceptions →</a></p>{% endif %}
+{% else %}<p>No resolved exceptions for this product and batch.</p>{% endif %}
+</section>
+{% endblock %}

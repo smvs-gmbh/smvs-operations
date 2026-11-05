@@ -17,6 +17,13 @@ def test_integration_foundation_metadata_contains_only_approved_tables() -> None
         "products", "product_source_records", "product_versions", "batches",
         "sai_holders", "sai_preparations", "sai_packages", "product_reference_matches",
         "mapping_runs", "current_publications",
+        "participant_mapping_runs", "participant_publications", "local_organisations", "local_locations",
+        "activity_publications", "activity_days", "activity_facts",
+        "exception_publications", "nmvs_exceptions", "exception_revisions",
+        "pack_audit_reports", "pack_audit_requests",
+        "upload_reports", "upload_requests",
+        "exception_reviews", "exception_review_events", "intelligence_rule_revisions",
+        "manual_import_requests", "manual_import_attempts", "scheduler_heartbeats",
     }
 
 

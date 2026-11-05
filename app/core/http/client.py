@@ -25,13 +25,30 @@ class HttpClient:
         response.raise_for_status()
         return response
 
-    def get_sensitive(self, url: str, headers: Mapping[str, str],
-                      params: Mapping[str, str] | None = None) -> httpx.Response:
+    def get_sensitive(
+        self,
+        url: str,
+        headers: Mapping[str, str],
+        params: Mapping[str, str] | None = None,
+    ) -> httpx.Response:
         # Caller validates the destination first. Never follow even same-origin
         # redirects; callers handle status codes without exposing response URLs.
         with sensitive_http_request():
             try:
-                return self._client.get(url, headers=headers, params=params, follow_redirects=False)
+                return self._client.get(
+                    url, headers=headers, params=params, follow_redirects=False
+                )
+            except httpx.HTTPError:
+                raise SensitiveHttpError("Authenticated HTTP request failed") from None
+
+    def post_sensitive(
+        self, url: str, headers: Mapping[str, str], json: object
+    ) -> httpx.Response:
+        with sensitive_http_request():
+            try:
+                return self._client.post(
+                    url, headers=headers, json=json, follow_redirects=False
+                )
             except httpx.HTTPError:
                 raise SensitiveHttpError("Authenticated HTTP request failed") from None
 

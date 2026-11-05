@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block heading %}
+<a class="back-link" href="/exceptions/{{ record.id }}/analysis">← Root cause analysis</a>
+<div class="heading"><div><h1>Resolve matching batch exceptions</h1><p>{{ record.product_code }} · Batch {{ batch }}</p></div></div>
+{% endblock %}
+{% block content %}
+<section class="panel review-body">
+<p><strong>{{ eligible|length }} eligible {{ "exception" if eligible|length == 1 else "exceptions" }}</strong> {{ "shares" if eligible|length == 1 else "share" }} this product, exact batch, A7 Export operation, requesting market, location and process. {{ skipped }} already resolved or have pending work.</p>
+<p>The originating pack audit supports the shared pattern. Each exception will record that pack as the source of the evidence.</p>
+{% if eligible %}
+<form method="post" class="review-form">
+<input type="hidden" name="fingerprint" value="{{ fingerprint }}">
+<label>Local resolution reason<textarea name="reason" required maxlength="4000" rows="3">The originating pack audit records a successful Export followed by a rejected repeat at the same location. The selected batch exceptions share the same A7 Export pattern.</textarea></label>
+<details><summary>Show eligible exceptions</summary><ul>{% for item, review in eligible %}<li><a href="/exceptions/{{ item.id }}/analysis">{{ item.unique_alert_id }}</a> · {{ item.serial_number or 'Serial number not supplied' }}</li>{% endfor %}</ul></details>
+<div><button type="submit">Resolve {{ eligible|length }} {{ "exception" if eligible|length == 1 else "exceptions" }} locally</button></div>
+</form>
+{% endif %}
+</section>
+{% endblock %}

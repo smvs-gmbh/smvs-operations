@@ -178,6 +178,7 @@ class ImportSchedule(Base):
     enabled: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     timezone: Mapped[str] = mapped_column(String(100), nullable=False)
     daily_time: Mapped[str] = mapped_column(String(5), nullable=False)
+    interval_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
     next_run_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
     retry_delay_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=300)

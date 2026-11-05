@@ -1,0 +1,11 @@
+{% macro badge(product) -%}<span class="badge {{ product.match_status }}">{{ product.match_label }}</span>{%- endmacro %}
+{% macro version(number, raw) -%}{% if number is not none %}<span class="mono">{{ number }}</span>{% else %}<span class="unresolved" title="Meaning of the supplied version value is unresolved">Unresolved <span class="mono">{{ raw if raw else 'empty' }}</span></span>{% endif %}{%- endmacro %}
+{% macro pagination(p, request) %}
+<div class="pagination"><span>{{ p.first|number }}–{{ p.last|number }} of <strong>{{ p.total|number }}</strong></span><div><span>Page {{ p.page }} / {{ p.pages }}</span>{% if p.page > 1 %}<a class="page-button" href="{{ request.url.include_query_params(page=p.page-1) }}" aria-label="Previous page">←</a>{% else %}<span class="page-button disabled">←</span>{% endif %}{% if p.page < p.pages %}<a class="page-button" href="{{ request.url.include_query_params(page=p.page+1) }}" aria-label="Next page">→</a>{% else %}<span class="page-button disabled">→</span>{% endif %}</div></div>
+{% endmacro %}
+{% macro batch_table(rows, show_product=true) %}
+<div class="table-scroll"><table><thead><tr><th>Batch Id</th>{% if show_product %}<th>Product · SAI</th>{% endif %}<th>Batch version</th><th>Expiry · source value</th><th>State · NMVS</th><th class="numeric">Packs</th><th class="numeric">Active packs</th></tr></thead><tbody>
+{% for b in rows %}<tr><td class="mono strong"><a href="/batches/{{ b.id }}/source">{{ b.code }}</a><small><a class="source-row-link" href="/batches/{{ b.id }}/source">NMVS original</a></small></td>{% if show_product %}<td class="name-cell"><a href="/products/{{ b.product.id }}">{{ b.product.name or 'Swiss name not matched' }}</a><small class="mono">{{ b.product.gtin14 or b.product.source_code }}</small></td>{% endif %}<td>{{ version(b.version, b.version_text) }}</td><td class="mono">{{ b.expiry_text or '—' }}</td><td><span class="state">{{ b.state or '—' }}</span></td><td class="numeric">{{ b.pack_count|number }}</td><td class="numeric">{{ b.active_pack_count|number }}</td></tr>
+{% else %}<tr><td colspan="{{ 7 if show_product else 6 }}" class="empty-state">No matching batches found.</td></tr>{% endfor %}
+</tbody></table></div>
+{% endmacro %}

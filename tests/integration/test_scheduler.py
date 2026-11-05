@@ -161,3 +161,22 @@ def test_missing_handler_is_refused(setup):
         scheduler.configure("unknown")
     with pytest.raises(ValueError):
         scheduler.execute("unknown", manual=True)
+
+
+def test_two_hour_interval_reschedule_and_return_to_daily(setup):
+    scheduler,factory,clock,calls=setup
+    scheduler.configure('sai',interval_seconds=7200,enabled=True)
+    with factory() as s:assert s.scalar(select(ImportSchedule)).next_run_at==clock[0]+timedelta(hours=2)
+    clock[0]+=timedelta(hours=2)
+    assert len(scheduler.tick())==1 and len(calls)==1
+    with factory() as s:
+        schedule=s.scalar(select(ImportSchedule))
+        assert schedule.interval_seconds==7200 and schedule.next_run_at==clock[0]+timedelta(hours=2)
+    scheduler.configure('sai',daily_time='05:00',enabled=True)
+    with factory() as s:assert s.scalar(select(ImportSchedule)).interval_seconds is None
+
+
+@pytest.mark.parametrize('interval',[0,True,-5,59,604801])
+def test_invalid_intervals_refused(setup,interval):
+    scheduler,_,_,_=setup
+    with pytest.raises(ValueError):scheduler.configure('sai',interval_seconds=interval)

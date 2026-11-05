@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} · SMVS Operations</title>
+  <link rel="stylesheet" href="{{ request.url_for('portal_static', path='portal.css') }}?v=text-size">
+  <script src="{{ request.url_for('portal_static', path='text-size.js') }}"></script>
+</head>
+<body>
+<aside class="sidebar">
+  <a class="brand brand-official" href="/products" aria-label="SMVS Operations">
+    <span class="logo-surface"><img class="official-logo" src="{{ request.url_for('portal_static', path='smvs-operations-logo.svg') }}" alt="SMVS Operations" width="272" height="142"></span>
+  </a>
+  <div class="nav-label">WORKSPACE</div>
+  <nav aria-label="Main navigation">
+    <a class="{{ 'selected' if active == 'products' else '' }}" href="/products"><span class="nav-icon">▦</span>Products <span class="nav-arrow">›</span></a>
+    <a class="{{ 'selected' if active == 'batches' else '' }}" href="/batches"><span class="nav-icon">▤</span>Batches <span class="nav-arrow">›</span></a>
+    <a class="{{ 'selected' if active == 'organisations' else '' }}" href="/organisations"><span class="nav-icon">▥</span>Organisations <span class="nav-arrow">›</span></a>
+    <a class="{{ 'selected' if active == 'locations' else '' }}" href="/locations"><span class="nav-icon">⌖</span>Locations <span class="nav-arrow">›</span></a>
+    <a class="{{ 'selected' if active == 'activity' else '' }}" href="/activity/verification"><span class="nav-icon">▥</span>Activity <span class="nav-arrow">›</span></a>
+    <a class="{{ 'selected' if active == 'exceptions' else '' }}" href="/exceptions"><span class="nav-icon">!</span>Exceptions <span class="nav-arrow">›</span></a>
+    <a class="{{ 'selected' if active == 'intelligence' else '' }}" href="/intelligence/rules"><span class="nav-icon">✦</span>Intelligence <span class="nav-arrow">›</span></a>
+    <a class="{{ 'selected' if active == 'imports' else '' }}" href="/imports"><span class="nav-icon">↻</span>Imports <span class="nav-arrow">›</span></a>
+  </nav>
+  <div class="sidebar-foot"><span class="foot-dot"></span>Local dataset<small>Swiss Medicines Verification</small></div>
+</aside>
+<div class="workspace">
+  <header class="topbar"><span>SMVS <span class="crumb">/</span> Operational Information</span><div class="topbar-tools">
+      <div class="text-size-controls" id="text-size-controls" role="group" aria-label="Text size" hidden>
+        <button type="button" id="text-size-decrease" aria-label="Decrease text size">A−</button>
+        <output id="text-size-value" aria-live="polite">100%</output>
+        <button type="button" id="text-size-increase" aria-label="Increase text size">A+</button>
+      </div>
+      <span class="preview-label">LOCAL PREVIEW</span>
+    </div></header>
+  <main>
+    {% block heading %}{% endblock %}
+    {% if imports_section %}
+    <div class="source-strip"><span><i class="dot"></i>Import management</span><span>Daily schedules use their configured time zone</span><span>History and data periods use UTC</span></div>
+    {% elif upload_section %}
+    <div class="source-strip"><span><i class="dot"></i>Product Pack Upload Audit Trail Report</span><span>Times in UTC</span><span>Genuine Transactions</span></div>
+    {% elif pack_audit_section %}
+    <div class="source-strip"><span><i class="dot"></i>{{ 'Supplied example report' if example else 'NMVS Reporting API' }}</span><span>Pack Audit Trail Report</span><span>Times in UTC</span></div>
+    {% elif exception_section %}
+    <div class="source-strip"><span><i class="dot"></i>NMVS Exceptions API</span><span>Times in UTC</span>{% if latest_exception_publication %}<span>Last retrieved {{ latest_exception_publication.captured_at.strftime('%Y-%m-%d %H:%M') }} UTC</span>{% endif %}<span>{{ exception_total }} reported alerts</span></div>
+    {% elif activity_section %}
+    <div class="source-strip"><span><i class="dot"></i>User Activity Report</span><span>UTC calendar days</span><span>Excluding Synthetic Monitoring</span>{% if latest %}<span>History {{ first.strftime('%Y-%m-%d') }}–{{ latest.strftime('%Y-%m-%d') }}</span>{% endif %}</div>
+    {% elif publication %}
+    <div class="source-strip"><span><i class="dot"></i>Published dataset</span><span>NMVS retrieval date <strong>{{ publication.snapshot_date.strftime('%Y-%m-%d') }}</strong></span>{% if publication.sai_exported_at is defined %}<span>SAI export <strong>{{ publication.sai_exported_at.strftime('%Y-%m-%d') }}</strong></span>{% endif %}</div>
+    {% else %}
+    <div class="notice">{% if participant_section %}No organisation/location dataset has been published yet.{% else %}No product/batch dataset has been published yet.{% endif %}</div>
+    {% endif %}
+    {% block content %}{% endblock %}
+    <footer class="page-footer">SMVS Operations <span>{% if imports_section %}Import schedules, data coverage and retrieval history.{% elif upload_section %}Product and batch context · No evidence for an individual serial number.{% elif pack_audit_section %}Technical pack history · Source evidence remains separate from investigation decisions.{% elif exception_section %}NMVS source observations · Swiss product names from SAI.{% elif activity_section %}NMVS Reporting API · Exception counts are not alert counts.{% elif participant_section %}Organisations and Locations from the NMVS snapshot · Source statuses are unchanged.{% else %}Swiss names from Refdata SAI · NMVS states remain separate.{% endif %}</span></footer>
+  </main>
+</div>
+</body>
+</html>

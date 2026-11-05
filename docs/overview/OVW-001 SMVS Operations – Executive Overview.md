@@ -3,6 +3,10 @@
 
 **A conceptual architecture for next-generation operational investigations in the medicines verification ecosystem.**
 
+For the implemented local system, data coverage and remaining work, see the
+[dated implementation status](IMPLEMENTATION-STATUS.md). This executive overview
+continues to describe the broader target concept.
+
 
 
 ### The Challenge

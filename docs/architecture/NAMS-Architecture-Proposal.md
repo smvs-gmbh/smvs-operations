@@ -81,10 +81,21 @@ A national module replacing NMVS Alerts differs from replacing AMS Hub or NMVS v
 
 ## Delivery and replacement readiness
 
-1. Agree capability ownership and a representative End-user/SMVS/MAH scenario; obtain current Hub and Alert-source contracts.
-2. Continue the Product/Batch mapping foundation, keeping Alert/case identity and participant contribution needs visible in SDS-002.
-3. Implement Alert acquisition, internal case workflow and provenance; then the Hub adapter and application API against verified contracts.
-4. Build the lean portal and validate participant access, end-to-end exchange, duplicate/out-of-order delivery, failed delivery, reconciliation and evidence visibility.
-5. Plan migration from NMVS Alerts: inventory open cases, identity links, history/evidence export rights and availability, participant onboarding, notifications and support ownership. Establish one writer per workflow during parallel operation; rehearse reconciliation, rollback and cutover.
+The agreed product direction is **Shared investigation**, with the **End-user
+collaboration pilot before AMS-Hub integration**. The integrated CRM supplies
+organisation, contact and SPOC relationships. See the
+[Shared investigation and CRM proposal](Shared-Investigation-and-CRM-Proposal.md)
+for decision ownership, access and CSV migration boundaries.
+
+1. Prepare the minimal organisation/contact/SPOC directory and Investigation services.
+2. Build the End-user shared workspace and internal NMVO assessment/closure workflow,
+   using scoped passwordless access and an attributed Action Log.
+3. Validate shared findings, open questions, closure proposals and evidence visibility
+   with representative End-users. The NMVO owns the final closure decision.
+4. Verify the Hub contract and add supported MAH/OBP exchange, acknowledgement,
+   retries and reconciliation through the adapter and application API.
+5. Plan migration from NMVS Alerts: inventory open cases, identity links, history/evidence
+   availability, participant onboarding and support ownership. Establish one writer
+   per workflow during parallel operation; rehearse reconciliation and cutover.
 
 A pilot must demonstrate that no Alerts/actions are lost or duplicated, participants see only permitted information and internal evidence remains explainable. Replacement is not assumed feasible solely because the Snapshot importer exists. No migration, external write or cutover occurs as part of this documentation work.

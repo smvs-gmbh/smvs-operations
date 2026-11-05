@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 8 272 142" width="272" height="142" role="img" aria-labelledby="logo-title logo-description">
+  <title id="logo-title">SMVS Operations</title>
+  <desc id="logo-description">Typographic wordmark: SMVS in Arial Bold, Operations in Arial Regular. No symbols or images.</desc>
+  <text x="15" y="83" font-family="Arial, Helvetica, sans-serif" font-size="84" font-weight="700" font-style="normal" letter-spacing="-1.2" fill="#7c7c7c">SMV<tspan fill="#005185">S</tspan></text>
+  <text x="15" y="135" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="400" letter-spacing="2.8" fill="#005185">Operations</text>
+</svg>

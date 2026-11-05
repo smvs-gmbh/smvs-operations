@@ -1,0 +1,12 @@
+<div class="table-scroll"><table>
+<thead><tr><th scope="col">Alert</th><th scope="col">Reported (UTC)</th><th scope="col">Operation</th><th scope="col">Evaluation</th></tr></thead>
+<tbody>
+{% for row in results %}
+<tr>
+<td><a href="/exceptions/{{ row.record.id }}/analysis">{{ row.record.unique_alert_id }}</a></td>
+<td>{{ row.record.alert_at or 'Not supplied' }}</td>
+<td>{{ row.record.evidence.get('attemptedOperation') or 'Not supplied' }}</td>
+<td>{{ row.explanation }}{% if row.sequence %} <a href="/exceptions/{{ row.record.id }}/audit-trail">Pack audit trail →</a>{% endif %}</td>
+</tr>
+{% else %}<tr><td colspan="4">No matching exceptions in this preview.</td></tr>{% endfor %}
+</tbody></table></div>

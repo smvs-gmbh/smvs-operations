@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block heading %}
+<a class="back-link" href="/exceptions">← Exceptions</a>
+<div class="heading"><div><h1>Preview rule on selected exceptions</h1><p>A7 repeated operation · Scope version {{ scope.version }} · Evaluator version {{ evaluator_version }}</p></div></div>
+{% endblock %}
+{% block content %}
+<section class="panel review-body">
+<p>{{ eligible|length }} of {{ results|length }} selected exceptions are eligible for local resolution.</p>
+{% include 'intelligence_results.html' %}
+{% if eligible %}
+<form method="post" class="review-form">
+<input type="hidden" name="confirm" value="yes">
+<input type="hidden" name="fingerprint" value="{{ fingerprint }}">
+{% for id, target in targets.items() %}<input type="hidden" name="target_{{ id }}" value="{{ target[0] }}:{{ target[1] }}">{% endfor %}
+<label>Local resolution reason<textarea name="reason" rows="2" required maxlength="4000">The retained pack audit shows a successful state change and a rejected repeat at the same location.</textarea></label>
+<div><button type="submit">Resolve {{ eligible|length }} locally</button></div>
+</form>
+{% endif %}
+</section>
+{% endblock %}

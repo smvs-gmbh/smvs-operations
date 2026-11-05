@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% import 'macros.html' as ui %}
+{% macro audit_value(value) %}
+{% if value is mapping %}<pre class="work-audit-value">{{ value|tojson(indent=2) }}</pre>
+{% elif value is not none and value != '' %}<div class="work-audit-value">{{ value }}</div>
+{% else %}—{% endif %}
+{% endmacro %}
+{% block heading %}
+<a class="back-link" href="/exceptions">← Exceptions</a>
+<div class="heading"><div><div class="eyebrow">LOCAL WORKFLOW</div><h1>Audit trail</h1><p>{{ record.unique_alert_id }} · Changes to this exception in Operations</p></div></div>
+{% endblock %}
+{% block content %}
+{% set exception_tab='work_audit' %}{% include 'exception_tabs.html' %}
+<section class="panel">
+  <div class="panel-heading"><h2>Action history</h2><span class="subtle">Newest first · UTC</span></div>
+  {% for event in events %}
+  {% set before_status = event.before.get('status', 'open') %}
+  {% set after_status = event.after.get('status', 'open') %}
+  {% set decision = event.after.get('resolution') or {} %}
+  {% set resolved = after_status == 'resolved' and (before_status != 'resolved' or event.before.get('resolution') != decision) %}
+  {% set reopened = before_status == 'resolved' and after_status == 'open' %}
+  <article class="review-body review-event">
+    <strong>{% if resolved %}Resolved locally{% elif reopened %}Reopened{% elif before_status != after_status %}Work status changed{% else %}Analysis saved{% endif %}</strong>
+    <p><time datetime="{{ event.occurred_at.isoformat() }}Z">{{ event.occurred_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</time> · {{ event.actor }} · Entry {{ event.id }}</p>
+    <p><strong>Work status</strong> {{ before_status|replace('_',' ')|title }} → {{ after_status|replace('_',' ')|title }}</p>
+    {% if resolved or reopened %}
+    <p><strong>Reason</strong> {{ decision.get('reopened_reason') if reopened else decision.get('reason') or event.after.get('review_reason') or 'Not recorded' }}</p>
+    {% if resolved and decision.get('basis') %}<p><strong>Basis</strong> {{ decision.basis|replace('_',' ')|capitalize }}</p>{% endif %}
+    {% endif %}
+    {% if event.originating_exception_id != record.id %}<p><a href="/exceptions/{{ event.originating_exception_id }}/work-audit">Originating exception {{ event.originating_exception_id }} →</a></p>{% endif %}
+    {% if decision.get('rule_id') %}
+    <p><strong>Rule</strong> {{ decision.rule_id }} · Scope version {{ decision.rule_version }} · Evaluator version {{ decision.evaluator_version }}</p>
+    {% endif %}
+    {% if decision.get('pack_audit_report_id') %}
+    <p><a href="/pack-audit/reports/{{ decision.pack_audit_report_id }}/original">Download pack audit evidence →</a>{% if decision.get('pack_audit_scope') == 'originating_pack_only' %} · Evidence for the originating pack{% endif %}</p>
+    {% endif %}
+    <details>
+      <summary>Before and after</summary>
+      <div class="table-scroll"><table>
+        <thead><tr><th scope="col">Field</th><th scope="col">Before</th><th scope="col">After</th></tr></thead>
+        <tbody>
+          <tr><td>Work status</td><td>{{ before_status|replace('_',' ')|title }}</td><td>{{ after_status|replace('_',' ')|title }}</td></tr>
+          {% for field in audit_fields if event.before.get(field) != event.after.get(field) %}
+          <tr><td>{{ field|replace('_',' ')|capitalize }}</td><td>{{ audit_value(event.before.get(field)) }}</td><td>{{ audit_value(event.after.get(field)) }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table></div>
+    </details>
+  </article>
+  {% else %}<p class="review-body">No local actions recorded for this exception.</p>{% endfor %}
+  {% if events %}{{ ui.pagination(pagination, request) }}{% endif %}
+</section>
+{% endblock %}
