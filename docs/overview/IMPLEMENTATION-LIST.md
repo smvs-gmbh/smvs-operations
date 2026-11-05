@@ -74,3 +74,11 @@ and [CRM proposal](../architecture/Shared-Investigation-and-CRM-Proposal.md).
   Review candidate links to Contacts and End Users.
 - [ ] Confirm supplier identity and editable fields before creating maintained
   supplier records and linking suppliers to the Software Product catalogue.
+
+## Portal identity and access
+
+- [x] Add the opt-in internal passkey pilot with invitations, user lifecycle,
+  Administrator and NMVO roles, and server-side access checks.
+- [ ] Add recovery codes, supervised recovery and authentication audit events.
+- [ ] Store CRM column preferences per authenticated user and directory.
+- [ ] Release MAH reports to explicitly assigned SAI holders after review.

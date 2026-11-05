@@ -16,7 +16,7 @@ if (actionsForm && selectPage) {
         selectPage.checked = selected === rows.length;
         selectPage.indeterminate = selected > 0 && selected < rows.length;
         count.textContent = selected + " selected on this page";
-        previewButton.disabled = selected === 0;
+        if (previewButton) previewButton.disabled = selected === 0;
         if (reopenButton) {
             reopenButton.disabled = selected === 0 || rows.some(row => row.checked && row.dataset.resolved !== "yes");
         }

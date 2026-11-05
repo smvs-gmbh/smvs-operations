@@ -3,37 +3,54 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ title }} · SMVS Operations</title>
-  <link rel="stylesheet" href="{{ request.url_for('portal_static', path='portal.css') }}?v=list-layout">
+  <link rel="stylesheet" href="{{ request.url_for('portal_static', path='portal.css') }}?v=portal-account">
   <script src="{{ request.url_for('portal_static', path='text-size.js') }}"></script>
 </head>
 <body>
 <aside class="sidebar">
-  <a class="brand brand-official" href="/products" aria-label="SMVS Operations">
+  <a class="brand brand-official" href="/" aria-label="SMVS Operations">
     <span class="logo-surface"><img class="official-logo" src="{{ request.url_for('portal_static', path='smvs-operations-logo.svg') }}" alt="SMVS Operations" width="272" height="142"></span>
   </a>
   <div class="nav-label">WORKSPACE</div>
+  {% set account = request.state.portal_user if request.state.portal_auth_enabled else none %}
   <nav aria-label="Main navigation">
+    {% if not account or account.is_nmvo %}
     <a class="{{ 'selected' if active == 'products' else '' }}" href="/products"><span class="nav-icon">▦</span>Products <span class="nav-arrow">›</span></a>
     <a class="{{ 'selected' if active == 'batches' else '' }}" href="/batches"><span class="nav-icon">▤</span>Batches <span class="nav-arrow">›</span></a>
     <a class="{{ 'selected' if active == 'organisations' else '' }}" href="/organisations"><span class="nav-icon">▥</span>Organisations <span class="nav-arrow">›</span></a>
     <a class="{{ 'selected' if active == 'locations' else '' }}" href="/locations"><span class="nav-icon">⌖</span>Locations <span class="nav-arrow">›</span></a>
     <a class="{{ 'selected' if active == 'activity' else '' }}" href="/activity/verification"><span class="nav-icon">▥</span>Activity <span class="nav-arrow">›</span></a>
     <a class="{{ 'selected' if active == 'exceptions' else '' }}" href="/exceptions"><span class="nav-icon">!</span>Exceptions <span class="nav-arrow">›</span></a>
-    <a class="{{ 'selected' if active == 'intelligence' else '' }}" href="/intelligence/rules"><span class="nav-icon">✦</span>Intelligence <span class="nav-arrow">›</span></a>
     <a class="{{ 'selected' if active == 'mah_reports' else '' }}" href="/reports/mah"><span class="nav-icon">▤</span>MAH reports <span class="nav-arrow">›</span></a>
     <a class="{{ 'selected' if active == 'crm' else '' }}" href="/crm/mahs"><span class="nav-icon">▥</span>CRM <span class="nav-arrow">›</span></a>
+    {% endif %}
+    {% if not account or account.is_admin %}
+    <a class="{{ 'selected' if active == 'intelligence' else '' }}" href="/intelligence/rules"><span class="nav-icon">✦</span>Intelligence <span class="nav-arrow">›</span></a>
     <a class="{{ 'selected' if active == 'imports' else '' }}" href="/imports"><span class="nav-icon">↻</span>Imports <span class="nav-arrow">›</span></a>
+    {% if account %}<a class="{{ 'selected' if active == 'users' else '' }}" href="/admin/users">Users <span class="nav-arrow">›</span></a>{% endif %}
+    {% endif %}
   </nav>
   <div class="sidebar-foot"><span class="foot-dot"></span>Local dataset<small>Swiss Medicines Verification</small></div>
 </aside>
 <div class="workspace">
-  <header class="topbar"><span>SMVS <span class="crumb">/</span> Operational Information</span><div class="topbar-tools">
+  <header class="topbar{{ ' topbar-signed-in' if account }}"><span class="topbar-brand">SMVS <span class="crumb">/</span> Operational Information</span><div class="topbar-tools">
       <div class="text-size-controls" id="text-size-controls" role="group" aria-label="Text size" hidden>
         <button type="button" id="text-size-decrease" aria-label="Decrease text size">A−</button>
         <output id="text-size-value" aria-live="polite">100%</output>
         <button type="button" id="text-size-increase" aria-label="Increase text size">A+</button>
       </div>
-      <span class="preview-label">LOCAL PREVIEW</span>
+      {% if account %}
+      <div class="portal-account" role="group" aria-label="Signed-in account">
+        <div class="portal-account-identity">
+          <span>Signed in as</span>
+          <strong>{{ account.email }}</strong>
+        </div>
+        <div class="portal-account-actions">
+          <form method="post" action="/auth/backup-passkey"><input type="hidden" name="action" value="add"><button type="submit" class="portal-account-button">Add passkey</button></form>
+          <form method="post" action="/auth/logout"><input type="hidden" name="action" value="logout"><button type="submit" class="portal-account-button portal-sign-out">Sign out</button></form>
+        </div>
+      </div>
+      {% else %}<span class="preview-label">LOCAL PREVIEW</span>{% endif %}
     </div></header>
   <main>
     {% block heading %}{% endblock %}
@@ -44,6 +61,7 @@
       <a href="{{ path }}"{% if current %} aria-current="{{ 'page' if request.url.path == path else 'location' }}"{% endif %}>{{ label }}</a>
       {% endfor %}
     </nav>
+    {% elif active == "users" %}
     {% elif imports_section %}
     <div class="source-strip"><span><i class="dot"></i>Import management</span><span>Daily schedules use their configured time zone</span><span>History and data periods use UTC</span></div>
     {% elif upload_section %}

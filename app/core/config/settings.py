@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     app_name: str = "SMVS Operations"
     environment: str = "development"
     log_level: str = "INFO"
+    portal_auth_enabled: bool = False
+    portal_auth_origin: str = "http://localhost:8010"
     db_host: str = "127.0.0.1"
     db_port: int = 3306
     db_name: str

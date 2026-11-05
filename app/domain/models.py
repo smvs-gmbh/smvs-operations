@@ -696,3 +696,42 @@ class CRMEndUser(Base):
     version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
 
     __mapper_args__: ClassVar[dict] = {"version_id_col": version}
+
+
+AUTH_TABLES = {"portal_users", "portal_passkeys", "portal_auth_tokens"}
+DOMAIN_TABLES.update(AUTH_TABLES)
+
+
+class PortalUser(Base):
+    __tablename__ = "portal_users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(254), unique=True)
+    handle: Mapped[str] = mapped_column(String(64), unique=True)
+    is_admin: Mapped[int] = mapped_column(Integer)
+    is_nmvo: Mapped[int] = mapped_column(Integer)
+    disabled_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+class PortalPasskey(Base):
+    __tablename__ = "portal_passkeys"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("portal_users.id", ondelete="CASCADE"))
+    credential_id: Mapped[str] = mapped_column(Text)
+    public_key: Mapped[str] = mapped_column(Text)
+    sign_count: Mapped[int] = mapped_column(BigInteger)
+
+
+class PortalAuthToken(Base):
+    __tablename__ = "portal_auth_tokens"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    kind: Mapped[str] = mapped_column(String(20))
+    user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("portal_users.id", ondelete="CASCADE"), index=True
+    )
+    challenge: Mapped[str | None] = mapped_column(String(64))
+    invitation_id: Mapped[str | None] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)

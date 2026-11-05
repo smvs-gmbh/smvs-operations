@@ -6,6 +6,8 @@ from fastapi.staticfiles import StaticFiles
 
 from app.core.config import get_settings
 from app.core.logging import configure_logging
+from app.portal.auth_access import install_portal_access
+from app.portal.auth_routes import router as auth_router
 from app.portal.participant_routes import router as participant_router
 from app.portal.routes import router as portal_router
 from app.portal.activity_routes import router as activity_router
@@ -22,7 +24,9 @@ configure_logging(settings.log_level)
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title=settings.app_name)
+app = FastAPI(title=settings.app_name, docs_url=None, redoc_url=None, openapi_url=None)
+install_portal_access(app, settings)
+app.include_router(auth_router)
 app.mount(
     "/portal-static",
     StaticFiles(directory=str(Path(__file__).parent / "portal/static")),

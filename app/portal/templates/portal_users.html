@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% import 'macros.html' as ui %}
+{% block heading %}{{ ui.list_heading('ADMINISTRATION', 'Users', 'Invite internal users and manage their access to SMVS Operations.') }}{% endblock %}
+{% block content %}
+{% if invitation %}
+<section class="panel review-body review-form">
+<h2>Invitation ready</h2>
+<p>Share this single-use link with the intended recipient through a trusted channel. It expires in 24 hours.</p>
+<label>Invitation link<input value="{{ invitation }}" readonly></label>
+</section>
+{% endif %}
+<section class="panel review-body review-form">
+<h2>Invite user</h2>
+<form method="post" action="/admin/users" class="review-controls">
+<label>Email<input type="email" name="email" maxlength="254" required></label>
+<label class="resolve-confirm"><input type="checkbox" name="admin" value="yes"> Administrator</label>
+<label class="resolve-confirm"><input type="checkbox" name="nmvo" value="yes" checked> NMVO User</label>
+<button type="submit">Create invitation</button>
+</form>
+</section>
+<section class="panel">
+<div class="panel-heading"><h2>Internal users</h2></div>
+<div class="table-scroll"><table>
+<thead><tr><th>Email</th><th>Access</th><th>Roles and actions</th></tr></thead>
+<tbody>{% for user in users %}
+<tr><td>{{ user.email }}</td><td>{{ 'Disabled' if user.disabled_at else 'Enabled' }}</td>
+<td>{% if user.id != request.state.portal_user.id %}
+<form method="post" action="/admin/users/{{ user.id }}" class="review-form">
+<div class="review-controls">
+<label class="resolve-confirm"><input type="checkbox" name="admin" value="yes" {{ 'checked' if user.is_admin }}> Administrator</label>
+<label class="resolve-confirm"><input type="checkbox" name="nmvo" value="yes" {{ 'checked' if user.is_nmvo }}> NMVO User</label>
+<button name="command" value="roles" type="submit">Save roles</button>
+<button name="command" value="{{ 'enable' if user.disabled_at else 'disable' }}" type="submit">{{ 'Enable' if user.disabled_at else 'Disable' }}</button>
+{% if user.id not in enrolled and not user.disabled_at %}<button name="command" value="reinvite" type="submit">New invitation</button>{% endif %}
+</div>
+</form>
+{% else %}{{ 'Administrator' if user.is_admin }}{{ ' · NMVO User' if user.is_nmvo }} · Your account{% endif %}</td></tr>
+{% endfor %}</tbody>
+</table></div>
+</section>
+{% endblock %}

@@ -266,10 +266,17 @@ def exception_source(request: Request, identifier: int, session: DbSession):
     )
 
 
-async def review_form(request):
+async def review_form(request, *, expected_origin=None):
     url = urlsplit(str(request.url))
-    if request.headers.get("origin") != f"{url.scheme}://{url.netloc}":
-        raise HTTPException(403, "Use the local exception review form.")
+    if request.headers.get("origin") != (
+        expected_origin or f"{url.scheme}://{url.netloc}"
+    ):
+        message = (
+            "Open the portal at its configured address and try again."
+            if expected_origin
+            else "Use the local exception review form."
+        )
+        raise HTTPException(403, message)
     if (
         request.headers.get("content-type", "").split(";", 1)[0]
         != "application/x-www-form-urlencoded"

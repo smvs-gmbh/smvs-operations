@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in · SMVS Operations</title>
+<link rel="stylesheet" href="{{ request.url_for('portal_static', path='portal.css') }}?v=portal-auth">
+<script src="{{ request.url_for('portal_static', path='portal-passkey.js') }}" defer></script>
+</head>
+<body>
+<main class="portal-login">
+<section class="panel review-body review-form">
+<div class="eyebrow">SMVS Operations</div>
+<h1 id="passkey-title">Sign in</h1>
+<p id="passkey-intro">Use a passkey registered for this portal.</p>
+<div><button id="passkey-action" type="button">Sign in with a passkey</button></div>
+<p id="passkey-status" role="status"></p>
+</section>
+</main>
+</body>
+</html>

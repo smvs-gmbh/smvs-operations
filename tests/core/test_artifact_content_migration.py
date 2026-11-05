@@ -206,7 +206,11 @@ def test_upgrade_matches_models_and_preserves_all_ids_and_provenance(migration_d
     end_user_management_migration = load_migration("0026_crm_end_user_management")
     end_user_management_migration.op = Operations(MigrationContext.configure(connection))
     end_user_management_migration.upgrade()
+    auth_migration = load_migration("0027_portal_auth")
+    auth_migration.op = Operations(MigrationContext.configure(connection))
+    auth_migration.upgrade()
     assert compare_metadata(MigrationContext.configure(connection), Base.metadata) == []
+    auth_migration.downgrade()
     end_user_management_migration.downgrade()
     end_users_migration.downgrade()
     end_user_review_migration.downgrade()
