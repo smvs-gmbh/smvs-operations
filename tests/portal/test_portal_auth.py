@@ -28,6 +28,63 @@ def client_data(kind, challenge):
     return json.dumps({"type": kind, "challenge": challenge, "origin": ORIGIN}).encode()
 
 
+def registration_response(invite, options, credential_id):
+    private = ec.generate_private_key(ec.SECP256R1())
+    key = private.public_key().public_numbers()
+    cose = cbor2.dumps(
+        {
+            1: 2,
+            3: -7,
+            -1: 1,
+            -2: key.x.to_bytes(32, "big"),
+            -3: key.y.to_bytes(32, "big"),
+        }
+    )
+    attested = (
+        b"\x00" * 16 + len(credential_id).to_bytes(2, "big") + credential_id + cose
+    )
+    authenticator = RP_HASH + b"\x45" + bytes(4) + attested
+    attestation = cbor2.dumps({"fmt": "none", "attStmt": {}, "authData": authenticator})
+    identifier = bytes_to_base64url(credential_id)
+    credential = {"id": identifier, "rawId": identifier, "type": "public-key"}
+    registration = {
+        "invitation": invite,
+        "credential": {
+            **credential,
+            "response": {
+                "clientDataJSON": bytes_to_base64url(
+                    client_data("webauthn.create", options["challenge"])
+                ),
+                "attestationObject": bytes_to_base64url(attestation),
+            },
+        },
+    }
+    return private, credential, registration
+
+
+def assertion_response(client, private, credential, options):
+    challenge = client.post("/auth/signin/options", json={}, headers=HEADERS).json()[
+        "challenge"
+    ]
+    data = client_data("webauthn.get", challenge)
+    authenticator = RP_HASH + b"\x05" + (1).to_bytes(4, "big")
+    signature = private.sign(
+        authenticator + sha256(data).digest(), ec.ECDSA(hashes.SHA256())
+    )
+    assertion = {
+        "credential": {
+            **credential,
+            "response": {
+                "clientDataJSON": bytes_to_base64url(data),
+                "authenticatorData": bytes_to_base64url(authenticator),
+                "signature": bytes_to_base64url(signature),
+                "userHandle": options["user"]["id"],
+            },
+        }
+    }
+    return assertion
+
+
 def test_passkey_enrolment_signin_role_guards_and_revocation(portal, monkeypatch):  # noqa: F811
     _, factory = portal
     settings = SimpleNamespace(
@@ -78,39 +135,9 @@ def test_passkey_enrolment_signin_role_guards_and_revocation(portal, monkeypatch
         options = client.post(
             "/auth/enrol/options", json={"invitation": invite}, headers=HEADERS
         ).json()
-        private = ec.generate_private_key(ec.SECP256R1())
-        key = private.public_key().public_numbers()
-        cose = cbor2.dumps(
-            {
-                1: 2,
-                3: -7,
-                -1: 1,
-                -2: key.x.to_bytes(32, "big"),
-                -3: key.y.to_bytes(32, "big"),
-            }
+        private, credential, registration = registration_response(
+            invite, options, b"virtual-credential"
         )
-        credential_id = b"virtual-credential"
-        attested = (
-            b"\x00" * 16 + len(credential_id).to_bytes(2, "big") + credential_id + cose
-        )
-        authenticator = RP_HASH + b"\x45" + bytes(4) + attested
-        attestation = cbor2.dumps(
-            {"fmt": "none", "attStmt": {}, "authData": authenticator}
-        )
-        identifier = bytes_to_base64url(credential_id)
-        credential = {"id": identifier, "rawId": identifier, "type": "public-key"}
-        registration = {
-            "invitation": invite,
-            "credential": {
-                **credential,
-                "response": {
-                    "clientDataJSON": bytes_to_base64url(
-                        client_data("webauthn.create", options["challenge"])
-                    ),
-                    "attestationObject": bytes_to_base64url(attestation),
-                },
-            },
-        }
         result = client.post("/auth/enrol/finish", json=registration, headers=HEADERS)
         assert result.status_code == 200, result.text
         assert "HttpOnly" in result.headers["set-cookie"]
@@ -127,6 +154,27 @@ def test_passkey_enrolment_signin_role_guards_and_revocation(portal, monkeypatch
             'action="/auth/logout"' in products.text
             and ">Sign out</button>" in products.text
         )
+        backup_headers = {**HEADERS, "Accept": "application/json"}
+        backup = client.post(
+            "/auth/backup-passkey", data={"action": "add"}, headers=backup_headers
+        )
+        assert backup.status_code == 200
+        backup_url = backup.json()["next"]
+        assert backup_url.startswith("/auth/login#")
+        backup_token = backup_url.split("#", 1)[1]
+        backup_options = client.post(
+            "/auth/enrol/options", json={"invitation": backup_token}, headers=HEADERS
+        ).json()
+        assert backup_options["excludeCredentials"][0]["id"] == credential["id"]
+        backup_key, backup_credential, backup_response = registration_response(
+            backup_token, backup_options, b"backup-credential"
+        )
+        assert (
+            client.post(
+                "/auth/enrol/finish", json=backup_response, headers=HEADERS
+            ).status_code
+            == 200
+        )
         assert client.get("/admin/users").status_code == 403
         assert client.get("/imports").status_code == 403
         assert (
@@ -137,25 +185,7 @@ def test_passkey_enrolment_signin_role_guards_and_revocation(portal, monkeypatch
         )
         assert client.get("/products").status_code == 303
 
-        challenge = client.post(
-            "/auth/signin/options", json={}, headers=HEADERS
-        ).json()["challenge"]
-        data = client_data("webauthn.get", challenge)
-        authenticator = RP_HASH + b"\x05" + (1).to_bytes(4, "big")
-        signature = private.sign(
-            authenticator + sha256(data).digest(), ec.ECDSA(hashes.SHA256())
-        )
-        assertion = {
-            "credential": {
-                **credential,
-                "response": {
-                    "clientDataJSON": bytes_to_base64url(data),
-                    "authenticatorData": bytes_to_base64url(authenticator),
-                    "signature": bytes_to_base64url(signature),
-                    "userHandle": options["user"]["id"],
-                },
-            }
-        }
+        assertion = assertion_response(client, private, credential, options)
         assert (
             client.post(
                 "/auth/signin/finish", json=assertion, headers=HEADERS
@@ -167,6 +197,15 @@ def test_passkey_enrolment_signin_role_guards_and_revocation(portal, monkeypatch
                 "/auth/signin/finish", json=assertion, headers=HEADERS
             ).status_code
             == 403
+        )
+        backup_assertion = assertion_response(
+            client, backup_key, backup_credential, backup_options
+        )
+        assert (
+            client.post(
+                "/auth/signin/finish", json=backup_assertion, headers=HEADERS
+            ).status_code
+            == 200
         )
         nmvo_session = client.cookies[auth.SESSION_COOKIE]
 

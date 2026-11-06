@@ -46,10 +46,12 @@
           <strong>{{ account.email }}</strong>
         </div>
         <div class="portal-account-actions">
-          <form method="post" action="/auth/backup-passkey"><input type="hidden" name="action" value="add"><button type="submit" class="portal-account-button">Add passkey</button></form>
+          <form method="post" action="/auth/backup-passkey" id="backup-passkey-form"><input type="hidden" name="action" value="add"><button type="submit" class="portal-account-button">Add passkey</button></form>
           <form method="post" action="/auth/logout"><input type="hidden" name="action" value="logout"><button type="submit" class="portal-account-button portal-sign-out">Sign out</button></form>
         </div>
       </div>
+      <div id="backup-passkey-feedback" role="status" hidden><span></span> <a href="/auth/login" hidden>Sign in →</a></div>
+      <script src="{{ request.url_for('portal_static', path='backup-passkey.js') }}?v=passkey-response" defer></script>
       {% else %}<span class="preview-label">LOCAL PREVIEW</span>{% endif %}
     </div></header>
   <main>

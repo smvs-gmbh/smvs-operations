@@ -255,11 +255,10 @@ async def backup_passkey(request: Request, session: DbSession):
         raise HTTPException(403, "This account is unavailable.")
     raw = auth.issue_token(session, "invite", timedelta(minutes=5), user_id=user.id)
     session.commit()
-    return RedirectResponse(
-        auth.invitation_url(settings.portal_auth_origin, raw),
-        status_code=303,
-        headers=PRIVATE,
-    )
+    next_url = f"/auth/login#{raw}"
+    if request.headers.get("accept") == "application/json":
+        return JSONResponse({"next": next_url}, headers=PRIVATE)
+    return RedirectResponse(next_url, status_code=303, headers=PRIVATE)
 
 
 def user_admin(request, session, invitation=None):
