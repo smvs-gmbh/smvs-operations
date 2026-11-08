@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% import 'macros.html' as ui %}
+{% block heading %}{{ ui.list_heading('CRM · AGREEMENTS', 'MAH Agreements', 'Review cooperation agreements, MAH assignments and archived documents.', action_url='/crm/agreements/new', action_label='New agreement') }}{% endblock %}
+{% block content %}
+{{ ui.crm_list_status(imported_at) }}
+{{ ui.list_metrics('Agreement overview', [('Agreements', total|number, 'Imported cooperation agreements'), ('Unassigned', unlinked|number, 'Agreements without a MAH'), ('Matching results', pagination.total|number, 'With the current filters')]) }}
+<section class="panel">
+<div class="panel-heading"><h2>Agreement directory</h2></div>
+<form method="get" class="review-body review-form list-filters" role="search" data-crm-filters="agreements">
+<div class="review-controls">
+<label>Contract ID or MAH<input name="q" value="{{ filters.get('q', '') }}" maxlength="150"></label>
+<label>Status<select name="status"><option value="">All statuses</option>{% for status in statuses %}<option value="{{ status }}" {{ 'selected' if filters.get('status') == status }}>{{ status }}</option>{% endfor %}</select></label>
+<label>MAH assignment<select name="link">
+{% for value, label in [('', 'All assignments'), ('linked', 'Linked'), ('unlinked', 'Unassigned'), ('ambiguous', 'Multiple candidates')] %}
+<option value="{{ value }}" {{ 'selected' if filters.get('link', '') == value }}>{{ label }}</option>
+{% endfor %}
+</select></label>
+<label>Attachments<select name="attachments">
+{% for value, label in [('', 'All attachments'), ('missing', 'No PDF'), ('multiple', 'Multiple PDFs')] %}
+<option value="{{ value }}" {{ 'selected' if filters.get('attachments', '') == value }}>{{ label }}</option>
+{% endfor %}
+</select></label>
+<button type="submit">Filter</button>
+</div>
+</form>
+<div class="table-scroll"><table data-crm-columns="agreements">
+<thead><tr><th data-column="contract_id">Contract ID</th><th data-column="contractor">Contractor</th><th data-column="status">Status</th><th data-column="mah">Assigned MAH</th><th data-column="pdfs">PDFs</th>{{ ui.crm_extra_headers(crm_extra_columns) }}</tr></thead>
+<tbody>
+{% for (agreement,) in rows %}
+<tr><td><a href="/crm/agreements/{{ agreement.id }}{{ filter_query(request, 'q', 'status', 'link', 'attachments') }}">{{ agreement.contract_id }}</a></td>
+<td>{{ agreement.contractor }}</td><td>{{ agreement.status }}</td>
+<td>{% if agreement.mahs %}{% for mah in agreement.mahs %}<a href="/crm/mahs/{{ mah.id }}">{{ mah.name }} →</a>{% if not loop.last %}<br>{% endif %}{% endfor %}{% elif candidates[agreement.contract_id]|length > 1 %}Multiple candidates{% else %}Unassigned{% endif %}</td>
+<td>{{ counts[agreement.contract_id] }}</td>{{ ui.crm_extra_cells(crm_extra_columns, crm_field_cells[agreement.id]) }}</tr>
+{% else %}<tr><td colspan="5">No agreements for this selection.</td></tr>{% endfor %}
+</tbody></table></div>
+{{ ui.pagination(pagination, request) }}
+</section>
+{% endblock %}

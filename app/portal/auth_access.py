@@ -74,7 +74,7 @@ def install_portal_access(app, settings):
         request.state.portal_user = user
         if path == "/" and not user.is_nmvo:
             return RedirectResponse("/admin/users", status_code=303)
-        if not in_section(path, "/auth"):
+        if path != "/user-guide" and not in_section(path, "/auth"):
             admin_section = any(
                 in_section(path, section)
                 for section in ("/admin", "/imports", "/intelligence")

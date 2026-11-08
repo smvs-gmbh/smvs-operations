@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% import 'macros.html' as ui %}
+{% block heading %}
+{{ ui.list_heading('TEST WORKSPACE · SELF-DECLARATIONS', 'Test submission received', mah_name) }}
+{% endblock %}
+{% block content %}
+<section class="panel review-body">
+<h2>Annual fee for {{ data_year + 1 }}</h2>
+<dl class="mah-values">
+<div><dt>Data year</dt><dd>{{ data_year }}</dd></div>
+<div><dt>RX packs sold</dt><dd>{{ packs|number }}</dd></div>
+<div><dt>RX sales group</dt><dd>{{ sales_group }}</dd></div>
+<div><dt>Base fee</dt><dd>CHF {{ fees.base_amount }}</dd></div>
+<div><dt>Quantity fee · {{ fees.quantity_group }}</dt><dd>CHF {{ fees.quantity_amount }}</dd></div>
+<div><dt>Sales fee</dt><dd>CHF {{ fees.sales_amount }}</dd></div>
+<div><dt>Calculated annual fee (excl. VAT)</dt><dd><strong>CHF {{ fees.total }}</strong></dd></div>
+{% if po_number %}<div><dt>Purchase order number</dt><dd>{{ po_number }}</dd></div>{% endif %}
+</dl>
+<p class="subtle">Simulation only. No invoice is issued.</p>
+</section>
+{% endblock %}

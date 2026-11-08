@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% import 'macros.html' as ui %}
+{% block heading %}
+{{ ui.record_bar(record_nav) }}
+{{ ui.list_heading('CRM · COOPERATION AGREEMENT', agreement.contract_id, agreement.contractor) }}
+{% endblock %}
+{% block content %}
+{% set action = '/crm/agreements/' ~ agreement.id ~ filter_query(request, 'q', 'status', 'link', 'attachments') %}
+<section class="panel review-body review-form">
+<h2>Agreement details</h2>
+<form method="post" action="{{ action }}" class="review-form">
+<div class="review-controls">
+<label>Contract status<select name="status" required>
+{% for status in agreement_statuses %}<option value="{{ status }}" {{ 'selected' if agreement.status == status }}>{{ status }}</option>{% endfor %}
+</select></label>
+<label>Signing date<input type="date" name="signing_date" value="{{ agreement.signing_date or '' }}"></label>
+<button type="submit" class="portal-button" name="command" value="details">Save details</button>
+</div>
+</form>
+<dl class="mah-values">
+{% for label, value in [('Start date', source.get('Start Date')), ('Termination date', source.get('Termination Date'))] %}
+<div><dt>{{ label }}</dt><dd>{{ value or '—' }}</dd></div>
+{% endfor %}
+</dl>
+</section>
+<section class="panel review-body review-form">
+<h2>MAH assignment</h2>
+{% if candidates %}<p class="subtle">Airtable candidates</p><ul>{% for mah in candidates %}<li><a href="/crm/mahs/{{ mah.id }}">{{ mah.name }} →</a></li>{% endfor %}</ul>{% endif %}
+<form method="post" action="{{ action }}" class="review-form">
+<div class="review-controls">
+<fieldset class="analysis-edit-fields contact-options">
+<legend>Assigned MAHs</legend>
+{% set candidate_ids = candidates|map(attribute='id')|list %}
+{% for group in [true, false] %}
+{% for mah in mahs if (mah.id in candidate_ids or mah.id in assigned_mah_ids) == group %}
+<label class="resolve-confirm"><input type="checkbox" name="mah:{{ mah.id }}" value="yes" {{ 'checked' if mah.id in assigned_mah_ids }}>
+{{ mah.name }}{% if mah.archived_at %} (archived){% endif %}{% if mah.id in candidate_ids %} · Airtable candidate{% endif %}</label>
+{% endfor %}
+{% endfor %}
+</fieldset>
+<button type="submit" class="portal-button" name="command" value="assign">Save assignments</button>
+</div>
+</form>
+</section>
+<section class="panel review-body review-form" id="agreement-documents">
+<h2>Agreement documents</h2>
+{% if request.state.portal_user %}
+<script src="{{ request.url_for('portal_static', path='crm-agreement-upload.js') }}" type="module"></script>
+<form method="post" action="/crm/agreements/{{ agreement.id }}/pdf" data-agreement-upload hidden>
+<div class="review-controls">
+<label>PDF attachment<input type="file" accept=".pdf,application/pdf" required></label>
+<button type="submit" class="portal-button portal-button-secondary">Attach PDF</button>
+</div>
+<p role="status"></p>
+</form>
+{% endif %}
+{% if documents %}
+<div class="table-scroll"><table><thead><tr><th>Document</th><th>Status</th><th>Action</th></tr></thead><tbody>
+{% for id, metadata, excluded in documents %}
+<tr><td><a href="/crm/agreements/{{ agreement.id }}/pdf/{{ id }}">{{ metadata.filename }} →</a></td>
+<td>{{ 'Excluded' if excluded else 'Attached' }}</td>
+<td><form method="post" action="{{ action }}">
+<input type="hidden" name="artifact_id" value="{{ id }}">
+<button type="submit" class="portal-button portal-button-secondary" name="command" value="{{ 'restore' if excluded else 'exclude' }}">{{ 'Restore attachment' if excluded else 'Exclude attachment' }}</button>
+</form></td></tr>
+{% endfor %}
+</tbody></table></div>
+{% else %}<p>No archived PDFs.</p>{% endif %}
+</section>
+{% endblock %}

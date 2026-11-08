@@ -7,20 +7,30 @@
 {{ ui.list_metrics('MAH overview', [('MAHs in this directory', directory_total|number, 'Archived records' if archived else 'Current records'), ('Registration checked', checked_total|number, 'In this directory'), ('Matching results', pagination.total|number, 'With the current filters')]) }}
 <section class="panel">
 <div class="panel-heading"><h2>{{ 'Archived MAHs' if archived else 'Current MAHs' }}</h2><span class="subtle">{{ pagination.total|number }} results · <a href="/crm/imports">Airtable import review →</a></span></div>
-<form method="get" class="review-body review-form list-filters" role="search">
+<form method="get" class="review-body review-form list-filters" role="search" data-crm-filters="mahs">
   <div class="review-controls">
-    <label>Name, GLN or UID<input name="q" maxlength="150" value="{{ q }}"></label>
-    <label>Directory<select name="archived"><option value="false" {{ 'selected' if not archived }}>Current MAHs</option><option value="true" {{ 'selected' if archived }}>Archived MAHs</option></select></label>
-    <button type="submit">Filter</button>
+    <label>Name or GLN<input name="q" maxlength="150" value="{{ q }}"></label>
+    <button type="submit">Search</button>
   </div>
+  <details data-crm-view-filters class="crm-filter-settings">
+    <summary>View scope</summary>
+    <div class="crm-view-sorting">
+    <label>Directory<select name="archived"><option value="false" {{ 'selected' if not archived }}>Current MAHs</option><option value="true" {{ 'selected' if archived }}>Archived MAHs</option></select></label>
+    <label>Agreements<select name="agreement">
+    {% for value, label in [('', 'All MAHs'), ('linked', 'With a linked agreement'), ('missing', 'No linked agreement'), ('no-signed', 'No linked signed agreement')] %}
+    <option value="{{ value }}" {{ 'selected' if agreement_filter == value }}>{{ label }}</option>
+    {% endfor %}
+    </select></label>
+    </div>
+  </details>
 </form>
-<div class="table-scroll"><table>
-<thead><tr><th>MAH</th><th>GLN</th><th>UID</th><th>Registration check</th><th>SMVS contract</th></tr></thead>
+<div class="table-scroll"><table data-crm-columns="mahs">
+<thead><tr><th data-column="name">MAH</th><th data-column="gln">GLN</th><th data-column="uid">UID</th><th data-column="registration">Registration check</th><th data-column="contract">SMVS contract</th>{{ ui.crm_extra_headers(crm_extra_columns) }}</tr></thead>
 <tbody>{% for mah in rows %}<tr>
-<td><a class="mah-name-link" href="/crm/mahs/{{ mah.id }}{{ filter_query(request, 'q') }}">{% if logos.get(mah.id) %}<img class="mah-logo-icon" src="{{ logos[mah.id] }}" alt="" loading="lazy" referrerpolicy="no-referrer">{% endif %}<span>{{ mah.name }}</span></a></td><td>{{ mah.gln or '—' }}</td><td>{{ mah.uid or '—' }}</td>
+<td><a class="mah-name-link" href="/crm/mahs/{{ mah.id }}{{ filter_query(request, 'q', 'agreement') }}">{% if logos.get(mah.id) %}<img class="mah-logo-icon" src="{{ logos[mah.id] }}" alt="" loading="lazy" referrerpolicy="no-referrer">{% endif %}<span>{{ mah.name }}</span></a></td><td>{{ mah.gln or '—' }}</td><td>{{ mah.uid or '—' }}</td>
 <td>{{ 'Checked' if mah.registration_checked == 1 else 'Not checked' if mah.registration_checked == 0 else 'Unknown' }}</td>
-<td>{{ contract_statuses[mah.contract_status] }}</td>
-</tr>{% else %}<tr><td colspan="5">No MAHs for this selection.</td></tr>{% endfor %}</tbody>
+<td>{{ agreement_statuses[mah.id]|join(', ') or 'No linked agreement' }}</td>
+{{ ui.crm_extra_cells(crm_extra_columns, crm_field_cells[mah.id]) }}</tr>{% else %}<tr><td colspan="5">No MAHs for this selection.</td></tr>{% endfor %}</tbody>
 </table></div>{{ ui.pagination(pagination, request) }}
 </section>
 {% endblock %}

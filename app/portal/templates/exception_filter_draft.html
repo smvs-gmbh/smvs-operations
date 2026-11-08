@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block heading %}
+<a class="back-link" href="/exceptions">← Exceptions</a>
+<div class="heading"><div><div class="eyebrow">OPERATIONAL INFORMATION · NMVS</div><h1>Review search filters</h1></div></div>
+{% endblock %}
+{% block content %}
+<section class="panel review-body review-form">
+{% if filters %}
+<p>Check these filters before opening the local Exceptions results.</p>
+<dl class="mah-values">
+{% for key, label in [('start', 'From (UTC)'), ('end', 'To (UTC)'), ('error', 'Alert code'), ('market', 'Requesting market'), ('work_status', 'Work status'), ('q', 'Search term')] %}
+<div><dt>{{ label }}</dt><dd>{{ filters[key] or '—' }}</dd></div>
+{% endfor %}
+</dl>
+<p><a href="{{ target }}">Open filtered Exceptions →</a></p>
+{% else %}
+<p>The search could not be represented with the available filters.</p>
+<p><a href="/exceptions">Use the Exceptions filters →</a></p>
+{% endif %}
+</section>
+{% endblock %}

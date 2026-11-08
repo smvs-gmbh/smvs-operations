@@ -71,15 +71,21 @@ def imports(
 ):
     if source:
         known(source)
+    return render_imports(request, session, source=source, notice=notice)
+
+
+def render_imports(request, session, *, source="", notice="", backfill_error=None):
     return templates.TemplateResponse(
         request=request,
         name="imports.html",
+        status_code=422 if backfill_error else 200,
         context={
             **overview(session, source=source),
             "title": "Imports",
             "active": "imports",
             "imports_section": True,
             "notice": NOTICES.get(notice),
+            "backfill_error": backfill_error,
         },
     )
 
@@ -160,23 +166,36 @@ def run_now(request: Request, key: str):
 
 
 @router.post("/imports/{key}/backfill", include_in_schema=False)
-async def backfill(request: Request, key: str):
+async def backfill(request: Request, key: str, session: DbSession):
     known(key)
     values = await form_values(request)
+    end_value = values.get("end", "")
     try:
         start = date.fromisoformat(values.get("start", ""))
         end = (
-            start
-            if key == "daily_snapshot"
-            else date.fromisoformat(values.get("end", ""))
+            date.fromisoformat(end_value)
+            if end_value and key != "daily_snapshot"
+            else start
         )
-        enqueue(SessionFactory, key, kind="backfill", start=start, end=end)
     except ValueError:
-        raise HTTPException(
-            422,
-            "Use one snapshot date, or 1–31 UTC days. Activity and Uploads require completed days. Configure the source first.",
-        ) from None
-    return redirect("queued")
+        error = "Enter a valid start date and, if needed, a valid end date."
+    else:
+        try:
+            enqueue(SessionFactory, key, kind="backfill", start=start, end=end)
+        except ValueError as exc:
+            error = str(exc)
+        else:
+            return redirect("queued")
+    return render_imports(
+        request,
+        session,
+        backfill_error={
+            "key": key,
+            "message": error,
+            "start": values.get("start", ""),
+            "end": end_value,
+        },
+    )
 
 
 @router.post("/imports/requests/{identifier}/cancel", include_in_schema=False)

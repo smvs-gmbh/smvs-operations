@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% import 'macros.html' as ui %}
+{% block heading %}
+{{ ui.record_bar(record_nav) }}
+{{ ui.list_heading('CRM · ANNUAL DECLARATION', declaration.record_label, declaration.source_mah_name) }}
+{% endblock %}
+{% block content %}
+<section class="panel review-body review-form">
+<h2>Declaration</h2>
+<dl class="mah-values">
+<div><dt>Data year</dt><dd>{{ declaration.declaration_year }}</dd></div>
+<div><dt>Invoice year (derived)</dt><dd>{{ declaration.declaration_year + 1 }}</dd></div>
+<div><dt>Assigned MAH</dt><dd>{% if mah %}<a href="/crm/mahs/{{ mah.id }}">{{ mah.name }} →</a>{% else %}Unassigned{% endif %}</dd></div>
+<div><dt>Imported status</dt><dd>{{ declaration.status or '—' }}</dd></div>
+<div><dt>RX packs sold</dt><dd>{{ declaration.packs_sold|number }}</dd></div>
+<div><dt>RX sales group</dt><dd>{{ source.get('RX sales group') or '—' }}</dd></div>
+<div><dt>RX quantity group</dt><dd>{{ source.get('RX quantity group') or '—' }}</dd></div>
+</dl>
+</section>
+<section class="panel review-body review-form">
+<h2>Historical billing data</h2>
+<dl class="mah-values">
+{% for label in ['Invoice number', 'Base fee code', 'Base fee amount', 'Quantity related amount', 'Sales related amount'] %}
+<div><dt>{{ label }}</dt><dd>{{ source.get(label) or '—' }}</dd></div>
+{% endfor %}
+</dl>
+</section>
+<section class="panel review-body review-form">
+<h2>Fee calculation preview</h2>
+{% if fee_preview %}
+<p class="subtle">Calculated from the imported packs and sales group. The annual total excludes VAT.</p>
+<dl class="mah-values">
+<div><dt>Base fee {{ '(default)' if uses_default_base_fee else '(imported)' }}</dt><dd>CHF {{ fee_preview.base_amount }}</dd></div>
+<div><dt>RX quantity group</dt><dd>{{ fee_preview.quantity_group }}</dd></div>
+<div><dt>Quantity related amount</dt><dd>CHF {{ fee_preview.quantity_amount }}</dd></div>
+<div><dt>Sales related amount</dt><dd>CHF {{ fee_preview.sales_amount }}</dd></div>
+<div><dt>Calculated annual fee (excl. VAT)</dt><dd>CHF {{ fee_preview.total }}</dd></div>
+</dl>
+{% else %}
+<p>A valid pack count, known RX sales group and valid base fee are required.</p>
+{% endif %}
+</section>
+{% endblock %}

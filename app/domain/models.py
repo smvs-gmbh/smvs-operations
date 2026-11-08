@@ -13,9 +13,10 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    UniqueConstraint,
 )
 from sqlalchemy.dialects.mysql import DATETIME
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db.models import Base
 
@@ -663,6 +664,7 @@ class CRMContact(Base):
     function: Mapped[str | None] = mapped_column(Text)
     source_row_id: Mapped[int | None] = evidence_row()
     profile: Mapped[dict[str, Any] | None] = mapped_column(JSON(none_as_null=True))
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime)
     version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
 
     __mapper_args__: ClassVar[dict] = {"version_id_col": version}
@@ -735,3 +737,126 @@ class PortalAuthToken(Base):
     invitation_id: Mapped[str | None] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(DateTime)
     expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+
+
+DOMAIN_TABLES.update({"crm_agreements", "crm_agreement_exclusions", "crm_agreement_mah_links"})
+
+
+class CRMAgreement(Base):
+    __tablename__ = "crm_agreements"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    contract_id: Mapped[str] = mapped_column(String(100), unique=True)
+    contractor: Mapped[str] = mapped_column(String(255))
+    status: Mapped[str] = mapped_column(String(40))
+    signing_date: Mapped[date | None] = mapped_column(Date)
+    mahs: Mapped[list[CRMMah]] = relationship(
+        secondary="crm_agreement_mah_links", order_by=(CRMMah.name, CRMMah.id)
+    )
+    source_row_id: Mapped[int | None] = evidence_row()
+
+
+class CRMAgreementMAH(Base):
+    __tablename__ = "crm_agreement_mah_links"
+
+    agreement_id: Mapped[int] = mapped_column(
+        ForeignKey("crm_agreements.id", ondelete="CASCADE"), primary_key=True
+    )
+    mah_id: Mapped[int] = mapped_column(
+        ForeignKey("crm_mahs.id", ondelete="CASCADE"), primary_key=True, index=True
+    )
+
+
+class CRMAgreementExclusion(Base):
+    __tablename__ = "crm_agreement_exclusions"
+
+    artifact_id: Mapped[int] = mapped_column(
+        ForeignKey("acquired_artifacts.id", ondelete="CASCADE"), primary_key=True
+    )
+
+
+DOMAIN_TABLES.add("crm_mah_transfers")
+
+
+class CRMMahTransfer(Base):
+    __tablename__ = "crm_mah_transfers"
+
+    source_mah_id: Mapped[int] = mapped_column(ForeignKey("crm_mahs.id"), primary_key=True)
+    target_mah_id: Mapped[int] = mapped_column(ForeignKey("crm_mahs.id"), index=True)
+    note: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+DOMAIN_TABLES.add("crm_self_declarations")
+
+
+class CRMSelfDeclaration(Base):
+    __tablename__ = "crm_self_declarations"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    source_key: Mapped[str] = mapped_column(String(64), unique=True)
+    source_row_id: Mapped[int | None] = evidence_row()
+    mah_id: Mapped[int | None] = mapped_column(
+        ForeignKey("crm_mahs.id", ondelete="SET NULL"), index=True
+    )
+    record_label: Mapped[str] = mapped_column(String(255))
+    source_mah_name: Mapped[str] = mapped_column(String(255))
+    declaration_year: Mapped[int] = mapped_column(Integer)
+    packs_sold: Mapped[int | None] = mapped_column(BigInteger)
+    status: Mapped[str | None] = mapped_column(String(80))
+
+
+DOMAIN_TABLES.add("crm_declaration_drafts")
+
+
+class CRMDeclarationDraft(Base):
+    __tablename__ = "crm_declaration_drafts"
+    __table_args__ = (UniqueConstraint("mah_id", "data_year", name="uq_declaration_draft_mah_year"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    mah_id: Mapped[int] = mapped_column(ForeignKey("crm_mahs.id"))
+    data_year: Mapped[int] = mapped_column(Integer)
+    base_fee: Mapped[Decimal] = mapped_column(Numeric(12, 2))
+    recipient_name: Mapped[str | None] = mapped_column(String(255))
+    recipient_emails: Mapped[list[str]] = mapped_column(JSON, default=list)
+    token_nonce: Mapped[str] = mapped_column(String(64))
+    token_digest: Mapped[str] = mapped_column(String(64), unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime)
+    approved_by: Mapped[str | None] = mapped_column(String(254))
+
+
+DOMAIN_TABLES.add("portal_list_preferences")
+
+
+class PortalListPreference(Base):
+    __tablename__ = "portal_list_preferences"
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("portal_users.id", ondelete="CASCADE"), primary_key=True
+    )
+    view: Mapped[str] = mapped_column(String(40), primary_key=True)
+    visible: Mapped[list[str]] = mapped_column(JSON)
+    defaults: Mapped[dict[str, str]] = mapped_column(JSON)
+    columns: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    column_order: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+
+
+DOMAIN_TABLES.add("crm_list_views")
+
+
+class CRMListView(Base):
+    __tablename__ = "crm_list_views"
+    __table_args__ = (UniqueConstraint("user_id", "directory", "name", name="uq_crm_view_name"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("portal_users.id", ondelete="CASCADE"), index=True)
+    directory: Mapped[str] = mapped_column(String(40))
+    name: Mapped[str] = mapped_column(String(80))
+    config: Mapped[dict[str, Any]] = mapped_column(JSON)
+    is_default: Mapped[int] = mapped_column(Integer, default=0)
+    version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    updated_at: Mapped[datetime] = mapped_column(DateTime)
+
+    __mapper_args__: ClassVar[dict] = {"version_id_col": version}

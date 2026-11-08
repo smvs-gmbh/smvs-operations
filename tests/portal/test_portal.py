@@ -171,3 +171,20 @@ def test_retained_full_original_product_survives_staging_expiry(portal):
     assert response.status_code == 200 and "WRONG NMVS NAME" in response.text
     assert "Retained source values" in response.text
     assert "nur ein Auszug" not in response.text
+
+
+def test_user_guide_is_available_from_portal_navigation(portal):
+    client, _ = portal
+    assert 'href="/user-guide"' in client.get("/products").text
+    response = client.get("/user-guide")
+    assert response.status_code == 200
+    assert "<h1>SMVS Operations User Guide</h1>" in response.text
+    assert "<table>" in response.text
+    assert "Alt + Shift + →" in response.text
+    assert "Configure view" in response.text
+    assert "Actions" in response.text
+    assert "Apply conditions" not in response.text
+    assert "Save &amp; manage views" not in response.text
+
+    assert "<h3>Transfer a marketing authorisation holder</h3>" in response.text
+    assert "<strong>Transfer to</strong>" in response.text

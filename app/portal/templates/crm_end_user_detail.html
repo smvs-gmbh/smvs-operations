@@ -5,6 +5,7 @@
 <div class="heading"><div><div class="eyebrow">CRM · End User</div><h1>{{ user.name if user else 'New End User' }}</h1></div></div>
 {% endblock %}
 {% block content %}
+<div class="record-detail-workspace" data-record-workspace><div class="record-detail-content">
 {% from "crm_contact_picker.html" import contact_picker, contact_labels with context %}
 {% macro value(label, data) %}
 <div><dt>{{ label }}</dt><dd>{{ data or '—' }}</dd></div>
@@ -22,6 +23,18 @@
 {% endmacro %}
 <div class="review-form">
 {% if user and user.archived_at %}<p class="notice">Archived End User</p>{% endif %}
+{% if user and not edit %}
+<section class="panel review-body" data-record-actions>
+<details class="exception-actions">
+<summary><strong>Actions</strong></summary>
+<p>{{ 'Return this record to the current directory.' if user.archived_at else 'Archived records can be restored. Their NMVS links and contact assignments are retained.' }}</p>
+<form method="post" action="/crm/end-users/{{ user.id }}{{ detail_query }}" class="review-form">
+<input type="hidden" name="version" value="{{ user.version }}">
+<div><button class="portal-button portal-button-secondary" name="command" value="{{ 'restore' if user.archived_at else 'archive' }}" type="submit">{{ 'Restore End User' if user.archived_at else 'Archive End User' }}</button></div>
+</form>
+</details>
+</section>
+{% endif %}
 <section class="panel review-body review-form">
 {{ heading('General', 'general') }}
 {% if edit == 'general' %}
@@ -69,19 +82,18 @@
 </section>
 <section class="panel review-body review-form">
 {{ heading('Contacts', 'contacts') }}
-{% set spoc_ids = [profile.spoc_id] if profile.spoc_id else [] %}
 {% set alert_ids = profile.alert_contact_ids or [] %}
 {% if edit == 'contacts' %}
 <script src="{{ request.url_for('portal_static', path='crm-contacts.js') }}?v=contact-actions" defer></script>
 <form method="post" action="/crm/end-users/{{ user.id }}{{ detail_query }}" class="review-form end-user-contact-editor">
 <input type="hidden" name="version" value="{{ user.version }}">
 <div class="review-controls">
-{{ contact_picker('spoc_id', 'SPOC', spoc_ids, compact=true) }}
+{{ contact_picker('spoc_ids', 'SPOCs', spoc_ids, multiple=true, compact=true) }}
 {{ contact_picker('alert_contact_ids', 'Alert contacts', alert_ids, multiple=true, compact=true) }}
 </div>
 {% else %}
 <dl class="mah-values">
-{{ value('SPOC', contact_labels(spoc_ids)) }}
+{{ value('SPOCs', contact_labels(spoc_ids)) }}
 {{ value('Alert contacts', contact_labels(alert_ids)) }}
 </dl>
 {% endif %}
@@ -108,16 +120,8 @@
 <p><a href="/crm/imports#end-user-review">End User import review →</a></p>
 </section>
 {% endif %}
-{% if not edit %}
-<section class="panel review-body">
-{% if not user.archived_at %}<details><summary>Archive End User</summary><p>Archived records can be restored. Their NMVS links and contact assignments are retained.</p>{% endif %}
-<form method="post" action="/crm/end-users/{{ user.id }}{{ detail_query }}" class="review-form">
-<input type="hidden" name="version" value="{{ user.version }}">
-<div><button name="command" value="{{ 'restore' if user.archived_at else 'archive' }}" type="submit">{{ 'Restore End User' if user.archived_at else 'Archive End User' }}</button></div>
-</form>
-{% if not user.archived_at %}</details>{% endif %}
-</section>
-{% endif %}
+
 {% endif %}
 </div>
+</div></div>
 {% endblock %}

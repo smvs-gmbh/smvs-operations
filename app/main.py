@@ -18,6 +18,7 @@ from app.portal.intelligence_routes import router as intelligence_router
 from app.portal.mah_report_routes import router as mah_report_router
 from app.portal.crm_routes import router as crm_router
 from app.portal.import_routes import router as import_router
+from app.portal.workflow_routes import router as workflow_router
 
 settings = get_settings()
 configure_logging(settings.log_level)
@@ -42,6 +43,7 @@ app.include_router(import_router)
 app.include_router(intelligence_router)
 app.include_router(mah_report_router)
 app.include_router(crm_router)
+app.include_router(workflow_router)
 
 
 @app.get("/health")

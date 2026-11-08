@@ -12,12 +12,19 @@ def main():
     parser.add_argument("--contacts", type=Path)
     parser.add_argument("--end-users", type=Path)
     parser.add_argument("--it-suppliers", type=Path)
+    parser.add_argument("--agreements", type=Path)
+    parser.add_argument("--self-declarations", type=Path)
+    parser.add_argument("--download-agreement-pdfs", action="store_true")
     args = parser.parse_args()
+    if args.download_agreement_pdfs and not args.agreements:
+        parser.error("--download-agreement-pdfs requires --agreements.")
     sources = (
         ("MAH", args.mah),
         ("Contacts", args.contacts),
         ("End Users", args.end_users),
         ("IT Suppliers", args.it_suppliers),
+        ("MAH Agreements", args.agreements),
+        ("Self-declarations", args.self_declarations),
     )
     if not any(path for _, path in sources):
         parser.error("Provide at least one Airtable export.")
@@ -36,11 +43,34 @@ def main():
             for dataset, content, filename in imports
             for staged, created in [stage_export(session, dataset, content, filename)]
         ]
+        if args.self_declarations:
+            from app.domain.crm.self_declarations import seed_self_declarations
+
+            dataset_id = next(
+                identifier
+                for identifier, table, _, _ in results
+                if table == "Self-declarations"
+            )
+            declaration_count = seed_self_declarations(session, dataset_id)
         session.commit()
     for identifier, table, count, created in results:
         print(
             f"{table}: {count} records · staging dataset {identifier} · {'staged' if created else 'already staged'}"
         )
+
+    if args.self_declarations:
+        print(f"{declaration_count} self-declarations created.")
+
+    if args.download_agreement_pdfs:
+        from app.domain.crm.agreements import archive_pdfs
+
+        agreements = next(
+            dataset
+            for dataset, _, _ in imports
+            if dataset.source_dataset_name == "MAH Agreements"
+        )
+        if archive_pdfs(SessionFactory, agreements.rows):
+            raise SystemExit(1)
 
 
 if __name__ == "__main__":

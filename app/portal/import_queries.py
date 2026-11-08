@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.core.db.models import ImportExecution, ImportSchedule, IntegrationJob
 from app.domain.models import (
@@ -101,6 +101,13 @@ def overview(session, *, source=""):
         )
     ).all()
     coverage["pack_uploads"] = window_coverage(uploads, now)
+    successful_imports = dict(
+        session.execute(
+            select(ImportExecution.schedule_id, func.max(ImportExecution.completed_at))
+            .where(ImportExecution.status == "succeeded")
+            .group_by(ImportExecution.schedule_id)
+        ).all()
+    )
     cards = []
     for key, meta in SOURCES.items():
         schedule = schedules.get(key)
@@ -160,6 +167,9 @@ def overview(session, *, source=""):
                 "busy": busy,
                 "queued": queued,
                 "last_execution": executions[0] if executions else None,
+                "last_successful_import": successful_imports.get(schedule.id)
+                if schedule
+                else None,
                 "last_job": last_job,
                 "last_success": success,
                 "coverage": coverage[key],

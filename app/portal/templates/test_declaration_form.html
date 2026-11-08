@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% import 'macros.html' as ui %}
+{% block heading %}
+{{ ui.list_heading('TEST WORKSPACE · SELF-DECLARATIONS', 'Test self-declaration', mah.name) }}
+{% endblock %}
+{% block content %}
+<section class="panel review-body review-form">
+<h2>Sales and pack counts for {{ draft.data_year }}</h2>
+{% if draft.approved_at %}
+<form method="post" action="/test-form" class="review-form">
+<input type="hidden" name="auth_code" value="{{ auth_code }}">
+<div class="review-controls">
+<label>RX packs sold<input name="packs" type="number" min="0" max="999999999999" step="1" required></label>
+<label>RX sales group<select name="sales_group" required>
+<option value="">Select a sales group</option>
+{% for group in sales_groups %}<option value="{{ group }}">{{ group }}</option>{% endfor %}
+</select></label>
+<label>Purchase order number (optional)<input name="po_number" maxlength="100"></label>
+</div>
+<div><button type="submit" class="portal-button">Submit test declaration</button></div>
+</form>
+{% else %}
+<p>Approve the draft before submitting a test declaration.</p>
+<a href="/workflows/self-declarations/{{ draft.id }}">Review draft →</a>
+{% endif %}
+</section>
+{% endblock %}

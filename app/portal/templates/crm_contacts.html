@@ -4,20 +4,21 @@
 {% block content %}
 
 {{ ui.crm_list_status(imported_at) }}
-{{ ui.list_metrics('Contacts overview', [('Contacts in CRM', directory_total|number, 'All contact records'), ('Matching results', pagination.total|number, 'With the current search')]) }}
+{{ ui.list_metrics('Contacts overview', [('Contacts in CRM', directory_total|number, 'Archived records' if archived else 'Current records'), ('Matching results', pagination.total|number, 'With the current search')]) }}
 <section class="panel">
 <div class="panel-heading"><h2>Contact directory</h2><span class="subtle">{{ pagination.total|number }} results</span></div>
-<form method="get" class="review-body review-form list-filters" role="search">
+<form method="get" class="review-body review-form list-filters" role="search" data-crm-filters="contacts">
 <div class="review-controls">
 <label>Contact or function<input name="q" maxlength="150" value="{{ q }}"></label>
+<label>Directory<select name="archived"><option value="false" {{ 'selected' if not archived }}>Current contacts</option><option value="true" {{ 'selected' if archived }}>Archived contacts</option></select></label>
 <button type="submit">Search</button>
 </div>
 </form>
-<div class="table-scroll"><table>
-<thead><tr><th>Contact</th><th>Function</th><th>Airtable record ID</th></tr></thead>
+<div class="table-scroll"><table data-crm-columns="contacts">
+<thead><tr><th data-column="name">Contact</th><th data-column="function">Function</th>{{ ui.crm_extra_headers(crm_extra_columns) }}</tr></thead>
 <tbody>
-{% for contact in rows %}<tr><td><a href="/crm/contacts/{{ contact.id }}{{ filter_query(request, 'q') }}">{{ contact.display_name }}</a></td><td>{{ contact.function or '—' }}</td><td>{{ contact.airtable_id }}</td></tr>
-{% else %}<tr><td colspan="3">No matching contacts.</td></tr>{% endfor %}
+{% for contact in rows %}<tr><td><a href="/crm/contacts/{{ contact.id }}{{ filter_query(request, 'q', 'archived') }}">{{ contact.display_name }}</a></td><td>{{ contact.function or '—' }}</td>{{ ui.crm_extra_cells(crm_extra_columns, crm_field_cells[contact.id]) }}</tr>
+{% else %}<tr><td colspan="2">No matching contacts.</td></tr>{% endfor %}
 </tbody>
 </table></div>{{ ui.pagination(pagination, request) }}
 </section>

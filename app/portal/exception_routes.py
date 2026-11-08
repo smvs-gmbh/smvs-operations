@@ -2,14 +2,18 @@ from datetime import UTC, date, datetime, timedelta
 from hashlib import sha256
 from urllib.parse import parse_qs, urlencode, urlsplit
 
+import httpx
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import StaleDataError
+from starlette.concurrency import run_in_threadpool
 
+from app.core.config import get_settings
 from app.domain.exceptions import causes, repeat_evidence
 from app.domain.exceptions import review as work
+from app.domain.exceptions.list_search import interpret_filters
 from app.domain.models import ExceptionReview, ExceptionReviewEvent, NMVSException
 from app.portal import exception_queries as queries
 from app.portal.queries import paged
@@ -58,6 +62,7 @@ def exception_list(
         page=page,
         work_status=work_status,
     )
+    settings = get_settings()
     return templates.TemplateResponse(
         request=request,
         name="exceptions.html",
@@ -65,6 +70,9 @@ def exception_list(
             **ctx,
             **queries.options(session),
             "title": "Exceptions",
+            "language_search_enabled": bool(
+                settings.openai_api_key and settings.openai_search_model
+            ),
             "active": "exceptions",
             "rows": rows,
             "pagination": pagination,
@@ -91,6 +99,45 @@ def exception_list(
             "date_quality": date_quality,
             "intermarket": intermarket,
             "work_status": work_status,
+        },
+    )
+
+
+@router.post("/exceptions/search-draft", include_in_schema=False)
+async def exception_search_draft(request: Request, session: DbSession):
+    settings = get_settings()
+    if not settings.openai_api_key or not settings.openai_search_model:
+        raise HTTPException(503, "Configure OpenAI search before using language input.")
+    question = (await review_form(request)).get("question", "").strip()
+    if not question or len(question) > 500:
+        raise HTTPException(422, "Enter a search question of up to 500 characters.")
+    try:
+        draft = await run_in_threadpool(interpret_filters, question, settings)
+    except (httpx.HTTPError, ValueError, KeyError, TypeError):
+        raise HTTPException(
+            502,
+            "The search question could not be interpreted. Use the filters to continue.",
+        ) from None
+    filters = {}
+    if draft:
+        end = datetime.now(UTC).date()
+        filters = {
+            "start": end - timedelta(days=draft.days - 1),
+            "end": end,
+            "error": draft.error,
+            "market": draft.market,
+            "work_status": draft.work_status,
+            "q": draft.q,
+        }
+    return templates.TemplateResponse(
+        request=request,
+        name="exception_filter_draft.html",
+        context={
+            **queries.context(session),
+            "active": "exceptions",
+            "title": "Search draft",
+            "filters": filters,
+            "target": "/exceptions?" + urlencode(filters),
         },
     )
 

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% import 'macros.html' as ui %}
+{% block heading %}{{ ui.list_heading('CRM · ANNUAL DECLARATIONS', 'Self-declarations', 'Review historical declarations, reported pack counts and Airtable references.') }}{% endblock %}
+{% block content %}
+{{ ui.crm_list_status(imported_at) }}
+{{ ui.list_metrics('Declaration overview', [('Imported declarations', total|number, 'All historical records'), ('Unassigned', unassigned|number, 'Records awaiting an MAH match'), ('Matching results', pagination.total|number, 'With the current filters')]) }}
+<section class="panel">
+<div class="panel-heading"><h2>Declaration directory</h2>{% if mah %}<a href="/crm/mahs/{{ mah.id }}">{{ mah.name }} →</a>{% endif %}</div>
+<form method="get" class="review-body review-form list-filters" role="search" data-crm-filters="self-declarations">
+{% if mah %}<input type="hidden" name="mah_id" value="{{ mah.id }}">{% endif %}
+<div class="review-controls">
+<label>Declaration or MAH<input name="q" maxlength="150" value="{{ q }}"></label>
+<label>Data year<select name="year"><option value="">All years</option>{% for item in years %}<option value="{{ item }}" {{ 'selected' if item|string == year }}>{{ item }}</option>{% endfor %}</select></label>
+<label>MAH assignment<select name="assignment"><option value="">All assignments</option><option value="linked" {{ 'selected' if assignment == 'linked' }}>Linked</option><option value="unassigned" {{ 'selected' if assignment == 'unassigned' }}>Unassigned</option></select></label>
+<label class="resolve-confirm"><input type="checkbox" name="duplicates" value="true" {{ 'checked' if duplicates }}> Repeated source labels</label>
+<button type="submit">Filter</button>
+</div>
+</form>
+<div class="table-scroll"><table data-crm-columns="self-declarations">
+<thead><tr><th data-column="declaration">Declaration</th><th data-column="year">Data year</th><th data-column="mah">MAH</th><th data-column="packs">RX packs sold</th><th data-column="status">Imported status</th>{{ ui.crm_extra_headers(crm_extra_columns) }}</tr></thead>
+<tbody>
+{% for item, mah_name in rows %}
+<tr>
+<td><a href="/crm/self-declarations/{{ item.id }}{{ filter_query(request, 'q', 'year', 'assignment', 'duplicates', 'mah_id') }}">{{ item.record_label }}</a>{% if item.record_label in duplicate_labels %}<small class="activity-row-meta">Repeated source label</small>{% endif %}</td>
+<td>{{ item.declaration_year }}</td>
+<td>{% if item.mah_id %}<a href="/crm/mahs/{{ item.mah_id }}">{{ mah_name }} →</a>{% else %}{{ item.source_mah_name }}<small class="activity-row-meta">Unassigned</small>{% endif %}</td>
+<td>{{ item.packs_sold|number }}</td><td>{{ item.status or '—' }}</td>
+{{ ui.crm_extra_cells(crm_extra_columns, crm_field_cells[item.id]) }}</tr>
+{% else %}<tr><td colspan="5">No self-declarations for this selection.</td></tr>{% endfor %}
+</tbody></table></div>
+{{ ui.pagination(pagination, request) }}
+</section>
+{% endblock %}

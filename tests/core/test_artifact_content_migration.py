@@ -209,7 +209,55 @@ def test_upgrade_matches_models_and_preserves_all_ids_and_provenance(migration_d
     auth_migration = load_migration("0027_portal_auth")
     auth_migration.op = Operations(MigrationContext.configure(connection))
     auth_migration.upgrade()
+    agreements_migration = load_migration("0028_crm_agreements")
+    agreements_migration.op = Operations(MigrationContext.configure(connection))
+    agreements_migration.upgrade()
+    agreement_dates_migration = load_migration("0029_agreement_signing_date")
+    agreement_dates_migration.op = Operations(MigrationContext.configure(connection))
+    agreement_dates_migration.upgrade()
+    agreement_links_migration = load_migration("0030_agreement_mah_links")
+    agreement_links_migration.op = Operations(MigrationContext.configure(connection))
+    agreement_links_migration.upgrade()
+    transfer_migration = load_migration("0031_crm_mah_transfers")
+    transfer_migration.op = Operations(MigrationContext.configure(connection))
+    transfer_migration.upgrade()
+    declarations_migration = load_migration("0032_crm_self_declarations")
+    declarations_migration.op = Operations(MigrationContext.configure(connection))
+    declarations_migration.upgrade()
+    drafts_migration = load_migration("0033_declaration_drafts")
+    drafts_migration.op = Operations(MigrationContext.configure(connection))
+    drafts_migration.upgrade()
+    recipients_migration = load_migration("0034_declaration_recipients")
+    recipients_migration.op = Operations(MigrationContext.configure(connection))
+    recipients_migration.upgrade()
+    contact_archive_migration = load_migration("0035_crm_contact_archive")
+    contact_archive_migration.op = Operations(MigrationContext.configure(connection))
+    contact_archive_migration.upgrade()
+    preferences_migration = load_migration("0036_portal_list_preferences")
+    preferences_migration.op = Operations(MigrationContext.configure(connection))
+    preferences_migration.upgrade()
+    columns_migration = load_migration("0037_portal_list_columns")
+    columns_migration.op = Operations(MigrationContext.configure(connection))
+    columns_migration.upgrade()
+    order_migration = load_migration("0038_crm_column_order")
+    order_migration.op = Operations(MigrationContext.configure(connection))
+    order_migration.upgrade()
+    views_migration = load_migration("0039_crm_list_views")
+    views_migration.op = Operations(MigrationContext.configure(connection))
+    views_migration.upgrade()
     assert compare_metadata(MigrationContext.configure(connection), Base.metadata) == []
+    views_migration.downgrade()
+    order_migration.downgrade()
+    columns_migration.downgrade()
+    preferences_migration.downgrade()
+    contact_archive_migration.downgrade()
+    recipients_migration.downgrade()
+    drafts_migration.downgrade()
+    declarations_migration.downgrade()
+    transfer_migration.downgrade()
+    agreement_links_migration.downgrade()
+    agreement_dates_migration.downgrade()
+    agreements_migration.downgrade()
     auth_migration.downgrade()
     end_user_management_migration.downgrade()
     end_users_migration.downgrade()
@@ -318,3 +366,34 @@ def test_mysql_content_foreign_key_ddl_order(direction, ordered_statements):
     assert all(sql.count(statement) == 1 for statement in ordered_statements)
     positions = [sql.index(statement) for statement in ordered_statements]
     assert positions == sorted(positions)
+
+
+def test_named_views_migration_preserves_personal_preferences():
+    from app.domain.models import CRMListView, PortalListPreference, PortalUser
+
+    engine = sa.create_engine('sqlite://')
+    with engine.begin() as connection:
+        PortalUser.__table__.create(connection)
+        PortalListPreference.__table__.create(connection)
+        connection.execute(PortalUser.__table__.insert().values(
+            id=1, email='fixture@example.test', handle='fixture', is_admin=0, is_nmvo=1,
+        ))
+        defaults = {'q': '', 'archived': 'false', 'agreement': 'missing'}
+        columns = ['name', 'gln']
+        order = ['gln', 'name', 'uid', 'registration', 'contract']
+        connection.execute(PortalListPreference.__table__.insert().values(
+            user_id=1, view='mahs', visible=['q', 'agreement'], defaults=defaults,
+            columns=columns, column_order=order,
+        ))
+        migration = load_migration('0039_crm_list_views')
+        migration.op = Operations(MigrationContext.configure(connection))
+        migration.upgrade()
+        row = connection.execute(sa.select(CRMListView.__table__)).mappings().one()
+        assert row['user_id'] == 1 and row['directory'] == 'mahs'
+        assert row['is_default'] == 1 and row['name'] == 'My view'
+        assert row['config']['quick_filters'] == defaults
+        assert row['config']['columns'] == columns
+        assert row['config']['column_order'] == order
+        migration.downgrade()
+        assert connection.execute(sa.select(PortalListPreference.__table__.c.defaults)).scalar_one() == defaults
+    engine.dispose()

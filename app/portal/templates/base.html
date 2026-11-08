@@ -3,8 +3,11 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ title }} · SMVS Operations</title>
-  <link rel="stylesheet" href="{{ request.url_for('portal_static', path='portal.css') }}?v=portal-account">
+  <link rel="stylesheet" href="{{ request.url_for('portal_static', path='portal.css') }}?v=crm-navigation-1">
   <script src="{{ request.url_for('portal_static', path='text-size.js') }}"></script>
+  {% if active == 'crm' %}<script src="{{ request.url_for('portal_static', path='crm-list-views.js') }}?v=crm-navigation-1" type="module"></script>
+  <script src="{{ request.url_for('portal_static', path='record-actions.js') }}?v=crm-navigation-1" type="module"></script>
+  <script src="{{ request.url_for('portal_static', path='crm-navigation.js') }}?v=crm-navigation-1" type="module"></script>{% endif %}
 </head>
 <body>
 <aside class="sidebar">
@@ -15,19 +18,30 @@
   {% set account = request.state.portal_user if request.state.portal_auth_enabled else none %}
   <nav aria-label="Main navigation">
     {% if not account or account.is_nmvo %}
-    <a class="{{ 'selected' if active == 'products' else '' }}" href="/products"><span class="nav-icon">▦</span>Products <span class="nav-arrow">›</span></a>
-    <a class="{{ 'selected' if active == 'batches' else '' }}" href="/batches"><span class="nav-icon">▤</span>Batches <span class="nav-arrow">›</span></a>
-    <a class="{{ 'selected' if active == 'organisations' else '' }}" href="/organisations"><span class="nav-icon">▥</span>Organisations <span class="nav-arrow">›</span></a>
-    <a class="{{ 'selected' if active == 'locations' else '' }}" href="/locations"><span class="nav-icon">⌖</span>Locations <span class="nav-arrow">›</span></a>
-    <a class="{{ 'selected' if active == 'activity' else '' }}" href="/activity/verification"><span class="nav-icon">▥</span>Activity <span class="nav-arrow">›</span></a>
+    {% for label, icon, links in [
+      ('Catalogue', '▦', [('products', 'Products', '/products'), ('batches', 'Batches', '/batches')]),
+      ('User', '⌖', [('organisations', 'Organisations', '/organisations'), ('locations', 'Locations', '/locations'), ('activity', 'Activity', '/activity/verification')])
+    ] %}
+    <details class="sidebar-group" {{ 'open' if active in links|map(attribute=0)|list }}>
+      <summary><span class="nav-icon" aria-hidden="true">{{ icon }}</span>{{ label }}</summary>
+      {% for key, name, path in links %}<a class="{{ 'selected' if active == key else '' }}" href="{{ path }}">{{ name }}</a>{% endfor %}
+    </details>
+    {% endfor %}
     <a class="{{ 'selected' if active == 'exceptions' else '' }}" href="/exceptions"><span class="nav-icon">!</span>Exceptions <span class="nav-arrow">›</span></a>
-    <a class="{{ 'selected' if active == 'mah_reports' else '' }}" href="/reports/mah"><span class="nav-icon">▤</span>MAH reports <span class="nav-arrow">›</span></a>
+    <details class="sidebar-group" {{ 'open' if active == 'mah_reports' }}>
+      <summary><span class="nav-icon" aria-hidden="true">▤</span>Reports</summary>
+      <a class="{{ 'selected' if active == 'mah_reports' else '' }}" href="/reports/mah">MAH</a>
+    </details>
     <a class="{{ 'selected' if active == 'crm' else '' }}" href="/crm/mahs"><span class="nav-icon">▥</span>CRM <span class="nav-arrow">›</span></a>
+    <a class="{{ 'selected' if active == 'workflows' else '' }}" href="/workflows"><span class="nav-icon" aria-hidden="true">✓</span>Workflows <span class="nav-arrow">›</span></a>
     {% endif %}
     {% if not account or account.is_admin %}
-    <a class="{{ 'selected' if active == 'intelligence' else '' }}" href="/intelligence/rules"><span class="nav-icon">✦</span>Intelligence <span class="nav-arrow">›</span></a>
-    <a class="{{ 'selected' if active == 'imports' else '' }}" href="/imports"><span class="nav-icon">↻</span>Imports <span class="nav-arrow">›</span></a>
-    {% if account %}<a class="{{ 'selected' if active == 'users' else '' }}" href="/admin/users">Users <span class="nav-arrow">›</span></a>{% endif %}
+    <details class="sidebar-group" {{ 'open' if active in ('intelligence', 'imports', 'users') }}>
+      <summary><span class="nav-icon" aria-hidden="true">⚙</span>Settings</summary>
+      {% for key, name, path in [('intelligence', 'Intelligence', '/intelligence/rules'), ('imports', 'Imports', '/imports'), ('users', 'Users', '/admin/users')] %}
+      {% if key != 'users' or account %}<a class="{{ 'selected' if active == key else '' }}" href="{{ path }}">{{ name }}</a>{% endif %}
+      {% endfor %}
+    </details>
     {% endif %}
   </nav>
   <div class="sidebar-foot"><span class="foot-dot"></span>Local dataset<small>Swiss Medicines Verification</small></div>
@@ -39,6 +53,7 @@
         <output id="text-size-value" aria-live="polite">100%</output>
         <button type="button" id="text-size-increase" aria-label="Increase text size">A+</button>
       </div>
+      <a class="portal-account-button portal-help" href="/user-guide" title="User Guide" aria-label="Help · User Guide"{% if active == 'user_guide' %} aria-current="page"{% endif %}>?</a>
       {% if account %}
       <div class="portal-account" role="group" aria-label="Signed-in account">
         <div class="portal-account-identity">
@@ -58,7 +73,7 @@
     {% block heading %}{% endblock %}
     {% if crm_section %}
     <nav class="crm-nav" aria-label="CRM navigation">
-      {% for label, path in [('MAHs', '/crm/mahs'), ('Contacts', '/crm/contacts'), ('End Users', '/crm/end-users'), ('IT Suppliers', '/crm/it-suppliers'), ('Import review', '/crm/imports')] %}
+      {% for label, path in [('MAHs', '/crm/mahs'), ('Agreements', '/crm/agreements'), ('Self-declarations', '/crm/self-declarations'), ('Contacts', '/crm/contacts'), ('End Users', '/crm/end-users'), ('IT Suppliers', '/crm/it-suppliers'), ('Import review', '/crm/imports')] %}
       {% set current = request.url.path == path or request.url.path.startswith(path ~ '/') %}
       <a href="{{ path }}"{% if current %} aria-current="{{ 'page' if request.url.path == path else 'location' }}"{% endif %}>{{ label }}</a>
       {% endfor %}
@@ -76,9 +91,10 @@
     <div class="source-strip"><span><i class="dot"></i>User Activity Report</span><span>UTC calendar days</span><span>Excluding Synthetic Monitoring</span>{% if latest %}<span>History {{ first.strftime('%Y-%m-%d') }}–{{ latest.strftime('%Y-%m-%d') }}</span>{% endif %}</div>
     {% elif publication %}
     <div class="source-strip"><span><i class="dot"></i>Published dataset</span><span>NMVS retrieval date <strong>{{ publication.snapshot_date.strftime('%Y-%m-%d') }}</strong></span>{% if publication.sai_exported_at is defined %}<span>SAI export <strong>{{ publication.sai_exported_at.strftime('%Y-%m-%d') }}</strong></span>{% endif %}</div>
-    {% else %}
+    {% elif participant_section or active in ("products", "batches") %}
     <div class="notice">{% if participant_section %}No organisation/location dataset has been published yet.{% else %}No product/batch dataset has been published yet.{% endif %}</div>
     {% endif %}
+    {% if request.app.state.test_workspace %}<p class="notice"><strong>Test workspace</strong> · Synthetic records only. Restart this instance to reset.</p>{% endif %}
     {% block content %}{% endblock %}
     <footer class="page-footer">SMVS Operations <span>{% if imports_section %}Import schedules, data coverage and retrieval history.{% elif upload_section %}Product and batch context · No evidence for an individual serial number.{% elif pack_audit_section %}Technical pack history · Source evidence remains separate from investigation decisions.{% elif exception_section %}NMVS source observations · Swiss product names from SAI.{% elif activity_section %}NMVS Reporting API · Exception counts are not alert counts.{% elif participant_section %}Organisations and Locations from the NMVS snapshot · Source statuses are unchanged.{% else %}Swiss names from Refdata SAI · NMVS states remain separate.{% endif %}</span></footer>
   </main>

@@ -17,6 +17,7 @@
 <div class="import-card-body"><p class="import-rule">{{ c.rule }}</p><p class="subtle">{{ c.note }}</p><div class="import-actions">{% if s %}<form method="post" action="/imports/{{ c.key }}/{{ 'pause' if s.enabled else 'resume' }}"><button type="submit" class="secondary-button">{{ 'Pause' if s.enabled else 'Resume' }}</button></form><form method="post" action="/imports/{{ c.key }}/run"><button type="submit" class="primary-button" {{ 'disabled' if c.busy or c.queued }}>Run now</button></form>{% endif %}<a class="audit-link" href="/imports?source={{ c.key }}#run-history">Run history →</a></div><dl class="import-facts">
 <div><dt>Cadence</dt><dd>{% if s %}{{ 'Every ' ~ ('%g'|format(s.interval_seconds/3600)) ~ ' hours after completion' if s.interval_seconds is not none else 'Daily at ' ~ s.daily_time ~ ' · ' ~ s.timezone }}{% else %}Not configured{% endif %}</dd></div>
 <div><dt>Next automatic run</dt><dd>{{ c.next_local.strftime('%Y-%m-%d %H:%M:%S %Z') if c.next_local else 'Paused' if s else 'Not scheduled' }}</dd></div>
+<div><dt>Last successful import</dt><dd>{{ stamp(c.last_successful_import) if c.last_successful_import else 'No successful import recorded' }}</dd></div>
 <div><dt>Last scheduler attempt</dt><dd>{% if c.last_execution %}{{ state(c.last_execution.status) }} · {{ stamp(c.last_execution.started_at) }}{% else %}No scheduler attempt recorded{% endif %}</dd></div>
 <div><dt>Last source acquisition</dt><dd>{% if c.last_job %}{{ state(c.last_job.status) }} · {{ stamp(c.last_job.started_at or c.last_job.created_at) }}{% else %}No acquisition recorded{% endif %}</dd></div>
 <div><dt>Last successful acquisition</dt><dd>{{ stamp(c.last_success.completed_at or c.last_success.created_at) if c.last_success else 'No successful acquisition yet' }}</dd></div>
@@ -30,7 +31,23 @@
 <label data-daily {{ 'hidden' if s and s.interval_seconds is not none }}>Daily time · {{ s.timezone if s else 'Europe/Zurich' }}<input type="time" name="daily_time" value="{{ s.daily_time if s else c.time }}" required {{ 'disabled' if s and s.interval_seconds is not none }}></label>
 <label data-interval {{ 'hidden' if not s or s.interval_seconds is none }}>Interval (hours)<input type="number" name="hours" min="1" max="168" step="1" value="{{ (s.interval_seconds/3600)|int if s and s.interval_seconds is not none else 2 }}" required {{ 'disabled' if not s or s.interval_seconds is none }}></label>
 <button type="submit" class="primary-button" {{ 'disabled' if c.busy }}>Save cadence</button></form><p class="subtle">Saving cadence preserves Scheduled/Paused. A new source starts paused. Interval timing starts after completion.</p></details>
-{% if c.backfill and s %}<details class="import-config"><summary>Backfill…</summary><form method="post" action="/imports/{{ c.key }}/backfill" class="import-backfill-form"><label>{{ 'Snapshot date (UTC)' if c.key=='daily_snapshot' else 'From (UTC)' }}<input type="date" name="start" value="{{ yesterday }}" max="{{ today if c.key in ['daily_snapshot','exceptions'] else yesterday }}" required></label>{% if c.key!='daily_snapshot' %}<label>To, inclusive (UTC)<input type="date" name="end" value="{{ yesterday }}" max="{{ today if c.key=='exceptions' else yesterday }}" required></label>{% endif %}<button type="submit" class="primary-button">Queue backfill</button></form><p class="subtle">{{ 'One snapshot date.' if c.key=='daily_snapshot' else '1–31 UTC days per request.' }} This action does not change the automatic schedule.{% if c.key=='pack_uploads' %} Existing matching Upload reports can be reused.{% endif %}</p></details>{% endif %}
+{% set error = backfill_error if backfill_error and backfill_error.key == c.key else none %}
+{% if c.backfill and s %}
+<details class="import-config" {{ 'open' if error }}><summary>Backfill…</summary>
+{% if error %}<p class="import-error" role="alert">{{ error.message }}</p>{% endif %}
+<form method="post" action="/imports/{{ c.key }}/backfill" class="import-backfill-form">
+<label>{{ 'Snapshot date (UTC)' if c.key == 'daily_snapshot' else 'From (UTC)' }}
+<input type="date" name="start" value="{{ error.start if error else yesterday }}" max="{{ today if c.key in ['daily_snapshot', 'exceptions'] else yesterday }}" required></label>
+{% if c.key != 'daily_snapshot' %}
+<label>To, inclusive (UTC) · optional
+<input type="date" name="end" value="{{ error.end if error else '' }}" max="{{ today if c.key == 'exceptions' else yesterday }}"></label>
+{% endif %}
+<button type="submit" class="primary-button">Queue backfill</button>
+</form>
+<p class="subtle">{{ 'One snapshot date.' if c.key == 'daily_snapshot' else 'Leave the end date blank for a single day. For a range, select up to 31 UTC days per request.' }} This action does not change the automatic schedule.{% if c.key == 'pack_uploads' %} Existing matching Upload reports can be reused.{% endif %}</p>
+</details>
+{% elif error %}<p class="import-error" role="alert">{{ error.message }}</p>
+{% endif %}
 </div></section>
 {% endfor %}
 <section class="panel import-card"><div class="panel-heading"><h2>Pack Audit Trail</h2><span class="source-tag">On demand</span></div><div class="import-card-body"><p>Retrieve a report from an individual Exception using its product and serial number. Reports are reused for the same pack.</p><p class="subtle">No periodic per-Alert retrieval is enabled.</p><ul>{% for name,count in evidence_pending %}<li>{{ name }}: {{ count }} queued or running request{{ 's' if count!=1 }}</li>{% endfor %}</ul><a class="audit-link" href="/exceptions">Open Exceptions →</a></div></section>

@@ -46,6 +46,8 @@ class Settings(BaseSettings):
     logo_dev_publishable_key: str | None = None
     openai_api_key: SecretStr | None = None
     openai_search_model: str | None = None
+    openai_web_model: str | None = None
+    declaration_invitation_secret: SecretStr | None = None
 
     model_config = SettingsConfigDict(
         env_file=".env",

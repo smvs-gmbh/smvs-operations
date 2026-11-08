@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% import 'macros.html' as ui %}
+{% block heading %}
+{{ ui.record_bar(record_nav) }}
+{{ ui.list_heading('WORKFLOWS · SELF-DECLARATIONS', mah.name, 'Review the recipients before approving this invitation.') }}
+{% endblock %}
+{% block content %}
+<section class="panel review-body">
+<div class="mah-section-heading"><h2>Invitation</h2><span class="source-tag">{{ 'Approved' if draft.approved_at else 'Draft' }}</span></div>
+<dl class="mah-values">
+<div><dt>Data year</dt><dd>{{ draft.data_year }}</dd></div>
+<div><dt>Invoice year</dt><dd>{{ draft.data_year + 1 }}</dd></div>
+<div><dt>MAH</dt><dd><a href="/crm/mahs/{{ mah.id }}">Open MAH →</a></dd></div>
+</dl>
+{% if invitation_url %}
+<p><a class="audit-link" href="{{ invitation_url }}" target="_blank" rel="noopener noreferrer">{{ 'Open test form link' if test_workspace else 'Open Tally form' }} →</a></p>
+{% else %}<p class="notice">The invitation link cannot be verified.</p>{% endif %}
+</section>
+<section class="panel review-body review-form">
+<h2>Recipients</h2>
+<form method="post" class="review-form">
+{% if draft.approved_at %}
+<ul>{% for email in draft.recipient_emails %}<li>{{ email }}</li>{% endfor %}</ul>
+<p>Approved {{ draft.approved_at.strftime('%Y-%m-%d %H:%M UTC') }}{% if draft.approved_by %} · {{ draft.approved_by }}{% endif %}</p>
+<button type="submit" name="command" value="reopen" class="portal-button portal-button-secondary">Reopen draft</button>
+{% else %}
+<label>Recipient emails<textarea name="recipient_emails" rows="3" aria-describedby="recipient-hint">{{ draft.recipient_emails|join('\n') }}</textarea></label>
+<p class="subtle" id="recipient-hint">Enter one address per line or separate addresses with commas.</p>
+{% if draft.recipient_name or recipient_options %}
+<details><summary>SPOC addresses</summary>
+{% if draft.recipient_name %}<p>Suggested SPOC at preparation · {{ draft.recipient_name }}</p>{% endif %}
+<ul>{% for name, email in recipient_options %}<li>{{ name }} · {{ email or 'No valid email' }}</li>{% endfor %}</ul>
+</details>
+{% endif %}
+<div class="mah-section-heading mah-edit-actions">
+<button type="submit" name="command" value="save" class="portal-button portal-button-secondary">Save draft</button>
+<button type="submit" name="command" value="approve" class="portal-button" {{ 'disabled' if not invitation_url }}>Approve for sending</button>
+</div>
+{% endif %}
+</form>
+<p class="subtle">Delivery is a separate step.</p>
+</section>
+{% endblock %}

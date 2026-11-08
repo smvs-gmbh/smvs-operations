@@ -28,6 +28,8 @@ TABLES = {
     "Contacts": ("RECORD_ID2", "Record Id"),
     "End Users": ("Record Id", "End User Name"),
     "IT Suppliers": ("Record Id", "IT Supplier Name"),
+    "MAH Agreements": ("Contract ID", "Contractor"),
+    "Self-declarations": ("Record Id", "MAH Name"),
 }
 
 
@@ -45,6 +47,13 @@ def parse_export(table, content):
         raise ValueError(f"{table} export has missing or duplicate column names.")
     if not {id_field, label_field}.issubset(headers):
         raise ValueError(f"{table} export needs {id_field} and {label_field}.")
+    if table == "Self-declarations" and not {
+        "Declaration year",
+        "RX packs sold",
+    }.issubset(headers):
+        raise ValueError(
+            "Self-declarations export needs Declaration year and RX packs sold."
+        )
     rows = []
     ids = set()
     for index, values in enumerate(reader, start=1):
@@ -54,9 +63,11 @@ def parse_export(table, content):
             raise ValueError(f"{table} record {index} has the wrong column count.")
         row = dict(zip(headers, values, strict=True))
         identity = row[id_field].strip()
-        if not identity or (table != "End Users" and identity in ids):
+        if not identity or (
+            table not in ("End Users", "Self-declarations") and identity in ids
+        ):
             raise ValueError(
-                f"{table} record {index} has a missing or duplicate Airtable ID."
+                f"{table} record {index} has a missing or duplicate {id_field}."
             )
         ids.add(identity)
         rows.append(row)

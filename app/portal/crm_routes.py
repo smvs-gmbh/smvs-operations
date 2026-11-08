@@ -3,13 +3,18 @@ import io
 import re
 from collections import Counter, defaultdict
 from datetime import date
-from urllib.parse import urlencode
+from decimal import Decimal, InvalidOperation
+from typing import Literal
+from urllib.parse import parse_qsl, quote, unquote, urlencode
 
-from fastapi import APIRouter, HTTPException, Query, Request
-from fastapi.responses import RedirectResponse
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import RedirectResponse, Response
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload
 from sqlalchemy.orm.exc import StaleDataError
+from starlette.concurrency import run_in_threadpool
 
 from app.core.config import get_settings
 from app.core.db.models import (
@@ -18,7 +23,19 @@ from app.core.db.models import (
     StagingDataset,
     StagingRow,
 )
+from app.domain.crm.agreements import (
+    AGREEMENT_PDF_SOURCES,
+    AGREEMENT_STATUSES,
+    MANUAL_SOURCE,
+    MAX_PDF_BYTES,
+    agreement_candidates,
+    archive_pdf,
+)
+from app.domain.crm.agreements import REPORT_TYPE as AGREEMENT_PDF
+from app.domain.crm.company_research import draft_company_summary
+from app.domain.crm.contact_assignments import spoc_ids
 from app.domain.crm.contacts import MAILBOX_TYPES
+from app.domain.crm.declaration_fees import DEFAULT_BASE_FEE, calculate_fees
 from app.domain.crm.end_users import (
     contact_reference_index,
     current_organisations,
@@ -43,30 +60,45 @@ from app.domain.crm.mah_profile import (
     profile_defaults,
 )
 from app.domain.crm.mahs import CONTRACT_STATUSES
+from app.domain.crm.self_declarations import TABLE as DECLARATION_TABLE
 from app.domain.models import (
+    CRMAgreement,
+    CRMAgreementExclusion,
+    CRMAgreementMAH,
     CRMContact,
     CRMEndUser,
     CRMMah,
+    CRMMahTransfer,
+    CRMSelfDeclaration,
     EndUserImportReview,
     LocalOrganisation,
 )
 from app.integration.artifacts.storage import utcnow
 from app.portal.exception_routes import review_form
-from app.portal.queries import paged
 from app.portal.record_navigation import (
     filter_query,
-    list_record_navigation,
     record_navigation,
 )
 from app.portal.routes import DbSession, templates
 
-router = APIRouter()
+from app.portal.crm_views import (
+    crm_paged, crm_navigation, configured_rows, list_catalogue_context,
+    router as views_router,
+)
+from app.portal.crm_list_preferences import (
+    apply_saved_crm_filters,
+    router as preferences_router,
+)
+
+router = APIRouter(dependencies=[Depends(apply_saved_crm_filters)])
+router.include_router(preferences_router)
+router.include_router(views_router)
 
 EDIT_SECTIONS = {
     "general": "General",
+    "company-summary": "Company summary",
     "address": "Address",
     "invoice": "Invoice information",
-    "contract": "Contract",
     "contacts": "Contacts",
 }
 
@@ -162,6 +194,16 @@ def crm_imports(
             (
                 "Contacts → MAH · Link MAH",
                 relation_profile(records["Contacts"], "Link MAH", mah_labels),
+            )
+        )
+    if "MAH Agreements" in records and "MAH" in records:
+        contract_ids = Counter(
+            row["Contract ID"].strip() for row in records["MAH Agreements"]
+        )
+        relations.append(
+            (
+                "MAH → MAH Agreements · Agreements",
+                relation_profile(records["MAH"], "Agreements", contract_ids),
             )
         )
     suppliers = records.get("IT Suppliers")
@@ -278,7 +320,7 @@ def end_user_directory_statement(q, unlinked, archived):
     return statement
 
 
-def end_user_filter_query(q, unlinked, archived=False):
+def end_user_filter_query(q, unlinked, archived=False, *, request=None):
     filters = {}
     if q:
         filters["q"] = q
@@ -286,6 +328,8 @@ def end_user_filter_query(q, unlinked, archived=False):
         filters["unlinked"] = "true"
     if archived:
         filters["archived"] = "true"
+    if request is not None:
+        filters.update(parse_qsl(filter_query(request, "view", "rules", "sort", "direction", "layout", "preset").lstrip("?")))
     return f"?{urlencode(filters)}" if filters else ""
 
 
@@ -299,8 +343,8 @@ def crm_end_users(
     page: int = Query(1, ge=1),
 ):
     statement = end_user_directory_statement(q, unlinked, archived)
-    rows, pagination = paged(
-        session, statement.order_by(CRMEndUser.name, CRMEndUser.id), page
+    rows, pagination = crm_paged(
+        session, statement.order_by(CRMEndUser.name, CRMEndUser.id), page, request, "end-users"
     )
     directory_scope = (
         CRMEndUser.archived_at.is_not(None)
@@ -311,6 +355,7 @@ def crm_end_users(
         request=request,
         name="crm_end_users.html",
         context={
+            **list_catalogue_context(request, session, "end-users", [user for user, _ in rows]),
             "title": "CRM · End Users",
             "active": "crm",
             "crm_section": True,
@@ -328,7 +373,7 @@ def crm_end_users(
             "q": q,
             "unlinked": unlinked,
             "archived": archived,
-            "detail_query": end_user_filter_query(q, unlinked),
+            "detail_query": filter_query(request, "q", "unlinked", "archived"),
         },
     )
 
@@ -363,33 +408,6 @@ def crm_end_user(
     )
 
 
-def end_user_neighbours(session, user, q, unlinked):
-    statement = end_user_directory_statement(
-        q, unlinked, bool(user.archived_at)
-    ).with_only_columns(CRMEndUser.id)
-    previous = session.scalar(
-        statement.where(
-            or_(
-                CRMEndUser.name < user.name,
-                and_(CRMEndUser.name == user.name, CRMEndUser.id < user.id),
-            )
-        )
-        .order_by(CRMEndUser.name.desc(), CRMEndUser.id.desc())
-        .limit(1)
-    )
-    following = session.scalar(
-        statement.where(
-            or_(
-                CRMEndUser.name > user.name,
-                and_(CRMEndUser.name == user.name, CRMEndUser.id > user.id),
-            )
-        )
-        .order_by(CRMEndUser.name, CRMEndUser.id)
-        .limit(1)
-    )
-    return previous, following
-
-
 def render_end_user(request, session, user, edit, q="", unlinked=False):
     row = (
         session.get(StagingRow, user.source_row_id)
@@ -422,24 +440,30 @@ def render_end_user(request, session, user, edit, q="", unlinked=False):
             options.insert(0, organisation)
         edit = "organisation"
     contact_options = []
-    ids = set(profile.get("alert_contact_ids", []))
-    if profile.get("spoc_id"):
-        ids.add(profile["spoc_id"])
+    ids = set(profile.get("alert_contact_ids", [])) | set(spoc_ids(profile))
     if edit == "contacts" or ids:
         contacts = select(CRMContact).order_by(CRMContact.label, CRMContact.id)
-        if edit != "contacts":
-            contacts = contacts.where(CRMContact.id.in_(ids))
+        contacts = contacts.where(
+            or_(CRMContact.archived_at.is_(None), CRMContact.id.in_(ids))
+            if edit == "contacts"
+            else CRMContact.id.in_(ids)
+        )
         contact_options = list(session.scalars(contacts))
     pending_contacts = []
     if source.get("SPOC") or source.get("Alert contacts"):
         _, pending_contacts = resolve_end_user_contacts(
             source, contact_reference_index(session)
         )
-    previous, following = (
-        end_user_neighbours(session, user, q, unlinked)
-        if user and not edit
-        else (None, None)
-    )
+    navigation_query = filter_query(request, "q", "unlinked", "archived")
+    if user and user.archived_at and "archived" not in request.query_params:
+        navigation_query += ("&" if navigation_query else "?") + "archived=true"
+    navigation = record_navigation("/crm/end-users", "End Users", query=navigation_query)
+    if user and not edit:
+        navigation = crm_navigation(
+            request, session, end_user_directory_statement(q, unlinked, bool(user.archived_at)),
+            CRMEndUser.id, user.id, (CRMEndUser.name, CRMEndUser.id),
+            "/crm/end-users", "End Users", query=navigation_query,
+        )
     return templates.TemplateResponse(
         request=request,
         name="crm_end_user_detail.html",
@@ -448,19 +472,11 @@ def render_end_user(request, session, user, edit, q="", unlinked=False):
             "active": "crm",
             "crm_section": True,
             "user": user,
-            "record_nav": record_navigation(
-                "/crm/end-users",
-                "End Users",
-                previous,
-                following,
-                query=end_user_filter_query(q, unlinked),
-                back_query=end_user_filter_query(
-                    q, unlinked, bool(user and user.archived_at)
-                ),
-            ),
-            "detail_query": end_user_filter_query(q, unlinked),
+            "record_nav": navigation,
+            "detail_query": navigation_query,
             "source": source,
             "profile": profile,
+            "spoc_ids": spoc_ids(profile),
             "profile_fields": END_USER_FIELDS,
             "organisation": organisation,
             "edit": edit,
@@ -520,14 +536,14 @@ async def update_end_user(
         user.name, profile = end_user_fields(data)
         user.profile = (user.profile or {}) | profile
     elif command == "contacts":
-        user.profile = (user.profile or {}) | contact_assignments(data, session)
+        user.profile = contact_assignments(data, session, user.profile)
     else:
         raise HTTPException(422, "Select a valid End User action.")
     session.commit()
     destination = (
-        f"/crm/end-users{end_user_filter_query(q, unlinked, archived=True)}"
+        f"/crm/end-users{end_user_filter_query(q, unlinked, archived=True, request=request)}"
         if command == "archive"
-        else f"/crm/end-users/{user.id}{end_user_filter_query(q, unlinked)}"
+        else f"/crm/end-users/{user.id}{end_user_filter_query(q, unlinked, request=request)}"
     )
     return RedirectResponse(destination, status_code=303)
 
@@ -590,7 +606,7 @@ async def update_end_user_organisation(
                 409, "This organisation is already linked to an End User."
             ) from None
     return RedirectResponse(
-        f"/crm/end-users/{identifier}{end_user_filter_query(q, unlinked)}#organisation",
+        f"/crm/end-users/{identifier}{end_user_filter_query(q, unlinked, request=request)}#organisation",
         status_code=303,
     )
 
@@ -619,11 +635,12 @@ def crm_it_suppliers(
     request: Request, session: DbSession, q: str = Query("", max_length=150)
 ):
     export = staged_crm_export(session, "IT Suppliers")
-    rows = filtered_suppliers(export[3] if export else [], q)
+    rows = configured_rows(request, session, "it-suppliers", filtered_suppliers(export[3] if export else [], q))
     return templates.TemplateResponse(
         request=request,
         name="crm_it_suppliers.html",
         context={
+            **list_catalogue_context(request, session, "it-suppliers", rows),
             "title": "CRM · IT Suppliers",
             "active": "crm",
             "crm_section": True,
@@ -689,7 +706,7 @@ def crm_it_supplier(request: Request, identifier: int, session: DbSession):
     links, pending, _ = supplier_contact_links(session, export[3])
     ids = [
         row.id
-        for row in filtered_suppliers(export[3], request.query_params.get("q", ""))
+        for row in configured_rows(request, session, "it-suppliers", filtered_suppliers(export[3], request.query_params.get("q", "")))
     ]
     position = ids.index(identifier) if identifier in ids else None
     navigation = record_navigation(
@@ -718,8 +735,12 @@ def crm_it_supplier(request: Request, identifier: int, session: DbSession):
     )
 
 
-def contact_directory_statement(q):
-    statement = select(CRMContact)
+def contact_directory_statement(q, archived=False):
+    statement = select(CRMContact).where(
+        CRMContact.archived_at.is_not(None)
+        if archived
+        else CRMContact.archived_at.is_(None)
+    )
     if q.strip():
         statement = statement.where(
             or_(
@@ -744,25 +765,30 @@ def crm_contacts(
     request: Request,
     session: DbSession,
     q: str = Query("", max_length=150),
+    archived: bool = False,
     page: int = Query(1, ge=1),
 ):
-    statement = contact_directory_statement(q)
-    rows, pagination = paged(
-        session, statement.order_by(CRMContact.label, CRMContact.id), page
+    statement = contact_directory_statement(q, archived)
+    rows, pagination = crm_paged(
+        session, statement.order_by(CRMContact.label, CRMContact.id), page, request, "contacts"
     )
     return templates.TemplateResponse(
         request=request,
         name="crm_contacts.html",
         context={
+            **list_catalogue_context(request, session, "contacts", [contact for (contact,) in rows]),
             "title": "CRM · Contacts",
             "active": "crm",
             "crm_section": True,
             "imported_at": crm_imported_at(session, "Contacts"),
             "directory_total": session.scalar(
-                select(func.count()).select_from(CRMContact)
+                select(func.count()).select_from(
+                    contact_directory_statement("", archived).subquery()
+                )
             ),
             "rows": [contact for (contact,) in rows],
             "q": q,
+            "archived": archived,
             "pagination": pagination,
         },
     )
@@ -810,7 +836,7 @@ def contact_organisations(session, contact):
         if label in references:
             matches.setdefault(label, []).append(mah)
         profile = mah.profile or {}
-        if contact.id == profile.get("spoc_id") or contact.id in profile.get(
+        if contact.id in spoc_ids(profile) or contact.id in profile.get(
             "alert_contact_ids", []
         ):
             assigned[mah.id] = (mah, "Contact assignment")
@@ -829,6 +855,11 @@ def crm_contact_detail(
     contact = session.get(CRMContact, identifier)
     if contact is None:
         raise HTTPException(404, "Contact not found.")
+    if contact.archived_at:
+        edit = ""
+    query = filter_query(request, "q")
+    if contact.archived_at:
+        query += ("&" if query else "?") + "archived=true"
     profile = {"email": contact.label if EMAIL.fullmatch(contact.label) else ""} | (
         contact.profile or {}
     )
@@ -840,27 +871,27 @@ def crm_contact_detail(
             .where(CRMEndUser.archived_at.is_(None))
             .order_by(CRMEndUser.name)
         )
-        if contact.id == (user.profile or {}).get("spoc_id")
+        if contact.id in spoc_ids(user.profile)
         or contact.id in (user.profile or {}).get("alert_contact_ids", [])
     ]
     export = staged_crm_export(session, "IT Suppliers")
     suppliers = export[3] if export else []
     links, _, pending_suppliers = supplier_contact_links(session, suppliers)
     navigation = (
-        list_record_navigation(
-            session,
-            contact_directory_statement(request.query_params.get("q", "")),
+        crm_navigation(
+            request, session,
+            contact_directory_statement(
+                request.query_params.get("q", ""), bool(contact.archived_at)
+            ),
             CRMContact.id,
             identifier,
             (CRMContact.label, CRMContact.id),
             "/crm/contacts",
             "Contacts",
-            query=filter_query(request, "q"),
+            query=query,
         )
         if edit not in CONTACT_SECTIONS
-        else record_navigation(
-            "/crm/contacts", "Contacts", query=filter_query(request, "q")
-        )
+        else record_navigation("/crm/contacts", "Contacts", query=query)
     )
     return templates.TemplateResponse(
         request=request,
@@ -898,6 +929,19 @@ async def update_crm_contact(request: Request, identifier: int, session: DbSessi
         raise HTTPException(404, "Contact not found.")
     if data.get("version") != str(contact.version):
         raise HTTPException(409, "This contact changed. Reload before saving.")
+    command = data.get("command")
+    if command == "archive" and not contact.archived_at:
+        contact.archived_at = utcnow()
+    elif command == "restore" and contact.archived_at:
+        contact.archived_at = None
+    elif command or contact.archived_at:
+        raise HTTPException(
+            409, "This action is unavailable for the current contact state."
+        )
+    if command:
+        session.commit()
+        suffix = "?archived=true" if contact.archived_at else ""
+        return RedirectResponse(f"/crm/contacts/{identifier}{suffix}", status_code=303)
     section = data.get("section")
     if section == "general":
         fields = {
@@ -949,7 +993,520 @@ async def update_crm_contact(request: Request, identifier: int, session: DbSessi
     )
 
 
-def mah_directory_statement(q, archived):
+AGREEMENTS_PATH = "/crm/agreements"
+AGREEMENT_FILTERS = ("q", "status", "link", "attachments")
+
+
+def agreement_documents():
+    return (
+        select(
+            AcquiredArtifact.id,
+            AcquiredArtifact.report_metadata,
+            CRMAgreementExclusion.artifact_id.is_not(None).label("excluded"),
+        )
+        .outerjoin(
+            CRMAgreementExclusion,
+            CRMAgreementExclusion.artifact_id == AcquiredArtifact.id,
+        )
+        .where(
+            AcquiredArtifact.source_name.in_(AGREEMENT_PDF_SOURCES),
+            AcquiredArtifact.report_type == AGREEMENT_PDF,
+        )
+    )
+
+
+def agreement_directory(session, params):
+    q = params.get("q", "").strip()[:150]
+    status, link, attachments = (params.get(key, "") for key in AGREEMENT_FILTERS[1:])
+    statement = select(CRMAgreement)
+    if q:
+        statement = statement.where(
+            or_(
+                CRMAgreement.contract_id.contains(q, autoescape=True),
+                CRMAgreement.contractor.contains(q, autoescape=True),
+                CRMAgreement.mahs.any(CRMMah.name.contains(q, autoescape=True)),
+            )
+        )
+    if status:
+        statement = statement.where(CRMAgreement.status == status)
+    candidates = agreement_candidates(session)
+    ambiguous = [
+        contract for contract, matches in candidates.items() if len(matches) > 1
+    ]
+    if link == "linked":
+        statement = statement.where(CRMAgreement.mahs.any())
+    elif link in ("unlinked", "ambiguous"):
+        statement = statement.where(~CRMAgreement.mahs.any())
+        if link == "ambiguous":
+            statement = statement.where(CRMAgreement.contract_id.in_(ambiguous))
+
+    counts = Counter(
+        metadata["contract_id"]
+        for _, metadata, _ in session.execute(
+            agreement_documents().where(CRMAgreementExclusion.artifact_id.is_(None))
+        )
+    )
+    if attachments == "missing":
+        statement = statement.where(CRMAgreement.contract_id.not_in(counts))
+    elif attachments == "multiple":
+        statement = statement.where(
+            CRMAgreement.contract_id.in_(
+                [key for key, count in counts.items() if count > 1]
+            )
+        )
+    return statement, candidates, counts
+
+
+@router.get(AGREEMENTS_PATH, include_in_schema=False)
+def crm_agreements(request: Request, session: DbSession, page: int = Query(1, ge=1)):
+    statement, candidates, counts = agreement_directory(session, request.query_params)
+    rows, pagination = crm_paged(
+        session,
+        statement.options(selectinload(CRMAgreement.mahs)).order_by(
+            CRMAgreement.contract_id
+        ),
+        page, request, "agreements", pdf_counts=counts,
+    )
+    return templates.TemplateResponse(
+        request=request,
+        name="crm_agreements.html",
+        context={
+            **list_catalogue_context(request, session, "agreements", [agreement for (agreement,) in rows], pdf_counts=counts),
+            "title": "CRM · MAH Agreements",
+            "active": "crm",
+            "crm_section": True,
+            "rows": rows,
+            "candidates": candidates,
+            "counts": counts,
+            "pagination": pagination,
+            "filters": request.query_params,
+            "statuses": list(
+                session.scalars(
+                    select(CRMAgreement.status).distinct().order_by(CRMAgreement.status)
+                )
+            ),
+            "total": session.scalar(select(func.count()).select_from(CRMAgreement)),
+            "unlinked": session.scalar(
+                select(func.count())
+                .select_from(CRMAgreement)
+                .where(~CRMAgreement.mahs.any())
+            ),
+            "imported_at": crm_imported_at(session, "MAH Agreements"),
+        },
+    )
+
+
+@router.get(AGREEMENTS_PATH + "/new", include_in_schema=False)
+def new_crm_agreement(request: Request, session: DbSession, mah_id: int | None = None):
+    mahs = list(
+        session.scalars(
+            select(CRMMah)
+            .where(CRMMah.archived_at.is_(None))
+            .order_by(CRMMah.name, CRMMah.id)
+        )
+    )
+    return templates.TemplateResponse(
+        request=request,
+        name="crm_agreement_new.html",
+        context={
+            "title": "New agreement",
+            "active": "crm",
+            "crm_section": True,
+            "mahs": mahs,
+            "selected_mah": mah_id,
+            "agreement_statuses": AGREEMENT_STATUSES,
+        },
+    )
+
+
+@router.post(AGREEMENTS_PATH, include_in_schema=False)
+async def create_crm_agreement(request: Request, session: DbSession):
+    data = await review_form(request)
+    contract_id = data.get("contract_id", "").strip()
+    contractor = data.get("contractor", "").strip()
+    if not contract_id or len(contract_id) > 100 or len(contractor) > 255:
+        raise HTTPException(422, "Enter a contract ID and a valid contractor name.")
+    value = data.get("mah_id", "")
+    mah = None
+    if value:
+        if not re.fullmatch(r"[0-9]{1,10}", value):
+            raise HTTPException(422, "Choose a valid MAH.")
+        mah = session.get(CRMMah, int(value))
+        if not mah or mah.archived_at:
+            raise HTTPException(422, "Choose an active MAH.")
+    if not contractor and not mah:
+        raise HTTPException(422, "Enter a contractor or select a MAH.")
+    agreement = CRMAgreement(
+        contract_id=contract_id,
+        contractor=contractor or mah.name,
+        mahs=[mah] if mah else [],
+    )
+    update_agreement_details(agreement, data)
+    session.add(agreement)
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        if session.scalar(
+            select(CRMAgreement.id).where(CRMAgreement.contract_id == contract_id)
+        ):
+            raise HTTPException(409, "This contract ID already exists.") from None
+        raise
+    return RedirectResponse(f"{AGREEMENTS_PATH}/{agreement.id}", status_code=303)
+
+
+def agreement_or_404(session, identifier, *, lock=False):
+    agreement = session.get(CRMAgreement, identifier, with_for_update=lock)
+    if agreement is None:
+        raise HTTPException(404, "Agreement not found.")
+    return agreement
+
+
+@router.get(AGREEMENTS_PATH + "/{identifier}", include_in_schema=False)
+def crm_agreement(request: Request, identifier: int, session: DbSession):
+    agreement = agreement_or_404(session, identifier)
+    source = (
+        session.get(StagingRow, agreement.source_row_id)
+        if agreement.source_row_id
+        else None
+    )
+    statement, candidates, counts = agreement_directory(session, request.query_params)
+    navigation = crm_navigation(
+        request, session,
+        statement,
+        CRMAgreement.id,
+        identifier,
+        (CRMAgreement.contract_id,),
+        AGREEMENTS_PATH,
+        "MAH Agreements",
+        query=filter_query(request, *AGREEMENT_FILTERS), pdf_counts=counts,
+    )
+    documents = session.execute(
+        agreement_documents()
+        .where(
+            AcquiredArtifact.report_metadata["contract_id"].as_string()
+            == agreement.contract_id
+        )
+        .order_by(AcquiredArtifact.id)
+    ).all()
+    return templates.TemplateResponse(
+        request=request,
+        name="crm_agreement_detail.html",
+        context={
+            "title": agreement.contract_id,
+            "active": "crm",
+            "crm_section": True,
+            "agreement": agreement,
+            "agreement_statuses": tuple(
+                dict.fromkeys((*AGREEMENT_STATUSES, agreement.status))
+            ),
+            "record_nav": navigation,
+            "documents": documents,
+            "source": source.raw_row_json if source else {},
+            "candidates": candidates[agreement.contract_id],
+            "assigned_mah_ids": {mah.id for mah in agreement.mahs},
+            "mahs": list(
+                session.scalars(
+                    select(CRMMah)
+                    .where(
+                        or_(
+                            CRMMah.archived_at.is_(None),
+                            CRMMah.id.in_([mah.id for mah in agreement.mahs]),
+                        )
+                    )
+                    .order_by(CRMMah.name, CRMMah.id)
+                )
+            ),
+        },
+    )
+
+
+def update_agreement_details(agreement, data):
+    status = data.get("status", "")
+    if status not in AGREEMENT_STATUSES and status != agreement.status:
+        raise HTTPException(422, "Choose a valid agreement status.")
+    try:
+        value = data.get("signing_date", "")
+        signing_date = date.fromisoformat(value) if value else None
+    except ValueError:
+        raise HTTPException(422, "Enter a valid signing date.") from None
+    agreement.status = status
+    agreement.signing_date = signing_date
+
+
+def selected_ids(data, prefix):
+    identifiers = set()
+    for key in data:
+        if key.startswith(prefix):
+            value = key.removeprefix(prefix)
+            if not re.fullmatch(r"[0-9]{1,10}", value):
+                raise HTTPException(422, "Invalid assignment.")
+            identifiers.add(int(value))
+    return identifiers
+
+
+@router.post(AGREEMENTS_PATH + "/{identifier}", include_in_schema=False)
+async def update_crm_agreement(request: Request, identifier: int, session: DbSession):
+    data = await review_form(request)
+    agreement = agreement_or_404(session, identifier, lock=True)
+    command = data.get("command")
+    if command == "details":
+        update_agreement_details(agreement, data)
+    elif command == "assign":
+        if "mah_id" in data:
+            # Accept the previous single-selection form from an already open tab.
+            value = data["mah_id"]
+            identifiers = selected_ids({f"mah:{value}": "yes"} if value else {}, "mah:")
+        else:
+            identifiers = selected_ids(data, "mah:")
+        existing = {mah.id for mah in agreement.mahs}
+        mahs = list(session.scalars(select(CRMMah).where(CRMMah.id.in_(identifiers))))
+        if len(mahs) != len(identifiers) or any(
+            mah.archived_at and mah.id not in existing for mah in mahs
+        ):
+            raise HTTPException(422, "Choose valid MAHs.")
+        agreement.mahs = mahs
+    elif command in ("exclude", "restore"):
+        value = data.get("artifact_id", "")
+        if not re.fullmatch(r"[0-9]{1,10}", value):
+            raise HTTPException(422, "Choose a valid attachment.")
+        artifact_id = int(value)
+        if not session.execute(
+            agreement_documents().where(
+                AcquiredArtifact.id == artifact_id,
+                AcquiredArtifact.report_metadata["contract_id"].as_string()
+                == agreement.contract_id,
+            )
+        ).first():
+            raise HTTPException(404, "Attachment not found.")
+        exclusion = session.get(CRMAgreementExclusion, artifact_id)
+        if command == "exclude" and exclusion is None:
+            session.add(CRMAgreementExclusion(artifact_id=artifact_id))
+        elif command == "restore" and exclusion is not None:
+            session.delete(exclusion)
+    else:
+        raise HTTPException(422, "Choose a valid agreement action.")
+    session.commit()
+    return RedirectResponse(
+        f"{AGREEMENTS_PATH}/{identifier}{filter_query(request, *AGREEMENT_FILTERS)}",
+        status_code=303,
+    )
+
+
+@router.post(AGREEMENTS_PATH + "/{identifier}/pdf", include_in_schema=False)
+async def upload_agreement_pdf(request: Request, identifier: int, session: DbSession):
+    if not getattr(request.state, "portal_user", None):
+        raise HTTPException(403, "Sign in to upload agreement PDFs.")
+    if request.headers.get("origin") != f"{request.url.scheme}://{request.url.netloc}":
+        raise HTTPException(403, "Use the agreement page to upload a PDF.")
+    filename = unquote(request.headers.get("x-filename", "")).strip()
+    if (
+        not filename.lower().endswith(".pdf")
+        or len(filename) > 255
+        or any(ord(char) < 32 or char in "/\\" for char in filename)
+    ):
+        raise HTTPException(422, "Choose a PDF with a valid filename.")
+    content = bytearray()
+    async for chunk in request.stream():
+        if len(content) + len(chunk) > MAX_PDF_BYTES:
+            raise HTTPException(413, "The PDF exceeds the 12 MiB size limit.")
+        content.extend(chunk)
+    if not content.startswith(b"%PDF-"):
+        raise HTTPException(422, "The file is not a PDF.")
+    agreement = agreement_or_404(session, identifier, lock=True)
+    archive_pdf(
+        session, agreement.contract_id, filename, bytes(content), source=MANUAL_SOURCE
+    )
+    session.commit()
+    return Response(status_code=204)
+
+
+@router.get(
+    AGREEMENTS_PATH + "/{identifier}/pdf/{artifact_id}", include_in_schema=False
+)
+def agreement_pdf(
+    request: Request, identifier: int, artifact_id: int, session: DbSession
+):
+    if not getattr(request.state, "portal_user", None):
+        raise HTTPException(403, "Sign in to download agreement PDFs.")
+    agreement = agreement_or_404(session, identifier)
+    artifact = session.scalar(
+        select(AcquiredArtifact).where(
+            AcquiredArtifact.id == artifact_id,
+            AcquiredArtifact.source_name.in_(AGREEMENT_PDF_SOURCES),
+            AcquiredArtifact.report_type == AGREEMENT_PDF,
+            AcquiredArtifact.report_metadata["contract_id"].as_string()
+            == agreement.contract_id,
+        )
+    )
+    if artifact is None:
+        raise HTTPException(404, "Attachment not found.")
+    filename = quote(artifact.report_metadata["filename"], safe="")
+    return Response(
+        artifact.artifact_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename*=UTF-8''{filename}",
+            "Cache-Control": "no-store",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
+DECLARATIONS_PATH = "/crm/self-declarations"
+DECLARATION_FILTERS = ("q", "year", "assignment", "duplicates", "mah_id")
+DECLARATION_ORDER = (
+    CRMSelfDeclaration.declaration_year.desc(),
+    CRMSelfDeclaration.record_label,
+    CRMSelfDeclaration.id,
+)
+
+
+def declaration_duplicates():
+    return (
+        select(CRMSelfDeclaration.record_label)
+        .group_by(CRMSelfDeclaration.record_label)
+        .having(func.count() > 1)
+    )
+
+
+def declaration_directory(q, year, assignment, duplicates, mah_id):
+    statement = select(CRMSelfDeclaration, CRMMah.name).outerjoin(
+        CRMMah, CRMSelfDeclaration.mah_id == CRMMah.id
+    )
+    if q.strip():
+        text = q.strip()
+        statement = statement.where(
+            or_(
+                CRMSelfDeclaration.record_label.contains(text, autoescape=True),
+                CRMSelfDeclaration.source_mah_name.contains(text, autoescape=True),
+                CRMMah.name.contains(text, autoescape=True),
+            )
+        )
+    if year:
+        statement = statement.where(CRMSelfDeclaration.declaration_year == int(year))
+    if mah_id is not None:
+        statement = statement.where(CRMSelfDeclaration.mah_id == mah_id)
+    if assignment == "unassigned":
+        statement = statement.where(CRMSelfDeclaration.mah_id.is_(None))
+    elif assignment == "linked":
+        statement = statement.where(CRMSelfDeclaration.mah_id.is_not(None))
+    if duplicates:
+        statement = statement.where(
+            CRMSelfDeclaration.record_label.in_(declaration_duplicates())
+        )
+    return statement
+
+
+@router.get(DECLARATIONS_PATH, include_in_schema=False)
+def crm_self_declarations(
+    request: Request,
+    session: DbSession,
+    q: str = Query("", max_length=150),
+    year: str = Query("", pattern=r"^(?:[0-9]{4})?$"),
+    assignment: Literal["", "linked", "unassigned"] = "",
+    duplicates: bool = False,
+    mah_id: int | None = None,
+    page: int = Query(1, ge=1),
+):
+    statement = declaration_directory(q, year, assignment, duplicates, mah_id)
+    rows, pagination = crm_paged(session, statement.order_by(*DECLARATION_ORDER), page, request, "self-declarations")
+    return templates.TemplateResponse(
+        request=request,
+        name="crm_self_declarations.html",
+        context={
+            **list_catalogue_context(request, session, "self-declarations", [item for item, _ in rows]),
+            "title": "Self-declarations",
+            "active": "crm",
+            "crm_section": True,
+            "rows": rows,
+            "pagination": pagination,
+            "q": q,
+            "year": year,
+            "assignment": assignment,
+            "duplicates": duplicates,
+            "mah": session.get(CRMMah, mah_id) if mah_id is not None else None,
+            "years": list(
+                session.scalars(
+                    select(CRMSelfDeclaration.declaration_year)
+                    .distinct()
+                    .order_by(CRMSelfDeclaration.declaration_year.desc())
+                )
+            ),
+            "duplicate_labels": set(session.scalars(declaration_duplicates())),
+            "total": session.scalar(
+                select(func.count()).select_from(CRMSelfDeclaration)
+            ),
+            "unassigned": session.scalar(
+                select(func.count())
+                .select_from(CRMSelfDeclaration)
+                .where(CRMSelfDeclaration.mah_id.is_(None))
+            ),
+            "imported_at": crm_imported_at(session, DECLARATION_TABLE),
+        },
+    )
+
+
+@router.get(DECLARATIONS_PATH + "/{identifier}", include_in_schema=False)
+def crm_self_declaration(
+    request: Request,
+    identifier: int,
+    session: DbSession,
+    q: str = Query("", max_length=150),
+    year: str = Query("", pattern=r"^(?:[0-9]{4})?$"),
+    assignment: Literal["", "linked", "unassigned"] = "",
+    duplicates: bool = False,
+    mah_id: int | None = None,
+):
+    declaration = session.get(CRMSelfDeclaration, identifier)
+    if declaration is None:
+        raise HTTPException(404, "Self-declaration not found.")
+    row = (
+        session.get(StagingRow, declaration.source_row_id)
+        if declaration.source_row_id
+        else None
+    )
+    source = row.raw_row_json if row else {}
+    base_value = (source.get("Base fee amount") or "").strip()
+    preview = None
+    try:
+        preview = calculate_fees(
+            declaration.packs_sold,
+            (source.get("RX sales group") or "").strip(),
+            Decimal(base_value.replace(",", ".")) if base_value else DEFAULT_BASE_FEE,
+        )
+    except (ValueError, InvalidOperation):
+        pass
+    navigation = crm_navigation(
+        request, session,
+        declaration_directory(q, year, assignment, duplicates, mah_id),
+        CRMSelfDeclaration.id,
+        identifier,
+        DECLARATION_ORDER,
+        DECLARATIONS_PATH,
+        "Self-declarations",
+        query=filter_query(request, *DECLARATION_FILTERS),
+    )
+    return templates.TemplateResponse(
+        request=request,
+        name="crm_self_declaration_detail.html",
+        context={
+            "title": declaration.record_label,
+            "active": "crm",
+            "crm_section": True,
+            "declaration": declaration,
+            "source": source,
+            "fee_preview": preview,
+            "uses_default_base_fee": not base_value,
+            "mah": session.get(CRMMah, declaration.mah_id)
+            if declaration.mah_id
+            else None,
+            "record_nav": navigation,
+        },
+    )
+
+
+def mah_directory_statement(q, archived, agreement=""):
     statement = select(CRMMah).where(
         CRMMah.archived_at.is_not(None) if archived else CRMMah.archived_at.is_(None)
     )
@@ -959,8 +1516,20 @@ def mah_directory_statement(q, archived):
             or_(
                 CRMMah.name.contains(text, autoescape=True),
                 CRMMah.gln.contains(text, autoescape=True),
-                CRMMah.uid.contains(text, autoescape=True),
             )
+        )
+    linked = (
+        select(CRMAgreement.id)
+        .join(CRMAgreementMAH)
+        .where(CRMAgreementMAH.mah_id == CRMMah.id)
+    )
+    if agreement == "linked":
+        statement = statement.where(linked.exists())
+    elif agreement == "missing":
+        statement = statement.where(~linked.exists())
+    elif agreement == "no-signed":
+        statement = statement.where(
+            ~linked.where(CRMAgreement.status == "Signed").exists()
         )
     return statement
 
@@ -971,10 +1540,11 @@ def crm_mahs(
     session: DbSession,
     q: str = Query("", max_length=150),
     archived: bool = False,
+    agreement: Literal["", "linked", "missing", "no-signed"] = "",
     page: int = Query(1, ge=1),
 ):
-    statement = mah_directory_statement(q, archived)
-    rows, pagination = paged(session, statement.order_by(CRMMah.name, CRMMah.id), page)
+    statement = mah_directory_statement(q, archived, agreement)
+    rows, pagination = crm_paged(session, statement.order_by(CRMMah.name, CRMMah.id), page, request, "mahs")
     mahs = [mah for (mah,) in rows]
     logos = {}
     key = get_settings().logo_dev_publishable_key
@@ -1002,6 +1572,16 @@ def crm_mahs(
             )
             for mah in mahs
         }
+    agreement_statuses = defaultdict(list)
+    if mahs:
+        for mah_id, status in session.execute(
+            select(CRMAgreementMAH.mah_id, CRMAgreement.status)
+            .join(CRMAgreementMAH)
+            .where(CRMAgreementMAH.mah_id.in_([mah.id for mah in mahs]))
+            .distinct()
+            .order_by(CRMAgreement.status)
+        ):
+            agreement_statuses[mah_id].append(status)
     directory_scope = (
         CRMMah.archived_at.is_not(None) if archived else CRMMah.archived_at.is_(None)
     )
@@ -1009,6 +1589,7 @@ def crm_mahs(
         request=request,
         name="crm_mahs.html",
         context={
+            **list_catalogue_context(request, session, "mahs", mahs),
             "title": "CRM · MAHs",
             "active": "crm",
             "crm_section": True,
@@ -1026,7 +1607,8 @@ def crm_mahs(
             "pagination": pagination,
             "q": q,
             "archived": archived,
-            "contract_statuses": CONTRACT_STATUSES,
+            "agreement_filter": agreement,
+            "agreement_statuses": agreement_statuses,
         },
     )
 
@@ -1049,7 +1631,107 @@ def crm_mah_detail(
     )
 
 
-def render_mah(request, session, mah=None, source=None, *, edit=""):
+@router.post("/crm/mahs/{identifier}/transfer", include_in_schema=False)
+async def transfer_crm_mah(request: Request, identifier: int, session: DbSession):
+    data = await review_form(request)
+    raw_target = data.get("target_mah_id", "")
+    note = data.get("note", "").strip()
+    if not re.fullmatch(r"[0-9]{1,10}", raw_target) or len(note) > 2000:
+        raise HTTPException(
+            422, "Select a target MAH and enter at most 2,000 characters."
+        )
+    target_id = int(raw_target)
+    if identifier == target_id:
+        raise HTTPException(422, "Select a different target MAH.")
+
+    records = {
+        mah.id: mah
+        for mah in session.scalars(
+            select(CRMMah)
+            .where(CRMMah.id.in_((identifier, target_id)))
+            .order_by(CRMMah.id)
+            .with_for_update()
+        )
+    }
+    source, target = records.get(identifier), records.get(target_id)
+    if source is None or target is None:
+        raise HTTPException(404, "MAH not found.")
+    existing = session.get(CRMMahTransfer, identifier, with_for_update=True)
+    if existing and existing.target_mah_id == target_id and existing.note == note:
+        return RedirectResponse(f"/crm/mahs/{target_id}#transfers", status_code=303)
+    if source.archived_at or existing or data.get("version") != str(source.version):
+        raise HTTPException(
+            409,
+            "This MAH changed or has already been transferred. Reload before continuing.",
+        )
+    if target.archived_at or session.get(
+        CRMMahTransfer, target_id, with_for_update=True
+    ):
+        raise HTTPException(422, "Choose a target MAH that is available for transfer.")
+
+    agreement_ids = selected_ids(data, "transfer_agreement:")
+    agreements = (
+        list(
+            session.scalars(
+                select(CRMAgreement)
+                .where(CRMAgreement.id.in_(agreement_ids))
+                .order_by(CRMAgreement.id)
+                .with_for_update()
+            )
+        )
+        if agreement_ids
+        else []
+    )
+    if len(agreements) != len(agreement_ids) or any(
+        source not in agreement.mahs or agreement.status != "Signed"
+        for agreement in agreements
+    ):
+        raise HTTPException(
+            409, "An agreement changed. Reload and review the transfer selection."
+        )
+    for agreement in agreements:
+        agreement.status = "Transferred"
+
+    now = utcnow()
+    source.profile = (source.profile or {}) | {"status": "Transferred"}
+    source.updated_at = now
+    session.add(
+        CRMMahTransfer(
+            source_mah_id=identifier, target_mah_id=target_id, note=note, created_at=now
+        )
+    )
+    session.commit()
+    return RedirectResponse(f"/crm/mahs/{target_id}#transfers", status_code=303)
+
+
+@router.post("/crm/mahs/{identifier}/summary-draft", include_in_schema=False)
+async def mah_summary_draft(request: Request, identifier: int, session: DbSession):
+    await review_form(request)
+    settings = get_settings()
+    if not settings.openai_api_key or not settings.openai_web_model:
+        raise HTTPException(
+            503, "Configure OpenAI web research before drafting a summary."
+        )
+    mah = session.get(CRMMah, identifier)
+    if not mah or mah.archived_at:
+        raise HTTPException(404, "Active MAH not found.")
+    staged = session.get(StagingRow, mah.source_row_id) if mah.source_row_id else None
+    source = staged.raw_row_json if staged else None
+    domain = (profile_defaults(source or {}) | (mah.profile or {}))["domain"]
+    try:
+        draft = await run_in_threadpool(
+            draft_company_summary, mah.name, domain, settings
+        )
+    except (httpx.HTTPError, ValueError, KeyError, TypeError):
+        raise HTTPException(
+            502, "A sourced summary could not be generated. Try again later."
+        ) from None
+    return render_mah(
+        request, session, mah, source, edit="company-summary", summary_draft=draft
+    )
+
+
+def render_mah(request, session, mah=None, source=None, *, edit="", summary_draft=None):
     companies = select(CRMMah.id, CRMMah.name, CRMMah.archived_at)
     if mah:
         companies = companies.where(CRMMah.id != mah.id)
@@ -1063,17 +1745,122 @@ def render_mah(request, session, mah=None, source=None, *, edit=""):
         else None
     )
     edit_section = edit if mah and not mah.archived_at and edit in EDIT_SECTIONS else ""
-    assigned_ids = set(profile.get("alert_contact_ids", []))
-    if profile.get("spoc_id"):
-        assigned_ids.add(profile["spoc_id"])
+    assigned_ids = set(profile.get("alert_contact_ids", [])) | set(spoc_ids(profile))
     contacts = []
     if edit_section == "contacts" or assigned_ids:
         statement = select(CRMContact).order_by(CRMContact.label, CRMContact.id)
-        if edit_section != "contacts":
-            statement = statement.where(CRMContact.id.in_(assigned_ids))
+        statement = statement.where(
+            or_(CRMContact.archived_at.is_(None), CRMContact.id.in_(assigned_ids))
+            if edit_section == "contacts"
+            else CRMContact.id.in_(assigned_ids)
+        )
         contacts = list(session.scalars(statement))
+    agreements = (
+        list(
+            session.scalars(
+                select(CRMAgreement)
+                .where(CRMAgreement.mahs.any(CRMMah.id == mah.id))
+                .order_by(CRMAgreement.contract_id)
+            )
+        )
+        if mah
+        else []
+    )
+    editing_agreement = None
+    if edit == "contract" and mah and not mah.archived_at:
+        selected = request.query_params.get("agreement_id")
+        editing_agreement = next(
+            (item for item in agreements if str(item.id) == selected), None
+        )
+        if editing_agreement:
+            edit_section = "contract"
+    editing_contract_links = bool(
+        edit == "contract-links" and mah and not mah.archived_at
+    )
+    if editing_contract_links:
+        edit_section = "contract-links"
+    agreement_options = (
+        list(
+            session.scalars(
+                select(CRMAgreement).order_by(
+                    CRMAgreement.contractor, CRMAgreement.contract_id
+                )
+            )
+        )
+        if editing_contract_links
+        else []
+    )
+    candidates = agreement_candidates(session) if editing_contract_links else {}
+    candidate_agreement_ids = {
+        item.id
+        for item in agreement_options
+        if any(
+            candidate.id == mah.id for candidate in candidates.get(item.contract_id, [])
+        )
+    }
+    agreement_options.sort(key=lambda item: item.id not in candidate_agreement_ids)
+    outgoing_transfer = session.get(CRMMahTransfer, mah.id) if mah else None
+    incoming_transfers = (
+        session.execute(
+            select(CRMMahTransfer, CRMMah.name)
+            .join(CRMMah, CRMMah.id == CRMMahTransfer.source_mah_id)
+            .where(CRMMahTransfer.target_mah_id == mah.id)
+            .order_by(CRMMahTransfer.created_at.desc(), CRMMahTransfer.source_mah_id)
+        ).all()
+        if mah
+        else []
+    )
+    transfer_targets = []
+    if mah and not mah.archived_at and not outgoing_transfer and not edit_section:
+        transferred_ids = select(CRMMahTransfer.source_mah_id)
+        transfer_targets = session.execute(
+            select(CRMMah.id, CRMMah.name)
+            .where(
+                CRMMah.id != mah.id,
+                CRMMah.archived_at.is_(None),
+                CRMMah.id.not_in(transferred_ids),
+            )
+            .order_by(CRMMah.name, CRMMah.id)
+        ).all()
+    transfer_agreements = (
+        [
+            (agreement, len(agreement.mahs) > 1)
+            for agreement in agreements
+            if agreement.status == "Signed"
+        ]
+        if transfer_targets
+        else []
+    )
+    settings = get_settings()
     return_context = {
         "edit_section": edit_section,
+        "agreements": agreements,
+        "editing_agreement": editing_agreement,
+        "incoming_transfers": incoming_transfers,
+        "outgoing_transfer": outgoing_transfer,
+        "transfer_targets": transfer_targets,
+        "self_declaration_count": session.scalar(
+            select(func.count())
+            .select_from(CRMSelfDeclaration)
+            .where(CRMSelfDeclaration.mah_id == mah.id)
+        )
+        if mah
+        else 0,
+        "transfer_agreements": transfer_agreements,
+        "editing_contract_links": editing_contract_links,
+        "agreement_options": agreement_options,
+        "linked_agreement_ids": {item.id for item in agreements},
+        "candidate_agreement_ids": candidate_agreement_ids,
+        "agreement_statuses": tuple(
+            dict.fromkeys((*AGREEMENT_STATUSES, editing_agreement.status))
+        )
+        if editing_agreement
+        else (),
+        "summary_draft": summary_draft,
+        "web_research_enabled": bool(
+            getattr(settings, "openai_api_key", None)
+            and getattr(settings, "openai_web_model", None)
+        ),
         "contact_options": contacts,
         "assigned_contacts": {
             contact.id: contact for contact in contacts if contact.id in assigned_ids
@@ -1084,15 +1871,14 @@ def render_mah(request, session, mah=None, source=None, *, edit=""):
         else [],
         "profile_groups": PROFILE_GROUPS,
         "profile": profile,
+        "spoc_ids": spoc_ids(profile),
         "association_options": sorted(
             set(ASSOCIATIONS) | set(profile["associations"]), key=str.casefold
         ),
-        "logo_url": logo_url(
-            profile["domain"], get_settings().logo_dev_publishable_key
-        ),
+        "logo_url": logo_url(profile["domain"], settings.logo_dev_publishable_key),
         "billing_parent": parent if not profile["eligible_for_invoicing"] else None,
     }
-    query = filter_query(request, "q")
+    query = filter_query(request, "q", "agreement")
     back_query = query + (
         ("&" if query else "?") + "archived=true" if mah and mah.archived_at else ""
     )
@@ -1100,10 +1886,12 @@ def render_mah(request, session, mah=None, source=None, *, edit=""):
         "/crm/mahs", "MAHs", query=query, back_query=back_query
     )
     if mah and not edit_section:
-        navigation = list_record_navigation(
-            session,
+        navigation = crm_navigation(
+            request, session,
             mah_directory_statement(
-                request.query_params.get("q", ""), bool(mah.archived_at)
+                request.query_params.get("q", ""),
+                bool(mah.archived_at),
+                request.query_params.get("agreement", ""),
             ),
             CRMMah.id,
             mah.id,
@@ -1124,7 +1912,6 @@ def render_mah(request, session, mah=None, source=None, *, edit=""):
             "mah": mah,
             "record_nav": navigation,
             "source": source,
-            "contract_statuses": CONTRACT_STATUSES,
         },
     )
 
@@ -1133,7 +1920,7 @@ def form_fields(data):
     name, gln, uid = (data.get(field, "").strip() for field in ("name", "gln", "uid"))
     checked = {"unknown": None, "yes": 1, "no": 0}
     registration = data.get("registration_checked")
-    contract = data.get("contract_status")
+    contract = data.get("contract_status", "unknown")
     if not name or len(name) > 255 or max(len(gln), len(uid)) > 100:
         raise HTTPException(422, "Provide a name and valid field lengths.")
     if registration not in checked or contract not in CONTRACT_STATUSES:
@@ -1197,41 +1984,60 @@ def profile_fields(data, session, identifier=None):
     return {"profile": profile, "parent_company_id": parent.id if parent else None}
 
 
-def contact_assignments(data, session):
-    spoc = data.get("spoc_id", "")
+def contact_assignments(data, session, profile):
+    spocs = data.get("spoc_ids", data.get("spoc_id", ""))
     alerts = data.get("alert_contact_ids", "")
-    submitted = ([spoc] if spoc else []) + (alerts.split(",") if alerts else [])
+    submitted = (spocs.split(",") if spocs else []) + (
+        alerts.split(",") if alerts else []
+    )
     if any(
         not value.isascii() or not value.isdecimal() or len(value) > 10
         for value in submitted
     ):
         raise HTTPException(422, "Select existing contacts.")
-    alert_ids = list(dict.fromkeys(map(int, alerts.split(",")))) if alerts else []
-    spoc_id = int(spoc) if spoc else None
     ids = set(map(int, submitted))
-    if (
-        ids
-        and set(session.scalars(select(CRMContact.id).where(CRMContact.id.in_(ids))))
-        != ids
+    profile = profile or {}
+    existing_spocs = set(spoc_ids(profile))
+    existing_alerts = set(profile.get("alert_contact_ids", []))
+    spoc_selection = list(dict.fromkeys(map(int, spocs.split(",")))) if spocs else []
+    alert_selection = list(dict.fromkeys(map(int, alerts.split(",")))) if alerts else []
+    contacts = (
+        {
+            contact.id: contact
+            for contact in session.scalars(
+                select(CRMContact)
+                .where(CRMContact.id.in_(ids))
+                .order_by(CRMContact.id)
+                .with_for_update()
+            )
+        }
+        if ids
+        else {}
+    )
+    if ids != contacts.keys() or any(
+        contacts[identifier].archived_at and identifier not in existing
+        for selection, existing in (
+            (spoc_selection, existing_spocs),
+            (alert_selection, existing_alerts),
+        )
+        for identifier in selection
     ):
-        raise HTTPException(422, "Select existing contacts.")
-    return {"spoc_id": spoc_id, "alert_contact_ids": alert_ids}
+        raise HTTPException(422, "Select active contacts for new assignments.")
+    saved = dict(profile or {})
+    saved.pop("spoc_id", None)
+    saved["spoc_ids"] = spoc_selection
+    saved["alert_contact_ids"] = alert_selection
+    return saved
 
 
 def section_fields(data, session, mah, section):
     if section not in EDIT_SECTIONS:
         raise HTTPException(422, "Select a valid MAH section.")
     if section == "contacts":
-        return {"profile": (mah.profile or {}) | contact_assignments(data, session)}
+        return {"profile": contact_assignments(data, session, mah.profile)}
     fields = {}
     if section == "general":
         fields = form_fields({**data, "contract_status": mah.contract_status})
-    elif section == "contract":
-        contract = data.get("contract_status")
-        if contract not in CONTRACT_STATUSES:
-            raise HTTPException(422, "Select a valid contract status.")
-        fields["contract_status"] = contract
-
     allowed = {field for field, _, _ in PROFILE_GROUPS.get(EDIT_SECTIONS[section], ())}
     if section == "general":
         allowed.update({"parent_company_id", "associations_present"})
@@ -1240,8 +2046,6 @@ def section_fields(data, session, mah, section):
         allowed.update(
             {"invoice_routing_present", "eligible_for_invoicing", "payment_platform"}
         )
-    elif section == "contract":
-        allowed.add("signing_date")
 
     changes = profile_fields(
         {field: data[field] for field in allowed if field in data}, session, mah.id
@@ -1249,8 +2053,7 @@ def section_fields(data, session, mah, section):
     profile = changes["profile"]
     if section != "invoice":
         profile.pop("payment_platform")
-    if section != "contract":
-        profile.pop("signing_date")
+    profile.pop("signing_date")
     if section == "general":
         fields["parent_company_id"] = changes["parent_company_id"]
     fields["profile"] = (mah.profile or {}) | profile
@@ -1281,7 +2084,41 @@ async def update_crm_mah(request: Request, identifier: int, session: DbSession):
     now = utcnow()
     if command == "save" and mah.archived_at is None:
         section = data.get("section")
-        if section is not None:
+        if section == "contract-links":
+            selected = selected_ids(data, "agreement:")
+            linked = select(CRMAgreementMAH.agreement_id).where(
+                CRMAgreementMAH.mah_id == mah.id
+            )
+            agreements = list(
+                session.scalars(
+                    select(CRMAgreement)
+                    .where(
+                        or_(CRMAgreement.id.in_(selected), CRMAgreement.id.in_(linked))
+                    )
+                    .order_by(CRMAgreement.id)
+                    .with_for_update()
+                )
+            )
+            if not selected.issubset({agreement.id for agreement in agreements}):
+                raise HTTPException(422, "Choose valid agreements.")
+            for agreement in agreements:
+                if agreement.id in selected and mah not in agreement.mahs:
+                    agreement.mahs.append(mah)
+                elif agreement.id not in selected and mah in agreement.mahs:
+                    agreement.mahs.remove(mah)
+            fields = {}
+        elif section == "contract":
+            value = data.get("agreement_id", "")
+            if not re.fullmatch(r"[0-9]{1,10}", value):
+                raise HTTPException(422, "Choose a valid agreement.")
+            agreement = agreement_or_404(session, int(value), lock=True)
+            if mah not in agreement.mahs:
+                raise HTTPException(
+                    409, "This agreement is no longer linked to this MAH."
+                )
+            update_agreement_details(agreement, data)
+            fields = {}
+        elif section is not None:
             fields = section_fields(data, session, mah, section)
         else:
             fields = form_fields(data)
@@ -1307,6 +2144,9 @@ async def update_crm_mah(request: Request, identifier: int, session: DbSession):
         raise HTTPException(409, "This MAH changed. Reload before saving.") from None
     if command == "archive":
         return RedirectResponse("/crm/mahs?archived=true", status_code=303)
-    return RedirectResponse(
-        f"/crm/mahs/{identifier}{filter_query(request, 'q')}", status_code=303
-    )
+    query = filter_query(request, "q", "agreement")
+    if command == "save" and data.get("section") == "company-summary":
+        query += ("&" if query else "?") + "summary=open#company-summary"
+    if command == "save" and data.get("section") in ("contract", "contract-links"):
+        query += "#contract"
+    return RedirectResponse(f"/crm/mahs/{identifier}{query}", status_code=303)

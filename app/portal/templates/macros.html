@@ -11,12 +11,12 @@
 {% endmacro %}
 
 {% macro record_bar(navigation, steps=true) %}
-<nav class="record-navigation" aria-label="Record navigation">
-  <a href="{{ navigation.back }}">← {{ navigation.label }}</a>
-  {% if steps %}<div class="record-navigation-steps">
-    {% if navigation.previous %}<a rel="prev" href="{{ navigation.previous }}">← Previous</a>{% else %}<span aria-disabled="true">← Previous</span>{% endif %}
-    {% if navigation.next %}<a rel="next" href="{{ navigation.next }}">Next →</a>{% else %}<span aria-disabled="true">Next →</span>{% endif %}
-  </div>{% endif %}
+<nav class="record-navigation" aria-label="Record navigation" data-record-editing="{{ 'false' if steps else 'true' }}">
+  <a href="{{ navigation.back }}" data-record-back>← {{ navigation.label }}</a>
+  <div class="record-navigation-steps">
+    {% if navigation.previous %}<a rel="prev"{% if steps %} href="{{ navigation.previous }}"{% endif %} data-record-href="{{ navigation.previous }}"{% if not steps %} aria-disabled="true" tabindex="-1"{% endif %}>← Previous</a>{% else %}<span aria-disabled="true">← Previous</span>{% endif %}
+    {% if navigation.next %}<a rel="next"{% if steps %} href="{{ navigation.next }}"{% endif %} data-record-href="{{ navigation.next }}"{% if not steps %} aria-disabled="true" tabindex="-1"{% endif %}>Next →</a>{% else %}<span aria-disabled="true">Next →</span>{% endif %}
+  </div>
 </nav>
 {% endmacro %}
 
@@ -44,4 +44,13 @@
 {% if received %}<span><i class="dot"></i>Airtable export</span><span>Imported <strong>{{ received.strftime('%Y-%m-%d %H:%M') }} UTC</strong></span>
 {% else %}<span>No Airtable export recorded</span>{% endif %}
 </div>
+{% endmacro %}
+
+
+{% macro crm_extra_headers(fields) %}
+{% for field in fields %}<th scope="col" data-column="{{ field.key }}" data-default-visible="false" hidden>{{ field.label }}{% if field.origin == 'Airtable import' %} · imported{% endif %}</th>{% endfor %}
+{% endmacro %}
+
+{% macro crm_extra_cells(fields, values) %}
+{% for field in fields %}<td class="crm-field-cell" hidden>{{ values[field.key] }}</td>{% endfor %}
 {% endmacro %}

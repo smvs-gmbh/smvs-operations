@@ -1,5 +1,7 @@
 """MAH master records and the initial, insert-only Airtable mapping."""
 
+import re
+
 from sqlalchemy import select
 
 from app.core.db.models import (
@@ -18,6 +20,10 @@ CONTRACT_STATUSES = {
     "no_contract": "No contract",
     "ended": "Contract ended",
 }
+
+
+def legacy_test_mah(name):
+    return bool(re.fullmatch(r"Test MAH(?: [0-9]+)?", name.strip(), re.IGNORECASE))
 
 
 def seed_staged_mahs(session):
@@ -47,6 +53,8 @@ def seed_staged_mahs(session):
         if identity in existing:
             continue
         name = data["MAH Name"].strip()
+        if legacy_test_mah(name):
+            continue
         gln = data.get("GLN", "").strip()
         uid = data.get("UID", "").strip()
         if not name or len(name) > 255 or max(len(identity), len(gln), len(uid)) > 100:

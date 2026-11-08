@@ -7,19 +7,19 @@
 {{ ui.list_metrics('IT Supplier overview', [('IT suppliers', directory_total|number, 'In the latest Airtable export'), ('Qualified', qualified_total|number, 'Checked in Airtable'), ('Matching results', rows|length|number, 'With the current search')]) }}
 <section class="panel">
 <div class="panel-heading"><h2>IT supplier directory</h2><span class="subtle">{{ rows|length|number }} results</span></div>
-<form method="get" class="review-body review-form list-filters" role="search">
+<form method="get" class="review-body review-form list-filters" role="search" data-crm-filters="it-suppliers">
 <div class="review-controls">
 <label>Name, software or status<input name="q" maxlength="150" value="{{ q }}"></label>
 <button type="submit">Search</button>
 </div>
 </form>
-<div class="table-scroll"><table>
-<thead><tr><th>IT Supplier</th><th>Status</th><th>Qualified</th><th>End-user software</th></tr></thead>
+<div class="table-scroll"><table data-crm-columns="it-suppliers">
+<thead><tr><th data-column="name">IT Supplier</th><th data-column="status">Status</th><th data-column="qualified">Qualified</th><th data-column="software">End-user software</th>{{ ui.crm_extra_headers(crm_extra_columns) }}</tr></thead>
 <tbody>
 {% for row in rows %}{% set supplier = row.raw_row_json %}
 <tr><td><a href="/crm/it-suppliers/{{ row.id }}{{ filter_query(request, 'q') }}">{{ supplier['IT Supplier Name'] }}</a></td>
 <td>{{ supplier.get('Status') or '—' }}</td><td>{{ 'Checked' if supplier.get('Qualified') == 'checked' else '—' }}</td>
-<td>{{ supplier.get('End User Software') or '—' }}</td></tr>
+<td>{{ supplier.get('End User Software') or '—' }}</td>{{ ui.crm_extra_cells(crm_extra_columns, crm_field_cells[row.id]) }}</tr>
 {% else %}<tr><td colspan="4">No matching IT suppliers.</td></tr>{% endfor %}
 </tbody>
 </table></div>

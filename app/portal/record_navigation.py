@@ -6,6 +6,8 @@ from sqlalchemy import func, select
 
 
 def filter_query(request, *keys):
+    if request.url.path.startswith("/crm/"):
+        keys = tuple(dict.fromkeys((*keys, "view", "rules", "sort", "direction", "layout", "preset")))
     values = {
         key: request.query_params[key] for key in keys if key in request.query_params
     }

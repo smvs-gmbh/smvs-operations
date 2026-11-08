@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% import 'macros.html' as ui %}
+{% block heading %}
+<nav class="record-navigation" aria-label="Record navigation"><a href="/crm/agreements">← MAH Agreements</a></nav>
+{{ ui.list_heading('CRM · COOPERATION AGREEMENT', 'New agreement', 'Register a cooperation agreement and optionally assign it to a MAH.') }}
+{% endblock %}
+{% block content %}
+<section class="panel review-body review-form">
+<h2>Agreement details</h2>
+<form method="post" action="/crm/agreements" class="review-form">
+<div class="review-controls">
+<label>Contract ID<input name="contract_id" maxlength="100" required></label>
+<label>Contractor<input name="contractor" maxlength="255" placeholder="Defaults to the selected MAH"></label>
+<label>Contract status<select name="status">{% for status in agreement_statuses %}<option>{{ status }}</option>{% endfor %}</select></label>
+<label>Signing date<input type="date" name="signing_date"></label>
+<label>Assigned MAH<select name="mah_id"><option value="">Unassigned</option>
+{% for mah in mahs %}<option value="{{ mah.id }}" {{ 'selected' if mah.id == selected_mah }}>{{ mah.name }}</option>{% endfor %}
+</select></label>
+</div>
+<p class="subtle">You can attach the PDF after creating the agreement.</p>
+<div class="mah-section-heading mah-edit-actions">
+<button class="portal-button" type="submit">Create agreement</button>
+<a class="portal-button portal-button-secondary" href="/crm/agreements">Cancel</a>
+</div>
+</form>
+</section>
+{% endblock %}

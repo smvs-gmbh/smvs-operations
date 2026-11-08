@@ -22,6 +22,8 @@ SMVS Operations is the central operational platform of SMVS for monitoring, anal
 
 ## Documentation
 
+The [User Guide](docs/overview/USER-GUIDE.md) describes portal workflows.
+
 The [portal UI conventions](docs/technical/PORTAL-UI-GUIDELINES.md) define the shared page layout, link styles and editing patterns.
 
 The [implementation list](docs/overview/IMPLEMENTATION-LIST.md) tracks completed work and the next priorities.

@@ -5,12 +5,12 @@
 <input type="hidden" name="{{ field }}" value="{{ ids|join(',') }}">
 {% if compact %}
 <div class="contact-picker-summary">
-<output class="contact-selection">{% for id in ids if id in assigned_contacts %}<span class="contact-chip">{{ assigned_contacts[id].display_name }}</span>{% else %}<span class="subtle">No contact selected</span>{% endfor %}</output>
+<output class="contact-selection">{% for id in ids if id in assigned_contacts %}<span class="contact-chip">{{ assigned_contacts[id].display_name }}{{ ' (archived)' if assigned_contacts[id].archived_at }}</span>{% else %}<span class="subtle">No contact selected</span>{% endfor %}</output>
 <button class="contact-button-secondary" id="{{ field }}-choose" type="button" data-open-contact-picker data-choose-label="{{ choose }}" data-contact-role="{{ label }}" aria-label="{{ 'Change' if ids else choose }} · {{ label }}" aria-haspopup="dialog">{{ 'Change' if ids else choose }}</button>
 </div>
 {% else %}
 <output class="contact-selection">{{ contact_labels(ids) }}</output>
-<div><button id="{{ field }}-choose" type="button" data-open-contact-picker>{{ choose }}</button></div>
+<div><button class="portal-button portal-button-secondary" id="{{ field }}-choose" type="button" data-open-contact-picker>{{ choose }}</button></div>
 {% endif %}
 <dialog aria-labelledby="{{ field }}-title">
 <h3 id="{{ field }}-title">{{ label }}</h3>
@@ -20,7 +20,7 @@
 {% if not multiple %}<label class="resolve-confirm" data-contact-option><input type="radio" name="{{ field }}-option" value="" disabled> No contact</label>{% endif %}
 {% for contact in contact_options %}
 <label class="resolve-confirm" data-contact-option><input type="{{ 'checkbox' if multiple else 'radio' }}"{% if not multiple %} name="{{ field }}-option"{% endif %} value="{{ contact.id }}" disabled>
-<span><span data-contact-label>{{ contact.display_name }}</span>{% if (contact.profile or {}).get("email") and contact.profile.email != contact.display_name %} · {{ contact.profile.email }}{% endif %}{% if contact.function %} · {{ contact.function }}{% endif %} <small>· {{ contact.airtable_id }}</small></span></label>
+<span><span data-contact-label>{{ contact.display_name }}</span>{% if contact.archived_at %} · Archived{% endif %}{% if (contact.profile or {}).get("email") and contact.profile.email != contact.display_name %} · {{ contact.profile.email }}{% endif %}</span></label>
 {% else %}<p>No contacts available.</p>{% endfor %}
 </fieldset>
 {% if compact %}
@@ -29,12 +29,12 @@
 <button type="button" data-apply-contacts>Use selection</button>
 </div>
 {% else %}
-<div class="mah-section-heading">
-<button type="button" data-apply-contacts>Use selection</button>
-<button type="button" data-cancel-contacts>Cancel</button>
+<div class="mah-section-heading mah-edit-actions">
+<button type="button" class="portal-button" data-apply-contacts>Use selection</button>
+<button type="button" class="portal-button portal-button-secondary" data-cancel-contacts>Cancel</button>
 </div>
 {% endif %}
 </dialog>
 </div>
 {% endmacro %}
-{% macro contact_labels(ids) %}{% for id in ids if id in assigned_contacts %}<a href="/crm/contacts/{{ id }}">{{ assigned_contacts[id].display_name }}</a>{{ ', ' if not loop.last }}{% else %}—{% endfor %}{% endmacro %}
+{% macro contact_labels(ids) %}{% for id in ids if id in assigned_contacts %}<a href="/crm/contacts/{{ id }}">{{ assigned_contacts[id].display_name }}</a>{% if assigned_contacts[id].archived_at %} (archived){% endif %}{{ ', ' if not loop.last }}{% else %}—{% endfor %}{% endmacro %}

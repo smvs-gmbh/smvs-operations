@@ -5,6 +5,7 @@ from collections import Counter, defaultdict
 from sqlalchemy import false, select
 
 from app.core.db.models import StagingRow
+from app.domain.crm.contact_assignments import has_spoc_assignment
 from app.domain.crm.imports import linked_values, staged_crm_export
 from app.domain.models import (
     CRMContact,
@@ -98,9 +99,9 @@ def contact_reference_index(session):
     by_id = {}
     by_label = defaultdict(list)
     for contact, raw in session.execute(
-        select(CRMContact, StagingRow.raw_row_json).outerjoin(
-            StagingRow, CRMContact.source_row_id == StagingRow.id
-        )
+        select(CRMContact, StagingRow.raw_row_json)
+        .outerjoin(StagingRow, CRMContact.source_row_id == StagingRow.id)
+        .where(CRMContact.archived_at.is_(None))
     ):
         by_id[contact.airtable_id] = contact.id
         label = (raw or {}).get("Record Id", contact.label).strip()
@@ -112,11 +113,11 @@ def resolve_end_user_contacts(source, index):
     by_id, by_label = index
     assignments = {}
     pending = []
-    for header, field in (("SPOC", "spoc_id"), ("Alert contacts", "alert_contact_ids")):
+    for header, field in (
+        ("SPOC", "spoc_ids"),
+        ("Alert contacts", "alert_contact_ids"),
+    ):
         references = list(dict.fromkeys(linked_values(source.get(header, ""))))
-        if header == "SPOC" and len(references) > 1:
-            pending.append("SPOC · Multiple contacts in the export")
-            continue
         matches = []
         for reference in references:
             candidates = (
@@ -130,9 +131,7 @@ def resolve_end_user_contacts(source, index):
                 reason = "Ambiguous match" if candidates else "No matching contact"
                 pending.append(f"{header} · {reason} · {reference}")
         if matches:
-            assignments[field] = (
-                matches[0] if header == "SPOC" else list(dict.fromkeys(matches))
-            )
+            assignments[field] = list(dict.fromkeys(matches))
     return assignments, pending
 
 
@@ -148,7 +147,10 @@ def seed_end_user_contacts(session):
         profile = user.profile or {}
         assignments, _ = resolve_end_user_contacts(source, index)
         missing = {
-            field: value for field, value in assignments.items() if field not in profile
+            field: value
+            for field, value in assignments.items()
+            if field not in profile
+            and (field != "spoc_ids" or not has_spoc_assignment(profile))
         }
         if missing:
             user.profile = profile | missing
@@ -165,7 +167,7 @@ def main():
         session.commit()
     print(f"{created} End Users created; {linked} linked to NMVS.")
     print(
-        f"{contacts['spoc_id']} SPOC and {contacts['alert_contact_ids']} Alert contact groups assigned."
+        f"{contacts['spoc_ids']} SPOC and {contacts['alert_contact_ids']} Alert contact groups assigned."
     )
 
 

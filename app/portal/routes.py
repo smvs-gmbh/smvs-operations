@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
+from markdown_it import MarkdownIt
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -29,6 +30,23 @@ templates.env.globals["filter_query"] = filter_query
 @router.get("/", include_in_schema=False)
 def index():
     return RedirectResponse("/products")
+
+
+USER_GUIDE = Path(__file__).resolve().parents[2] / "docs/overview/USER-GUIDE.md"
+guide_renderer = MarkdownIt("commonmark", {"html": False}).enable("table")
+
+
+@router.get("/user-guide", include_in_schema=False)
+def user_guide(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="user_guide.html",
+        context={
+            "title": "User Guide",
+            "active": "user_guide",
+            "guide": guide_renderer.render(USER_GUIDE.read_text(encoding="utf-8")),
+        },
+    )
 
 
 @router.get("/products", include_in_schema=False)

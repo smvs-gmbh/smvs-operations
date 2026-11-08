@@ -16,8 +16,9 @@ alerts that require follow-up.
 - [ ] Review parent company links for invoice routing.
 - [ ] Design on-demand company summary drafts and review a separate company news
   view for events such as announced acquisitions. Retain imported company size for reference.
-- [ ] Import self-declarations with turnover and packs sold for annual fee
-  calculation. Link agreements and contract documents to MAHs.
+- [x] Import historical self-declarations with RX sales groups and packs sold,
+  link agreements and contract documents to MAHs, and show a fee preview.
+- [ ] Implement [self-declaration invitations, Tally intake and delivery](../integration/self-declaration-workflow.md).
 - [ ] Prepare Bexio as the invoicing system from 2027-01-01.
 
 - [ ] Review the staged Airtable MAH and Contacts columns. Map agreed CRM
@@ -80,5 +81,19 @@ and [CRM proposal](../architecture/Shared-Investigation-and-CRM-Proposal.md).
 - [x] Add the opt-in internal passkey pilot with invitations, user lifecycle,
   Administrator and NMVO roles, and server-side access checks.
 - [ ] Add recovery codes, supervised recovery and authentication audit events.
-- [ ] Store CRM column preferences per authenticated user and directory.
+- [x] Store CRM column preferences per authenticated user and directory.
 - [ ] Release MAH reports to explicitly assigned SAI holders after review.
+
+- [x] Unify CRM directory filter controls and store visible filters and default values per signed-in user, with reset and explicit-link precedence.
+
+- [x] Personal CRM column selection per account and directory, with immediate preview and independent reset.
+
+- [x] Persist CRM column order, with accessible up/down controls and reset.
+- [x] Define a shared typed CRM business-field catalogue for list columns and future view conditions, with current-value precedence and labelled source-only values.
+- [x] Keep CRM record navigation visible during section editing and provide guarded keyboard shortcuts for record, tab and list review navigation.
+- [x] Move existing MAH, Contact and End User record actions to a right-hand toolbox opened from the record navigation.
+- [x] Provide a compact CRM toolbar and responsive right-hand View toolbox (Conditions, Columns, Save view), with Apply preview and keyboard support.
+- [x] Replace filter visibility configuration with named CRM views combining conditions, columns, order and a personal default. See `docs/technical/CRM-LIST-VIEWS.md`.
+
+- [ ] Connect live self-declaration lifecycle states to outstanding-response views.
+- [ ] Consider shared CRM views and OR condition groups after the personal-view workflow is accepted.

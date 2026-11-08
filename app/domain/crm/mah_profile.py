@@ -5,9 +5,11 @@ from datetime import date
 from urllib.parse import urlencode
 
 PROFILE_GROUPS = {
-    "General": (
+    "Company summary": (
         ("company_summary", "Company summary", "Company summary"),
         ("company_size", "Company size", "Company Size"),
+    ),
+    "General": (
         ("vat_number", "VAT number", "VAT Number"),
         ("domain", "Domain", "Domain"),
         ("status", "Status", "Status"),

@@ -7,7 +7,7 @@
 {{ ui.list_metrics('End User overview', [('End Users in this directory', directory_total|number, 'Archived records' if archived else 'Current records'), ('Without NMVS link', unlinked_total|number, 'In this directory'), ('Matching results', pagination.total|number, 'With the current filters')]) }}
 <section class="panel">
 <div class="panel-heading"><h2>{{ 'Archived End Users' if archived else 'Current End Users' }}</h2><span class="subtle">{{ pagination.total|number }} results</span></div>
-<form method="get" class="review-body review-form list-filters" role="search">
+<form method="get" class="review-body review-form list-filters" role="search" data-crm-filters="end-users">
 <div class="review-controls">
 <label>End User or NMVS organisation<input name="q" value="{{ q }}" maxlength="150"></label>
 <label class="resolve-confirm"><input type="checkbox" name="unlinked" value="true" {{ 'checked' if unlinked }}> Unlinked only</label>
@@ -18,12 +18,12 @@
 <button type="submit">Filter</button>
 </div>
 </form>
-<div class="table-scroll"><table>
-<thead><tr><th>End User</th><th>NMVS organisation</th><th>Link status</th></tr></thead>
+<div class="table-scroll"><table data-crm-columns="end-users">
+<thead><tr><th data-column="name">End User</th><th data-column="organisation">NMVS organisation</th><th data-column="link">Link status</th>{{ ui.crm_extra_headers(crm_extra_columns) }}</tr></thead>
 <tbody>{% for user, organisation in rows %}
 <tr><td><a href="/crm/end-users/{{ user.id }}{{ detail_query }}">{{ user.name }}</a></td>
 <td>{% if organisation %}<a href="/organisations/{{ organisation.id }}">{{ organisation.organisation_name or organisation.source_organisation_id }}</a>{% else %}—{% endif %}</td>
-<td>{{ 'Unlinked' if not organisation else 'Exact match' if user.link_origin == 'exact' else 'Manually linked' }}</td></tr>
+<td>{{ 'Unlinked' if not organisation else 'Exact match' if user.link_origin == 'exact' else 'Manually linked' }}</td>{{ ui.crm_extra_cells(crm_extra_columns, crm_field_cells[user.id]) }}</tr>
 {% else %}<tr><td colspan="3">No matching End Users.</td></tr>{% endfor %}</tbody>
 </table></div>{{ ui.pagination(pagination, request) }}
 </section>

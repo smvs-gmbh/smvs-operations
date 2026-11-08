@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 import pytest
 from sqlalchemy import func, select
@@ -108,6 +108,38 @@ def test_cadence_save_preserves_pause_and_resume_is_explicit(imports_portal):
         ).enabled
 
 
+def test_last_successful_import_uses_completion_time(imports_portal):
+    client, factory = imports_portal
+    started = datetime(2026, 8, 1, 9)
+    completed = started + timedelta(minutes=15)
+    with factory() as s:
+        schedule_id = s.scalar(
+            select(ImportSchedule.id).where(ImportSchedule.import_key == "exceptions")
+        )
+        s.add_all(
+            [
+                ImportExecution(
+                    schedule_id=schedule_id,
+                    trigger="backfill",
+                    status="succeeded",
+                    started_at=started,
+                    completed_at=completed,
+                ),
+                ImportExecution(
+                    schedule_id=schedule_id,
+                    trigger="scheduled",
+                    status="failed",
+                    started_at=completed,
+                    completed_at=completed + timedelta(minutes=5),
+                ),
+            ]
+        )
+        s.commit()
+
+    page = client.get("/imports").text
+    assert "<dt>Last successful import</dt><dd>2026-08-01 09:15:00 UTC</dd>" in page
+
+
 def test_backfill_validation_and_cancel_do_not_modify_schedule(imports_portal):
     client, factory = imports_portal
     headers = {"Origin": "http://testserver"}
@@ -165,6 +197,29 @@ def test_backfill_validation_and_cancel_do_not_modify_schedule(imports_portal):
         ).status_code
         == 422
     )
+
+
+def test_exceptions_backfill_defaults_to_one_day_and_preserves_invalid_range(
+    imports_portal,
+):
+    client, factory = imports_portal
+    headers = {"Origin": "http://testserver"}
+    url = "/imports/exceptions/backfill"
+    invalid = client.post(
+        url, headers=headers, data={"start": "2026-08-01", "end": "2026-11-05"}
+    )
+    assert invalid.status_code == 422
+    assert 'role="alert">Select 1 to 31 UTC days.' in invalid.text
+    assert 'name="end" value="2026-11-05"' in invalid.text
+    assert (
+        client.post(
+            url, headers=headers, data={"start": "2026-08-01", "end": ""}
+        ).status_code
+        == 200
+    )
+    with factory() as s:
+        request = s.scalars(select(ManualImportRequest)).one()
+        assert request.start_date == request.end_date == date(2026, 8, 1)
 
 
 def test_complete_day_coverage_merges_overlaps_and_keeps_gaps():

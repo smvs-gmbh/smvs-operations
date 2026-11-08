@@ -6,6 +6,16 @@
     ('Matching alerts', pagination.total|number, 'With the current filters'),
     ('Unresolved source dates', unresolved_dates|number, 'Across all retained alerts')
 ]) }}
+{% if language_search_enabled %}
+<details class="panel review-body">
+<summary>Search in natural language</summary>
+<form method="post" action="/exceptions/search-draft" class="review-form">
+<p class="subtle">The question is sent to OpenAI to draft filters. Avoid confidential details and personal data.</p>
+<label>Search question<input name="question" maxlength="500" placeholder="Open A7 alerts from Germany in the last 30 days" required></label>
+<div><button type="submit">Draft filters</button></div>
+</form>
+</details>
+{% endif %}
 <section class="panel"><div class="panel-heading"><h2>{{ 'To-do list · all dates' if work_status=='to_do' else 'Alerts with unresolved dates' if date_quality=='unresolved' else 'Reported alerts' }}</h2><span class="subtle">{{ 'Follow-up dates in UTC · source date filter not applied' if work_status=='to_do' else start.strftime('%Y-%m-%d') ~ '–' ~ end.strftime('%Y-%m-%d') ~ ' · UTC' }}</span></div><form class="activity-filters list-filters" method="get" role="search"><div class="activity-filter-row">
 <label>Work status<select name="work_status">{% for code,label in [('open','Open · includes to do'),('to_do','To-do list · all dates'),('resolved','Resolved'),('all','All')] %}<option value="{{ code }}" {{ 'selected' if work_status==code }}>{{ label }}</option>{% endfor %}</select></label>
 <label>From (UTC)<input type="date" name="start" value="{{ start }}" required></label><label>To (UTC)<input type="date" name="end" value="{{ end }}" required></label>

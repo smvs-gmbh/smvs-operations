@@ -1,4 +1,5 @@
 import re
+from types import SimpleNamespace
 
 from sqlalchemy import select
 
@@ -45,13 +46,23 @@ def test_mah_import_edit_archive_restore_and_create(portal, monkeypatch):
     overview = client.get(url).text
     assert 'aria-label="Edit general"' in overview and "Test Street" in overview
     assert 'name="street"' not in overview
+    assert '<details class="panel review-body mah-company-summary" >' in overview
+    summary_form = client.get(url + "?edit=company-summary").text
+    assert (
+        '<details class="panel review-body mah-company-summary" open>' in summary_form
+    )
+    assert (
+        'name="company_summary"' in summary_form
+        and 'name="company_size"' in summary_form
+    )
+    assert 'name="gln"' not in summary_form
     detail = client.get(url + "?edit=general").text
     address = client.get(url + "?edit=address").text
     invoice = client.get(url + "?edit=invoice").text
     contract = client.get(url + "?edit=contract").text
     assert 'name="street"' not in detail and 'name="name"' not in address
     assert "Cancel" in detail
-    assert "Signed" in detail
+    assert "No linked agreement." in detail
     assert 'name="association:interpharma" value="yes" checked' in detail
     assert 'name="association:scienceindustries" value="yes" checked' in detail
     assert 'name="eligible_for_invoicing" value="yes" checked' in invoice
@@ -61,7 +72,8 @@ def test_mah_import_edit_archive_restore_and_create(portal, monkeypatch):
         in client.get("/crm/imports").text
     )
     assert 'value="Test Street"' in address
-    assert 'value="2026-02-01"' in contract
+    assert 'name="signing_date"' not in contract
+    assert "Imported signing date" not in contract
     assert invoice.count('name="invoice_email"') == 1
     assert 'name="payment_platform" value="yes" checked' in invoice
     assert (
@@ -84,6 +96,27 @@ def test_mah_import_edit_archive_restore_and_create(portal, monkeypatch):
         record = session.get(CRMMah, identifier)
         assert record.profile == {"street": "Updated Street"}
         assert record.contract_status == "unknown"
+        version = str(record.version)
+    summary_saved = client.post(
+        url,
+        data={
+            "command": "save",
+            "section": "company-summary",
+            "version": version,
+            "company_summary": "Updated summary",
+            "company_size": "42",
+            "gln": "ignored",
+        },
+        headers=ORIGIN,
+        follow_redirects=False,
+    )
+    assert summary_saved.status_code == 303
+    assert summary_saved.headers["location"].endswith("?summary=open#company-summary")
+    with factory() as session:
+        record = session.get(CRMMah, identifier)
+        assert record.profile["company_summary"] == "Updated summary"
+        assert record.profile["company_size"] == "42"
+        assert record.gln == "01234"
         version = str(record.version)
     contact_csv = (
         b"RECORD_ID2,Record Id,Function,Link MAH\n"
@@ -154,17 +187,22 @@ def test_mah_import_edit_archive_restore_and_create(portal, monkeypatch):
         assert contact.profile["email"] == "new@example.test"
         assert contact.profile["first_name"] == "Ada"
         assert contact.profile["mailbox_type"] == "Shared Mailbox"
+    with factory() as session:
+        backup = CRMContact(airtable_id="recBackup", label="Backup Contact")
+        session.add(backup)
+        session.commit()
+        backup_id = backup.id
     assert "Shared Mailbox" in client.get(contact_url).text
     assignment = {
         "command": "save",
         "section": "contacts",
         "version": version,
-        "spoc_id": contact_id,
+        "spoc_ids": f"{contact_id},{backup_id}",
         "alert_contact_ids": str(contact_id),
     }
     assert (
         client.post(
-            url, data={**assignment, "spoc_id": 9999}, headers=ORIGIN
+            url, data={**assignment, "spoc_ids": "9999"}, headers=ORIGIN
         ).status_code
         == 422
     )
@@ -175,9 +213,11 @@ def test_mah_import_edit_archive_restore_and_create(portal, monkeypatch):
         == 303
     )
     assert "Ada Example" in client.get(url).text
+    assert "Backup Contact" in client.get(url).text
+    assert "Example Holder" in client.get(f"/crm/contacts/{backup_id}").text
     with factory() as session:
         record = session.get(CRMMah, identifier)
-        assert record.profile["spoc_id"] == contact_id
+        assert record.profile["spoc_ids"] == [contact_id, backup_id]
         assert record.profile["alert_contact_ids"] == [contact_id]
         assert record.profile["street"] == "Updated Street"
         version = str(record.version)
@@ -411,7 +451,7 @@ def test_end_user_contact_backfill_preserves_manual_choices(portal):
     content = (
         b"Record Id,End User Name,SPOC,Alert contacts\n"
         b'Alpha,Alpha,recA,"Unique,Duplicate"\n'
-        b'Beta,Beta,"Unique,recA",Unique\n'
+        b'Beta,Beta,"Unique,recB",Unique\n'
     )
     with factory() as session:
         stage_export(
@@ -432,8 +472,474 @@ def test_end_user_contact_backfill_preserves_manual_choices(portal):
         unique = session.scalar(
             select(CRMContact.id).where(CRMContact.airtable_id == "recA")
         )
-        assert seed_end_user_contacts(session) == {"alert_contact_ids": 2}
+        assert seed_end_user_contacts(session) == {
+            "spoc_ids": 1,
+            "alert_contact_ids": 2,
+        }
         session.commit()
         assert alpha.profile == {"spoc_id": None, "alert_contact_ids": [unique]}
-        assert beta.profile == {"alert_contact_ids": [unique]}
+        backup = session.scalar(
+            select(CRMContact.id).where(CRMContact.airtable_id == "recB")
+        )
+        assert beta.profile == {
+            "spoc_ids": [unique, backup],
+            "alert_contact_ids": [unique],
+        }
         assert not seed_end_user_contacts(session)
+
+
+def test_agreement_review_filters_and_reversible_attachment_exclusion(portal):
+    from app.core.db.models import AcquiredArtifact
+    from app.domain.crm.agreements import archive_pdf, seed_agreements
+    from app.domain.models import CRMAgreement
+
+    client, factory = portal
+    client.app.include_router(router)
+    holders = (
+        b"RECORD_ID,MAH Name,Agreements\n"
+        b"recOne,Holder One,C-1\nrecTwo,Holder Two,C-2\nrecThree,Holder Three,C-2\n"
+    )
+    contracts = (
+        b"Contract ID,Contractor,Status,Agreement,Signing Date\n"
+        b"C-1,Holder One,Signed,,1.2.2026\nC-2,Original Contractor,Signed,,2.3.2026\n"
+    )
+    with factory() as s:
+        stage_export(s, parse_export("MAH", holders), holders, "holders.csv")
+        seed_staged_mahs(s)
+        stage_export(
+            s, parse_export("MAH Agreements", contracts), contracts, "contracts.csv"
+        )
+        assert seed_agreements(s) == 2
+        assert archive_pdf(s, "C-2", "first.pdf", b"%PDF- first")
+        assert archive_pdf(s, "C-2", "second.pdf", b"%PDF- second")
+        s.commit()
+        first, second = s.scalars(select(CRMAgreement).order_by(CRMAgreement.id)).all()
+        assert first.mahs and not second.mahs
+        holder = s.scalar(select(CRMMah).where(CRMMah.name == "Holder Two"))
+        attachment = next(
+            item
+            for item in s.scalars(select(AcquiredArtifact))
+            if item.report_metadata.get("filename") == "second.pdf"
+        )
+        identifier, mah_id, artifact_id = second.id, holder.id, attachment.id
+
+    directory = "/crm/agreements"
+    url = f"{directory}/{identifier}"
+    assert "Original Contractor" in client.get(f"{directory}?link=ambiguous").text
+    assert "Original Contractor" in client.get(f"{directory}?attachments=multiple").text
+    assert (
+        "Original Contractor" not in client.get(f"{directory}?attachments=missing").text
+    )
+    assert "Holder Two" in client.get("/crm/mahs?agreement=missing").text
+    assert "second.pdf" in client.get(url).text
+    assert client.get(f"{url}/pdf/{artifact_id}").status_code == 403
+    assert (
+        client.post(
+            url, headers=ORIGIN, data={"command": "assign", "mah_id": mah_id}
+        ).status_code
+        == 200
+    )
+    assert "Holder Two" not in client.get("/crm/mahs?agreement=missing").text
+    assert "Original Contractor" not in client.get(f"{directory}?link=ambiguous").text
+    for command, expected in (("exclude", False), ("restore", True)):
+        assert (
+            client.post(
+                url,
+                headers=ORIGIN,
+                data={"command": command, "artifact_id": artifact_id},
+            ).status_code
+            == 200
+        )
+        assert (
+            "Original Contractor"
+            in client.get(f"{directory}?attachments=multiple").text
+        ) is expected
+    mah_url = f"/crm/mahs/{mah_id}"
+    mah_page = client.get(mah_url).text
+    assert "<td>Signed</td><td>2026-03-02</td>" in mah_page
+    heading = mah_page.split('data-mah-card="contract"', 1)[1].split("</div>", 1)[0]
+    assert "Manage agreements" in heading
+    assert 'aria-label="Edit agreement C-2"' in mah_page
+    assert (
+        client.post(
+            url,
+            headers=ORIGIN,
+            data={
+                "command": "details",
+                "status": "Terminated",
+                "signing_date": "2026-03-03",
+            },
+        ).status_code
+        == 200
+    )
+    assert "<td>Terminated</td><td>2026-03-03</td>" in client.get(mah_url).text
+    assert "Holder Two" in client.get("/crm/mahs?agreement=no-signed").text
+    editor = client.get(f"{mah_url}?edit=contract&agreement_id={identifier}").text
+    assert 'name="signing_date" aria-label="Signing date" value="2026-03-03"' in editor
+    with factory() as s:
+        version = s.get(CRMMah, mah_id).version
+        unrelated_id = s.scalar(
+            select(CRMAgreement.id).where(~CRMAgreement.mahs.any(CRMMah.id == mah_id))
+        )
+    details = {
+        "command": "save",
+        "section": "contract",
+        "version": version,
+        "status": "Signed",
+        "signing_date": "2026-03-04",
+    }
+    assert (
+        client.post(
+            mah_url, headers=ORIGIN, data={**details, "agreement_id": unrelated_id}
+        ).status_code
+        == 409
+    )
+    assert (
+        client.post(
+            mah_url, headers=ORIGIN, data={**details, "agreement_id": identifier}
+        ).status_code
+        == 200
+    )
+    assert 'value="2026-03-04"' in client.get(url).text
+    editor = client.get(f"{mah_url}?edit=contract-links").text
+    assert f'name="agreement:{unrelated_id}"' in editor
+    with factory() as s:
+        version = s.get(CRMMah, mah_id).version
+        other_mah_id = s.get(CRMAgreement, unrelated_id).mahs[0].id
+    response = client.post(
+        mah_url,
+        headers=ORIGIN,
+        data={
+            "command": "save",
+            "section": "contract-links",
+            "version": version,
+            f"agreement:{unrelated_id}": "yes",
+            f"agreement:{identifier}": "yes",
+        },
+    )
+    assert response.status_code == 200
+    assert "C-1 →" in response.text and "C-2 →" in response.text
+    first_url = f"{directory}/{unrelated_id}"
+    response = client.post(
+        first_url,
+        headers=ORIGIN,
+        data={
+            "command": "assign",
+            f"mah:{mah_id}": "yes",
+            f"mah:{other_mah_id}": "yes",
+        },
+    )
+    assert response.status_code == 200
+    assert f'name="mah:{mah_id}" value="yes" checked' in response.text
+    assert f'name="mah:{other_mah_id}" value="yes" checked' in response.text
+    with factory() as s:
+        assert {mah.id for mah in s.get(CRMAgreement, unrelated_id).mahs} == {
+            mah_id,
+            other_mah_id,
+        }
+    with factory() as s:
+        assert seed_agreements(s) == 0
+        assert {mah.id for mah in s.get(CRMAgreement, identifier).mahs} == {mah_id}
+
+
+def test_mah_transfer_records_note_and_allows_separate_archiving(portal):
+    from app.domain.models import CRMAgreement, CRMMahTransfer
+
+    client, factory = portal
+    client.app.include_router(router)
+    holders = b"RECORD_ID,MAH Name\nrecFrom,Source Holder\nrecTo,Target Holder\n"
+    with factory() as s:
+        stage_export(s, parse_export("MAH", holders), holders, "holders.csv")
+        seed_staged_mahs(s)
+        s.commit()
+        source, target = s.scalars(select(CRMMah).order_by(CRMMah.name)).all()
+        source_id, target_id, version = source.id, target.id, source.version
+        original = CRMAgreement(
+            contract_id="C-Original",
+            contractor=source.name,
+            status="Signed",
+            mahs=[source],
+        )
+        shared = CRMAgreement(
+            contract_id="C-Shared",
+            contractor=target.name,
+            status="Signed",
+            mahs=[source, target],
+        )
+        s.add_all([original, shared])
+        s.commit()
+        original_id, shared_id = original.id, shared.id
+
+    source_url = f"/crm/mahs/{source_id}"
+    target_url = f"/crm/mahs/{target_id}"
+    assert (
+        '<details class="exception-actions">\n<summary><strong>Actions</strong>'
+        in client.get(source_url).text
+    )
+    page = client.get(source_url).text
+    assert f'name="transfer_agreement:{original_id}" value="yes" checked' in page
+    assert f'name="transfer_agreement:{shared_id}" value="yes" checked' not in page
+    form = {
+        "target_mah_id": target_id,
+        "version": version,
+        "note": "Transfer following acquisition",
+        f"transfer_agreement:{original_id}": "yes",
+    }
+    assert (
+        client.post(
+            f"{source_url}/transfer",
+            headers=ORIGIN,
+            data={**form, "target_mah_id": source_id},
+        ).status_code
+        == 422
+    )
+    for _ in range(2):
+        result = client.post(
+            f"{source_url}/transfer", headers=ORIGIN, data=form, follow_redirects=False
+        )
+        assert (
+            result.status_code == 303
+            and result.headers["location"] == f"{target_url}#transfers"
+        )
+    assert "Transfer following acquisition" in client.get(target_url).text
+    assert "Transferred" in client.get(source_url).text
+    with factory() as s:
+        source = s.get(CRMMah, source_id)
+        assert source.profile["status"] == "Transferred" and source.archived_at is None
+        assert s.scalars(select(CRMMahTransfer)).one().target_mah_id == target_id
+        assert s.get(CRMAgreement, original_id).status == "Transferred"
+        assert s.get(CRMAgreement, shared_id).status == "Signed"
+        version = source.version
+    assert (
+        client.post(
+            source_url, headers=ORIGIN, data={"command": "archive", "version": version}
+        ).status_code
+        == 200
+    )
+    assert "Transfer following acquisition" in client.get(target_url).text
+
+
+def test_create_agreement_and_attach_pdf(portal):
+    client, factory = portal
+    client.app.include_router(router)
+
+    from fastapi.testclient import TestClient
+
+    async def signed_in(scope, receive, send):
+        scope.setdefault("state", {})["portal_user"] = SimpleNamespace(id=0)
+        await client.app(scope, receive, send)
+
+    authenticated = TestClient(signed_in)
+
+    holders = b"RECORD_ID,MAH Name\nrecExample,Example Holder\n"
+    with factory() as s:
+        stage_export(s, parse_export("MAH", holders), holders, "holders.csv")
+        seed_staged_mahs(s)
+        s.commit()
+        mah_id = s.scalar(select(CRMMah.id))
+    assert "New agreement" in client.get("/crm/agreements").text
+    assert (
+        f'value="{mah_id}" selected'
+        in client.get(f"/crm/agreements/new?mah_id={mah_id}").text
+    )
+    fields = {
+        "contract_id": "TEST-C-1",
+        "status": "Signed",
+        "mah_id": mah_id,
+        "signing_date": "2026-11-06",
+    }
+    result = client.post(
+        "/crm/agreements", headers=ORIGIN, data=fields, follow_redirects=False
+    )
+    assert result.status_code == 303
+    url = result.headers["location"]
+    assert "TEST-C-1" in client.get(f"/crm/mahs/{mah_id}").text
+    assert (
+        client.post("/crm/agreements", headers=ORIGIN, data=fields).status_code == 409
+    )
+
+    headers = {**ORIGIN, "x-filename": "agreement.pdf"}
+    pdf = b"%PDF-1.7 synthetic test document"
+    assert client.post(f"{url}/pdf", headers=ORIGIN, content=pdf).status_code == 403
+    assert (
+        authenticated.post(
+            f"{url}/pdf", headers=headers, content=b"invalid"
+        ).status_code
+        == 422
+    )
+    for _ in range(2):
+        assert (
+            authenticated.post(f"{url}/pdf", headers=headers, content=pdf).status_code
+            == 204
+        )
+    page = authenticated.get(url)
+    assert page.text.count("agreement.pdf") == 1
+    download = re.search(r'href="(' + url + r'/pdf/\d+)"', page.text)
+    assert download
+    assert authenticated.get(download[1]).content == pdf
+
+
+def test_self_declaration_import_retains_conflicts_and_is_repeatable(portal):
+    from app.domain.crm.self_declarations import seed_self_declarations
+    from app.domain.models import CRMSelfDeclaration
+
+    client, factory = portal
+    client.app.include_router(router)
+    holders = b"RECORD_ID,MAH Name,Selfdeclarations\nrecHolder,Current Holder,Old Holder 2025\n"
+    data = (
+        b"Record Id,Declaration year,MAH Name,RX packs sold,Sales related amount\n"
+        b'Old Holder 2025,2025,Old Holder,120,"1000,00"\n'
+        b'Old Holder 2025,2025,Old Holder,130,"1000,00"\n'
+        b"Unknown 2024,2024,Unknown,,\n"
+    )
+    with factory() as s:
+        stage_export(s, parse_export("MAH", holders), holders, "holders.csv")
+        seed_staged_mahs(s)
+        staged, _ = stage_export(
+            s, parse_export("Self-declarations", data), data, "declarations.csv"
+        )
+        assert seed_self_declarations(s, staged.id) == 3
+        s.commit()
+        assert seed_self_declarations(s, staged.id) == 0
+        mah_id = s.scalar(select(CRMMah.id))
+        item = s.scalar(
+            select(CRMSelfDeclaration).where(CRMSelfDeclaration.packs_sold == 120)
+        )
+        identifier = item.id
+        assert item.mah_id == mah_id
+    response = client.get("/crm/self-declarations?year=&duplicates=true")
+    assert response.status_code == 200
+    assert response.text.count("Repeated source label</small>") == 2
+    assert (
+        "Unknown 2024"
+        in client.get("/crm/self-declarations?assignment=unassigned").text
+    )
+    assert "Self-declarations (2)" in client.get(f"/crm/mahs/{mah_id}").text
+    detail = client.get(f"/crm/self-declarations/{identifier}?year=2025")
+    assert detail.status_code == 200 and "1000,00" in detail.text
+
+
+def test_archived_contact_is_restorable_and_unavailable_for_new_assignments(portal):
+    client, factory = portal
+    client.app.include_router(router)
+    with factory() as s:
+        person = CRMContact(airtable_id="recArchive", label="Contact for archiving")
+        holder = CRMMah(
+            name="Holder",
+            contract_status="unknown",
+            created_at=utcnow(),
+            updated_at=utcnow(),
+        )
+        s.add_all([person, holder])
+        s.commit()
+        contact_id, holder_id, version = person.id, holder.id, person.version
+    url = f"/crm/contacts/{contact_id}"
+    assert "Archive contact" in client.get(url).text
+    assert (
+        client.post(
+            url, headers=ORIGIN, data={"command": "archive", "version": version}
+        ).status_code
+        == 200
+    )
+    assert "Contact for archiving" not in client.get("/crm/contacts").text
+    assert "Contact for archiving" in client.get("/crm/contacts?archived=true").text
+    mah_url = f"/crm/mahs/{holder_id}"
+    assert "Contact for archiving" not in client.get(f"{mah_url}?edit=contacts").text
+    form = {
+        "command": "save",
+        "section": "contacts",
+        "version": 1,
+        "spoc_ids": contact_id,
+    }
+    assert client.post(mah_url, headers=ORIGIN, data=form).status_code == 422
+    with factory() as s:
+        version = s.get(CRMContact, contact_id).version
+    assert (
+        client.post(
+            url, headers=ORIGIN, data={"command": "restore", "version": version}
+        ).status_code
+        == 200
+    )
+    assert client.post(mah_url, headers=ORIGIN, data=form).status_code == 200
+
+
+def test_mah_direct_search_uses_name_or_gln_and_eligibility_is_identifiable(portal):
+    client, factory = portal
+    client.app.include_router(router)
+    with factory.begin() as session:
+        mah = CRMMah(
+            name="Searchable holder",
+            gln="7601234567890",
+            uid="CHE-UNIQUE-UID",
+            contract_status="unknown",
+            created_at=utcnow(),
+            updated_at=utcnow(),
+            profile={"eligible_for_invoicing": True},
+        )
+        session.add(mah)
+        session.flush()
+        identifier = mah.id
+    for query in ("Searchable", "7601234567890"):
+        assert (
+            ">Searchable holder</span>"
+            in client.get("/crm/mahs", params={"q": query}).text
+        )
+    assert (
+        ">Searchable holder</span>"
+        not in client.get("/crm/mahs", params={"q": "CHE-UNIQUE-UID"}).text
+    )
+    page = client.get("/crm/mahs").text
+    controls = page.split('<div class="review-controls">', 1)[1].split("</div>", 1)[0]
+    assert "Name or GLN" in controls
+    assert 'name="agreement"' not in controls and 'name="archived"' not in controls
+    # Relationship and archive scopes remain available to saved views.
+    assert "data-crm-view-filters" in page
+    assert 'name="agreement"' in page and 'name="archived"' in page
+    assert "Eligible for invoice" in page
+    detail = client.get(f"/crm/mahs/{identifier}?edit=invoice").text
+    assert "Eligible for invoice" in detail
+    assert 'name="eligible_for_invoicing" value="yes" checked' in detail
+
+
+def test_mah_edit_keeps_neighbour_controls_visible_and_save_restores_them(portal):
+    client, factory = portal
+    client.app.include_router(router)
+    with factory.begin() as session:
+        for name in ("Alpha", "Beta", "Gamma"):
+            session.add(
+                CRMMah(
+                    name=name,
+                    contract_status="unknown",
+                    created_at=utcnow(),
+                    updated_at=utcnow(),
+                )
+            )
+        session.flush()
+        record = session.scalar(select(CRMMah).where(CRMMah.name == "Beta"))
+        identifier, version = record.id, record.version
+    url = f"/crm/mahs/{identifier}"
+    editor = client.get(url + "?edit=general").text
+    nav = editor.split('<nav class="record-navigation"', 1)[1].split("</nav>", 1)[0]
+    assert 'class="record-navigation-steps"' in nav
+    assert 'data-record-editing="true"' in nav
+    assert "← Previous" in nav and "Next →" in nav
+    assert nav.count('aria-disabled="true"') == 2
+    assert 'class="record-navigation-steps" hidden' not in nav
+    result = client.post(
+        url,
+        headers=ORIGIN,
+        data={
+            "command": "save",
+            "section": "general",
+            "version": str(version),
+            "name": "Beta reviewed",
+            "registration_checked": "yes",
+        },
+    )
+    assert result.status_code == 200
+    nav = result.text.split('<nav class="record-navigation"', 1)[1].split("</nav>", 1)[
+        0
+    ]
+    assert 'data-record-editing="false"' in nav
+    assert re.search(r'rel="prev"[^>]* href=', nav)
+    assert re.search(r'rel="next"[^>]* href=', nav)
