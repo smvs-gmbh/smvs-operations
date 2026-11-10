@@ -8,8 +8,10 @@ from app.integration.artifacts.storage import utcnow
 
 
 @contextmanager
-def worker_heartbeat(factory):
+def worker_heartbeat(factory, *, mode="running"):
     """An independent thread keeps liveness visible during long report generation."""
+    if mode not in {"running", "manual"}:
+        raise ValueError("Unknown import-worker mode.")
     identifier, started, stop = str(uuid.uuid4()), utcnow(), threading.Event()
 
     def write(status):
@@ -22,12 +24,12 @@ def worker_heartbeat(factory):
             row.last_seen_at, row.status = utcnow(), status
             s.commit()
 
-    write("running")
+    write(mode)
 
     def pulse():
         while not stop.wait(15):
             try:
-                write("running")
+                write(mode)
             except Exception:  # noqa: BLE001, S110 - a stale heartbeat must remain visibly stale, without driver details
                 pass
 

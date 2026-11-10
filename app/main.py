@@ -9,6 +9,7 @@ from app.core.logging import configure_logging
 from app.portal.activity_routes import router as activity_router
 from app.portal.auth_access import install_portal_access
 from app.portal.auth_routes import router as auth_router
+from app.portal.collaboration_routes import router as collaboration_router
 from app.portal.crm_routes import router as crm_router
 from app.portal.exception_routes import router as exception_router
 from app.portal.import_routes import router as import_router
@@ -39,6 +40,7 @@ app.include_router(portal_router)
 app.include_router(participant_router)
 app.include_router(activity_router)
 app.include_router(exception_router)
+app.include_router(collaboration_router)
 app.include_router(pack_audit_router)
 app.include_router(upload_router)
 app.include_router(import_router)

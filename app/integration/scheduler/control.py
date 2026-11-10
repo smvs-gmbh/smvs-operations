@@ -24,7 +24,7 @@ SOURCES = {
         "rule": "Current UTC snapshot day",
         "backfill": True,
         "time": "04:15",
-        "note": "Retrieves and stages a snapshot. Product, batch and participant publication remains a separate step.",
+        "note": "Retrieves and stages the current snapshot, then publishes products, batches and participants using the selected SAI reference. Historical backfills remain staging-only.",
     },
     "user_activity": {
         "name": "User Activity",

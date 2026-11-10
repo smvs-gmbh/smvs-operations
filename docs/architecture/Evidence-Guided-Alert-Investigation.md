@@ -1,12 +1,16 @@
 # Evidence guided alert investigation
 
+The [2026-11-10 EMVO alignment and SMVS closure policy](EMVO-Alert-Handling-Alignment.md)
+is the current source mapping. It clarifies two-working-day progress feedback,
+NMVO-only closure and that monthly reporting supplements case investigation.
+
 Discussion proposal recorded on 2026-11-05. The NMVO workspace should assemble evidence and propose the next investigation step. The operator reviews the proposal, records the decision and adds only findings that are missing from the available sources.
 
 ## Sources and traceability
 
 | Reference | Scope |
 | --- | --- |
-| EMVO-00306 supplied Word document | Sections 3.3 and 3.4 cover End-user and wholesaler investigations. Sections 3.5, 3.6 and 3.10 cover MAH and NMVO roles, IMT, systematic monitoring and closure. Appendix 2 provides alert descriptions. SMVS confirmed that this supplied copy contains the latest content. Retain the original file identity in the source record. |
+| EMVO-00306 supplied Word document | Sections 3.3 and 3.4 cover End-user and wholesaler investigations. Section 3.5 covers MAHs, 3.7 IMT, 3.8 NMVO monitoring, 3.10 statuses and 3.11 closure. Appendix 2 provides alert descriptions. SMVS confirmed that this supplied copy contains the latest content. Retain the original file identity in the source record. |
 | VerifyIt Guides runtime knowledge base | GS-001 Pack Data Not Found and GS-002 Pack Data Mismatch provide reusable checks. Operation 41020005 maps A52 to an expiry mismatch. VerifyIt starts with a pharmacy scan. Operations starts with the NMVO case, available evidence and the actual transaction process. |
 | SMVS discussion and supplied A7 screenshot | Project proposals for proportionate investigation, explicit local resolution and a Monthly Alert Report. The screenshot illustrates one pack. The reported wider batch pattern needs its own query and supporting results. |
 
@@ -44,7 +48,8 @@ Prepare a reviewable draft for each MAH with assigned A2 or A3 alerts in the
 completed month. Group A2 by product and batch with upload evidence and report
 coverage. Keep A3 pack-level findings and outstanding checks visible. Route
 uncertain MAH assignments to an internal review list. Show the MAH contract
-status to SMVS during review, including unknown status. Use verified Alert
+status to SMVS during review, including unknown status. The monthly report does not
+replace timely case-specific investigation or progress feedback under section 3.2. Use verified Alert
 SPOC assignments from the CRM for later SendGrid delivery after approval.
 The [CRM proposal](Shared-Investigation-and-CRM-Proposal.md) describes the
 planned Excel import and contact relationships.
@@ -126,3 +131,27 @@ question and a fixed schema. The user reviews the proposed filters before
 running the local search. The interpreter supports A7 Export or Destroy,
 requesting market, relative UTC period and evidence matches. More complex
 patterns and automatic rule execution are future work.
+
+## Successful Verify analysis — deferred
+
+Successful verification volume/diversity is a separate future intelligence stream,
+not observable from Exceptions alone. No detector is enabled. The data-coverage,
+legitimate-process baseline and geography safeguards are specified in
+[NMVO guidance comparison](NMVO-Guidance-Comparison.md).
+
+## Minimal-input RCA with preventive value — owner decision 2026-11-10
+
+RCA must be effective and efficient: reuse evidence, ask only unresolved relevant
+questions and enable routine End-user contributions in a few meaningful clicks.
+Do not require duplicate evidence narratives or routine photos. System suggestions
+remain distinct from confirmed findings. Preserve uncertainty, assisted handling
+and NMVO-only decisions. A short path must not force a benign cause.
+
+Connect the finding to a proportionate corrective/preventive action or an existing
+known issue, with owner, due date and effectiveness review where warranted. Case
+closure and action completion have separate states; neither automatically closes
+the other. Reuse scoped actions across related cases and link external CAPA records
+instead of demanding a full new quality form per pack. Monthly reports support
+organisational learning and prevention. See the detailed
+[design principle](Shared-Alerts-Management-End-User-Pilot.md#design-principle-effective-efficient-rca-and-organisational-learning)
+for the candidate short flow and evaluation criteria.

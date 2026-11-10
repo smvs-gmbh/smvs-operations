@@ -439,8 +439,9 @@ def render_end_user(request, session, user, edit, q="", unlinked=False):
         else None
     )
     options = []
+    organisation_publication = None
     if user and edit in ("organisation", "true"):
-        _, current = current_organisations(session)
+        organisation_publication, current = current_organisations(session)
         occupied = select(CRMEndUser.organisation_id).where(
             CRMEndUser.id != user.id, CRMEndUser.organisation_id.is_not(None)
         )
@@ -497,6 +498,7 @@ def render_end_user(request, session, user, edit, q="", unlinked=False):
             "organisation": organisation,
             "edit": edit,
             "options": options,
+            "organisation_publication": organisation_publication,
             "contact_options": contact_options,
             "pending_contact_references": pending_contacts,
             "assigned_contacts": {

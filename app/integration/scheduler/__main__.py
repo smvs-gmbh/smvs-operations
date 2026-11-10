@@ -19,6 +19,11 @@ def main():
     actions.add_argument("--run", metavar="IMPORT_KEY")
     actions.add_argument("--tick", action="store_true")
     actions.add_argument("--serve", action="store_true")
+    actions.add_argument(
+        "--serve-manual",
+        action="store_true",
+        help="Process explicit queued requests without automatic imports",
+    )
     actions.add_argument("--list", action="store_true")
     parser.add_argument("--at", default="04:00")
     parser.add_argument("--every-hours", type=int)
@@ -73,10 +78,15 @@ def main():
             stop = threading.Event()
             signal.signal(signal.SIGINT, lambda *_: stop.set())
             signal.signal(signal.SIGTERM, lambda *_: stop.set())
-            with worker_heartbeat(SessionFactory):
+            with worker_heartbeat(
+                SessionFactory, mode="manual" if args.serve_manual else "running"
+            ):
                 while not stop.is_set():
                     try:
-                        scheduler.tick()
+                        if args.serve_manual:
+                            scheduler.tick_manual()
+                        else:
+                            scheduler.tick()
                         from app.domain.pack_audit.service import (
                             tick as pack_audit_tick,
                         )

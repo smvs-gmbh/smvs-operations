@@ -16,7 +16,7 @@ NOTICES = {
     "configured": "Cadence saved. The current Scheduled/Paused setting was preserved.",
     "paused": "Automatic starts paused. Running imports will finish. Manual requests remain available.",
     "resumed": "Automatic starts resumed. The next run has been recalculated.",
-    "queued": "Request queued. Repeated clicks reuse the same pending request.",
+    "queued": "Import request queued for the worker. This does not start the scheduler. Repeated clicks reuse the same pending request.",
     "busy": "An import for this source is already recorded as running. No duplicate request was queued.",
     "cancelled": "Queued request cancelled.",
 }

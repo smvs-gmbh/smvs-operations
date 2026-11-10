@@ -19,7 +19,22 @@ def import_daily_snapshot():
     client = reporting_client()
     try:
         with SessionFactory() as session:
-            return DailySnapshotAcquisition(client).run(session)
+            job = DailySnapshotAcquisition(client).run(session)
+        from app.integration.failures import IntegrationExecutionError
+        from app.integration.scheduler.publication import publish_snapshot
+
+        try:
+            publish_snapshot(SessionFactory, job.id)
+        except Exception:  # noqa: BLE001 - source acquisition succeeded; retain a safe publication failure
+            raise IntegrationExecutionError(
+                "publication",
+                "publication_error",
+                "Snapshot retrieved but publication did not complete. Review the selected references and mapping history.",
+                True,
+                job.id,
+                None,
+            ) from None
+        return job
     finally:
         client.close()
 

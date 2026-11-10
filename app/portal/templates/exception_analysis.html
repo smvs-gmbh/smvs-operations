@@ -8,6 +8,7 @@
 
 <div class="rca-context"><strong>{{ record.error_code or 'No error code' }} · {{ record.error_message or 'Message not supplied' }}</strong><p>Batch {{ record.provided_batch or 'Not supplied' }} · Serial {{ record.serial_number or 'Not supplied' }} · Requesting market {{ record.source_market or 'Not supplied' }} · {{ record.evidence.get('attemptedOperation') or 'Operation not supplied' }}</p></div>
 {% if review and not review.analysis %}<div class="notice">An earlier free-text assessment is retained below. It has not been classified or automatically confirmed.</div>{% endif %}
+{% include 'investigation_prechecks.html' %}
 {% if repeat_operation %}
 <section class="panel review-body intelligence-evidence">
 <p class="source-tag">Intelligence · Automatic analysis</p>
@@ -32,6 +33,9 @@
 </section>
 {% endif %}
 {% if batch_identity %}<p><a href="/exceptions/{{ record.id }}/reopen-batch">Reopen batch exceptions →</a></p>{% endif %}
+{% if request.state.portal_user and (request.state.portal_user.is_nmvo or request.state.portal_user.is_admin) %}
+<section class="panel review-body"><h2>Shared investigation</h2><p>Review the proposed End-user case view and EMVO-guided checks before preparing collaboration.</p><a class="audit-link" href="/exceptions/{{ record.id }}/participant-preview">Preview End-user investigation →</a></section>
+{% endif %}
 <div class="panel investigation-card" id="root-cause">
 <div class="panel-heading"><h2>Root cause analysis</h2><span class="source-tag">LOCAL REVIEW</span></div>
 <div class="review-body">

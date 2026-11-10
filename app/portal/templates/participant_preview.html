@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block heading %}<a class="back-link" href="/exceptions/{{ identifier }}/analysis">← Root cause analysis</a><div class="heading"><div><div class="eyebrow">SHARED INVESTIGATION · INTERNAL PREVIEW</div><h1>Participant preview</h1><p>Review the case facts and suggested checks for an End User.</p></div></div>{% endblock %}
+{% block content %}
+<section class="panel review-body review-form"><h2>Review before sharing</h2><p>This is an internal, read-only preview. Verify the organisation, location, recipients and applicable alert scope before a future invitation. No participant access has been granted.</p>
+<form method="get" class="review-controls"><label>Workflow used for this preview<select name="workflow"><option value="pharmacy" {{ 'selected' if preview.workflow=='pharmacy' }}>Pharmacy</option><option value="wholesaler" {{ 'selected' if preview.workflow=='wholesaler' }}>Wholesaler</option></select></label><button class="portal-button" type="submit">Update preview</button></form>
+<p class="subtle">The workflow selection changes the guidance; it does not establish a participant's identity or permission.</p>
+{% if intermarket_review %}<p class="notice">Market responsibility needs NMVO review before sharing. Local completion of support work must remain distinct from the initiating NMVO's alert closure.</p>{% endif %}
+{% if source_changed %}<p class="notice">The source changed since the last local assessment. Review the current evidence before preparing an investigation.</p>{% endif %}
+{% if source_report_id %}<p><a class="audit-link" href="/exceptions/{{ identifier }}/audit-trail">Internal evidence reference: pack audit report {{ source_report_id }} →</a></p>{% endif %}
+<p class="subtle">Exact feedback dates require an approved working-day calendar. Opening this preview does not calculate a deadline, publish a case, request reports or send an email. Use the explicit evidence-preparation action below when appropriate.</p>
+</section>
+{% set precheck_target="participant-preview" %}{% include 'investigation_prechecks.html' %}
+<div class="participant-preview" aria-label="End-user content preview">
+{% include 'participant_preview_content.html' %}
+</div>
+{% endblock %}

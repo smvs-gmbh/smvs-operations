@@ -450,3 +450,11 @@ main.portal-workspace form button:not([type="button"]):not([type="reset"]):not([
 }
 
 .registration-secret { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Internal participant preview: reuse the portal field and panel hierarchy. */
+.participant-preview { border-inline-start: .2rem solid #b7d2e7; padding-inline-start: 1rem; }
+.participant-check + .participant-check { border-top: 1px solid #e3eaf1; margin-top: 1.25rem; padding-top: 1rem; }
+.participant-check h3 { font-size: 1rem; }
+.participant-observations { padding-inline-start: 1.4rem; }
+.participant-observations li + li { margin-top: .8rem; }
+@media (max-width: 640px) { .participant-preview { padding-inline-start: .5rem; } }

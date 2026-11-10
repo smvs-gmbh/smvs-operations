@@ -1,0 +1,14 @@
+<section class="panel review-body intelligence-evidence" aria-label="Automatic investigation pre-checks">
+<p class="source-tag">Intelligence · Automatic pre-checks</p><h2>What we can check first</h2>
+<p>Existing evidence is checked before asking the End User. These are observations, not a confirmed cause or a closure decision.</p>
+{% if prechecks.snapshot_date %}<p class="subtle">Snapshot reference date: {{ prechecks.snapshot_date }}. It may differ from the position at alert time.</p>{% endif %}
+{% set discrepancies=prechecks.checks|selectattr("result","equalto","discrepancy")|list %}
+<details {{ 'open' if discrepancies }}><summary>{{ discrepancies|length }} discrepanc{{ 'y' if discrepancies|length == 1 else 'ies' }} detected · Show automatic checks</summary><dl class="mah-values">{% for check in prechecks.checks %}<div><dt>{{ check.label }}</dt><dd><strong>{{ {'discrepancy':'Discrepancy detected','consistent':'Consistent with reference','observed':'Observed','unknown':'Not established'}[check.result] }}</strong><p>{{ check.detail }}</p></dd></div>{% endfor %}</dl></details>
+<h3>Next evidence step</h3><p>{{ prechecks.report_plan.reason }}</p>
+{% if prechecks.report_id %}<p class="subtle">Retained pack report {{ prechecks.report_id }} · retrieved {{ prechecks.report_captured_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC{% if prechecks.report_source_as_of %} · Source data available at request: {{ prechecks.report_source_as_of }}{% endif %}</p>{% endif %}
+<div class="review-controls">
+{% if prechecks.report_plan.action == 'request' and request.state.portal_user and (request.state.portal_user.is_admin or request.state.portal_user.is_nmvo) %}<form method="post" action="/exceptions/{{ record.id if record else identifier }}/prepare-evidence?target={{ precheck_target|default('analysis') }}&amp;workflow={{ preview.workflow if preview else 'pharmacy' }}"><input type="hidden" name="source_version" value="{{ record.payload_hash if record else source_version }}"><button type="submit" class="portal-button">Prepare pack evidence</button></form>{% endif %}
+{% if prechecks.report_plan.action in ['reuse','pending'] %}<a href="/exceptions/{{ record.id if record else identifier }}/audit-trail">{{ 'View report processing' if prechecks.report_plan.action == 'pending' else 'Inspect retained pack audit trail' }} →</a>{% endif %}
+{% if prechecks.report_plan.action == 'uploads' %}<a href="/exceptions/{{ record.id if record else identifier }}/uploads">Review upload history →</a>{% endif %}
+</div><p class="subtle">Only an explicit preparation action queues a source report. The request runs in the background and is reused for the exact pack. No report is requested by opening this page. {{ prechecks.version }}</p>
+</section>

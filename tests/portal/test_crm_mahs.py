@@ -365,7 +365,13 @@ def test_end_user_import_review_filters_and_marks_rows(portal):
     filtered = client.get(detail + "?unlinked=true&q=Beta").text
     assert 'rel="prev"' not in filtered and 'rel="next"' not in filtered
     assert 'href="/crm/end-users?q=Beta&amp;unlinked=true"' in filtered
-    assert "Beta NMVS" in client.get(detail + "?edit=true").text
+    picker = client.get(detail + "?edit=true").text
+    assert "Beta NMVS" in picker
+    assert "Search by organisation name or ID" in picker
+    assert "data-organisation-picker" in picker
+    assert "Published NMVS Snapshot:" in picker
+    assert "organisation-picker.js" in picker
+    assert 'name="organisation_id"' in picker
     response = client.post(
         detail + "/organisation",
         data={

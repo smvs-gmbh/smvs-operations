@@ -64,7 +64,7 @@ def overview(session, *, source=""):
     live = [
         h
         for h in heartbeats
-        if h.status == "running" and h.last_seen_at >= now - timedelta(seconds=60)
+        if h.status in {"running", "manual"} and h.last_seen_at >= now - timedelta(seconds=60)
     ]
     current = session.get(CurrentPublication, "product-batch")
     coverage = {
@@ -217,6 +217,7 @@ def overview(session, *, source=""):
     return {
         "cards": cards,
         "workers": live,
+        "automatic_workers": [h for h in live if h.status == "running"],
         "last_heartbeat": heartbeats[0] if heartbeats else None,
         "history": history,
         "requests": requests,

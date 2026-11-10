@@ -1,5 +1,13 @@
 # Private Operations core and public collaboration portal
 
+> Current design review (2026-11-10): see [Shared Alerts Management: End-user
+> pilot and MAH extension](Shared-Alerts-Management-End-User-Pilot.md). CRM and the
+> narrow registration gateway are now deployed; collaboration is still proposed.
+> Historical implementation/hosting statements below describe their original date.
+> The new proposal explicitly compares stateless case-scoped API access with the
+> earlier outbound-only publication-store option; the choice needs approval.
+
+
 Date: 2026-11-09. Status: recommended architecture proposal following the product
 owner's suggestion; not deployed. The security hardening measures from the
 [security review](../technical/SECURITY-REVIEW-2026-11-09.md) remain required.

@@ -312,3 +312,86 @@ registration contacts are not automatically assigned. Ambiguous or missing
 references are shown in the Contacts card for manual review; no partial list is
 silently accepted for an unresolved role. **Imported contact references** retains
 the original source wording for comparison.
+
+### Review the proposed End-user investigation
+
+In **Exceptions → Root cause analysis**, open **Shared investigation → Preview
+End-user investigation**. This NMVO/Administrator-only page previews a limited
+participant projection and versioned EMVO-guided checks. Choose **Pharmacy** or
+**Wholesaler** and select **Update preview** to review the relevant workflow.
+
+The view includes SAI product context, provided/stored batch, the full transmitted serial
+number, its character count and the source observation. Where a retained exact same-location A7
+Export/Destroy sequence is established by the existing evaluator, it can show the
+successful operation and rejected repeat without exposing raw report rows or
+other locations. Questions reference the supplied EMVO steps. Internal RCA notes
+and raw error messages are excluded from the participant content. Matching Snapshot
+batch constraints are shown separately for the provided and stored batch, with raw
+format codes. They are reference observations, not proof of authenticity. A7 also
+previews participant assessment choices and a separate known-issue flag; response
+entry is not yet implemented.
+
+This is a local, read-only design increment: organisation/location/recipient scope
+still needs staff review. Intermarket responsibility and changed local assessment
+basis are flagged internally. The workflow selector is a guidance choice, not an
+identity or permission assignment. No invitation, case publication, contribution,
+closure or deadline calculation is performed by this page. Opening the preview
+does not retrieve reports; the explicit evidence-preparation action is described below.
+Case persistence, the working-day calendar and scoped external access follow after
+review of this projection.
+
+### Automatic investigation pre-checks
+
+Open **Exceptions → Root cause analysis**. **Intelligence · Automatic pre-checks**
+shows the next evidence step, with expandable results for batch comparison,
+Snapshot availability and serial length. A discrepancy is a lead to investigate;
+a matching value does not establish authenticity. The reference Snapshot date may
+differ from alert time. No value is repaired or confirmed automatically.
+
+Where useful, **Prepare pack evidence** queues one exact-pack report in the
+background. Existing reports or pending requests are reused across related
+exceptions. Follow **View report processing →** to inspect progress; the report
+worker must be running. A2 instead links to **Review upload history →**; a serial
+length discrepancy calls for comparison with the pack first. IMT cases are not
+automatically fetched by this action. An explicit refresh remains available in
+**Pack audit trail** after reviewing an existing report's coverage.
+
+Opening RCA or the staff-only participant preview does not request a report,
+save a review or change work status. The participant preview is still not a public
+case or an editable participant response form.
+
+### Running imports in the local test system
+
+**Run now** creates a durable import request. It does not start a scheduler
+process. An active import worker must take the request; the Imports page shows
+whether it is connected. **Manual import worker connected** means manual requests
+can run but automatic imports are not being started. Without a worker, the queued
+request remains visible and can be cancelled.
+
+A normal **Daily Snapshot → Run now** now includes publication of Products,
+Batches, Organisations and Locations using the already selected SAI reference.
+It does not silently select a different SAI import. Older inputs and implicit
+same-day corrections remain blocked. A historical Snapshot backfill only retrieves
+and stages its selected date; it does not roll the current catalogue backwards.
+Acquisition success and publication success are distinct: a publication failure
+is recorded against the import execution with its acquired source job retained.
+
+For local review, start the portal and `.venv/bin/python -m app.integration.scheduler --serve-manual` as separate processes. This worker
+processes explicit manual import and evidence requests without triggering overdue
+automatic imports. Normal scheduled operation still uses `--serve`.
+
+### Search when linking an End User to an NMVS organisation
+
+In **CRM → End Users → NMVS organisation → Link organisation / Edit link**, use
+**Choose organisation** to open a searchable selection dialog. Search by name or
+NMVS organisation ID; letter case and accents do not prevent a match. **Use
+selection** updates the draft choice; **Save link** persists it. **Cancel** or
+Escape closes the dialog without applying the draft. With JavaScript disabled,
+the standard selection list remains available.
+
+The displayed Snapshot date is the published participant reference. The Daily
+Snapshot is generated once daily: retrieving it again does not include an
+organisation created after that report was generated. A newer acquired/staged
+report is also not the same as a newer published participant reference. Existing
+one-to-one CRM links remain protected; an organisation assigned to another CRM
+End User is unavailable for a second assignment.

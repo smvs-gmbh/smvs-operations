@@ -110,7 +110,7 @@ def test_cadence_save_preserves_pause_and_resume_is_explicit(imports_portal):
 
 def test_last_successful_import_uses_completion_time(imports_portal):
     client, factory = imports_portal
-    started = datetime(2026, 8, 1, 9)
+    started = datetime(2026, 8, 1, 9)  # noqa: DTZ001 - database UTC-naive timestamp
     completed = started + timedelta(minutes=15)
     with factory() as s:
         schedule_id = s.scalar(
@@ -233,3 +233,23 @@ def test_complete_day_coverage_merges_overlaps_and_keeps_gaps():
     ]
     # The first partial day and the uncovered middle days must not count as full coverage.
     assert "2/6 complete UTC days" in window_coverage(windows, a + timedelta(days=10))
+
+
+def test_manual_worker_is_distinguished_from_automatic_scheduler(imports_portal):
+    from app.domain.models import SchedulerHeartbeat
+    from app.integration.artifacts.storage import utcnow
+
+    client, factory = imports_portal
+    with factory.begin() as session:
+        session.add(
+            SchedulerHeartbeat(
+                worker_id="manual-test",
+                started_at=utcnow(),
+                last_seen_at=utcnow(),
+                status="manual",
+            )
+        )
+    html = client.get("/imports").text
+    assert "Manual import worker connected" in html
+    assert "automatic imports are not running" in html
+    assert "Scheduler connected" not in html

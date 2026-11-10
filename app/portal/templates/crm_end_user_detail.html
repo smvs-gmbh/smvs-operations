@@ -65,12 +65,27 @@
 {% if edit == "organisation" %}
 <form method="post" action="/crm/end-users/{{ user.id }}/organisation{{ detail_query }}" class="review-form">
 <input type="hidden" name="previous_organisation_id" value="{{ user.organisation_id or '' }}">
-<label>Organisation<select name="organisation_id">
+<div class="contact-picker" data-organisation-picker>
+{% if organisation_publication %}<p class="subtle">Published NMVS Snapshot: {{ organisation_publication.snapshot_date }}. Organisations created after the daily report was generated appear in a later Snapshot.</p>{% endif %}
+<input type="hidden" name="organisation_id" value="{{ user.organisation_id or '' }}" data-organisation-value disabled>
+<div data-organisation-fallback><label>Organisation<select name="organisation_id">
 <option value="">Unlinked</option>
-{% for option in options %}
-<option value="{{ option.id }}" {{ 'selected' if option.id == user.organisation_id }}>{{ option.organisation_name or 'Unnamed organisation' }} · {{ option.source_organisation_id }}{% if option.organisation_status %} · {{ option.organisation_status }}{% endif %}</option>
-{% endfor %}
-</select></label>
+{% for option in options %}<option value="{{ option.id }}" {{ 'selected' if option.id == user.organisation_id }}>{{ option.organisation_name or 'Unnamed organisation' }} · {{ option.source_organisation_id }}{% if option.organisation_status %} · {{ option.organisation_status }}{% endif %}</option>{% endfor %}
+</select></label></div>
+<output data-organisation-selection>{{ (organisation.organisation_name or organisation.source_organisation_id) if organisation else 'Unlinked' }}</output>
+<div><button type="button" class="portal-button portal-button-secondary" data-choose-organisation aria-haspopup="dialog" hidden>Choose organisation</button></div>
+<dialog aria-labelledby="nmvs-organisation-title">
+<h3 id="nmvs-organisation-title">Choose NMVS organisation</h3>
+<label class="crm-column-search">Search by organisation name or ID<input type="search" data-organisation-search autocomplete="off"></label>
+<fieldset class="analysis-edit-fields contact-options"><legend>Available organisations</legend>
+<label class="resolve-confirm" data-organisation-option><input type="radio" name="organisation-choice" value="" disabled><span data-organisation-label>Unlinked</span></label>
+{% for option in options %}<label class="resolve-confirm" data-organisation-option><input type="radio" name="organisation-choice" value="{{ option.id }}" disabled><span data-organisation-label>{{ option.organisation_name or 'Unnamed organisation' }} · {{ option.source_organisation_id }}{% if option.organisation_status %} · {{ option.organisation_status }}{% endif %}</span></label>{% endfor %}
+</fieldset>
+<p class="subtle" data-organisation-results role="status" aria-live="polite"></p>
+<p class="subtle">Organisations already linked to another CRM End User are not available for assignment. Saving the selection does not create an organisation in NMVS.</p>
+<div class="mah-section-heading mah-edit-actions"><button type="button" class="portal-button portal-button-secondary" data-cancel-organisation>Cancel</button><button type="button" class="portal-button" data-apply-organisation>Use selection</button></div>
+</dialog>
+</div>
 <div class="mah-section-heading"><button type="submit">Save link</button><a href="/crm/end-users/{{ user.id }}{{ detail_query }}#organisation">Cancel</a></div>
 </form>
 {% elif organisation %}
@@ -126,4 +141,5 @@
 {% endif %}
 </div>
 </div></div>
+{% if edit == 'organisation' %}<script src="{{ request.url_for('portal_static', path='organisation-picker.js') }}" defer></script>{% endif %}
 {% endblock %}

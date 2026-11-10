@@ -5,7 +5,7 @@
 {% block heading %}{{ ui.list_heading('OPERATIONS · DATA SOURCES', 'Imports', 'Manage automatic schedules, run imports and retrieve historical periods.') }}{% endblock %}
 {% block content %}
 {% if notice %}<div class="notice" role="status">{{ notice }}</div>{% endif %}
-<section class="panel import-worker"><div><strong>{{ 'Scheduler connected' if workers else 'No recent scheduler heartbeat' }}</strong><p>{% if workers %}{{ workers|length }} active worker{{ 's' if workers|length!=1 }} · last heartbeat {{ stamp(workers[0].last_seen_at) }}{% elif last_heartbeat %}Last heartbeat {{ stamp(last_heartbeat.last_seen_at) }}. Queued work waits for an available worker.{% else %}The scheduler must be running to process automatic and queued imports.{% endif %}</p></div><a class="audit-link" href="/imports">Refresh status →</a></section>
+<section class="panel import-worker"><div><strong>{{ 'Scheduler connected' if automatic_workers else 'Manual import worker connected' if workers else 'No recent scheduler heartbeat' }}</strong><p>{% if workers %}{{ workers|length }} active worker{{ 's' if workers|length!=1 }}{% if not automatic_workers %} · Manual requests only; automatic imports are not running{% endif %} · last heartbeat {{ stamp(workers[0].last_seen_at) }}{% elif last_heartbeat %}Last heartbeat {{ stamp(last_heartbeat.last_seen_at) }}. Queued work waits for an available worker.{% else %}The scheduler must be running to process automatic and queued imports.{% endif %}</p></div><a class="audit-link" href="/imports">Refresh status →</a></section>
 {{ ui.list_metrics('Import management overview', [
   ('Scheduled sources', cards|selectattr('schedule')|selectattr('schedule.enabled')|list|length|number, 'Automatic imports enabled'),
   ('Active workers', workers|length|number, 'With a recent scheduler heartbeat'),
@@ -24,7 +24,7 @@
 <div><dt>Data coverage / published context</dt><dd>{{ c.coverage }}</dd></div>
 </dl>
 {% if c.last_execution and c.last_execution.failure_message %}<p class="import-error">{{ c.last_execution.failure_message }}</p>{% elif c.last_job and c.last_job.failure_message %}<p class="import-error">{{ c.last_job.failure_message }}</p>{% endif %}
-{% if c.busy %}<p role="status"><strong>Import recorded as running.</strong> Running imports finish before another run for this source starts.</p>{% elif c.queued %}<p role="status">Run now is queued.</p>{% endif %}
+{% if c.busy %}<p role="status"><strong>Import recorded as running.</strong> Running imports finish before another run for this source starts.</p>{% elif c.queued %}<p role="status">Run now is queued.{{ ' Waiting for an import worker; no import is running yet.' if not workers }}</p>{% endif %}
 
 <details class="import-config"><summary>Configure cadence</summary><form method="post" action="/imports/{{ c.key }}/configure" class="import-config-form">
 <label>Cadence type<select name="mode" aria-label="Cadence type"><option value="daily" {{ 'selected' if not s or s.interval_seconds is none }}>Daily</option><option value="interval" {{ 'selected' if s and s.interval_seconds is not none }}>Interval</option></select></label>

@@ -14,6 +14,7 @@ from app.core.config import get_settings
 from app.domain.exceptions import causes, repeat_evidence
 from app.domain.exceptions import review as work
 from app.domain.exceptions.list_search import interpret_filters
+from app.domain.investigations.prechecks import collect as investigation_prechecks
 from app.domain.models import ExceptionReview, ExceptionReviewEvent, NMVSException
 from app.portal import exception_queries as queries
 from app.portal.queries import paged
@@ -227,6 +228,7 @@ def exception_detail(request: Request, identifier: int, session: DbSession):
 @router.get("/exceptions/{identifier}/analysis", include_in_schema=False)
 def exception_analysis(request: Request, identifier: int, session: DbSession):
     record = current(session, identifier)
+    prechecks = investigation_prechecks(session, record)
     review = session.get(ExceptionReview, identifier)
     operation = repeat_evidence.operation_for(record)
     return templates.TemplateResponse(
@@ -240,7 +242,8 @@ def exception_analysis(request: Request, identifier: int, session: DbSession):
             "categories": causes.CATEGORIES,
             "confidence_labels": causes.CONFIDENCE,
             "check_labels": causes.CHECKS,
-            "repeat_sequence": repeat_evidence.repeat_sequence(session, record),
+            "repeat_sequence": prechecks["repeat"],
+            "prechecks": prechecks,
             "repeat_history": repeat_evidence.history(session, record)
             if operation
             else None,

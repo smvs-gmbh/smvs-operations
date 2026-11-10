@@ -208,3 +208,175 @@ required for the selected architecture.
   commit and explicitly deploy it with migration 0043 and a production smoke test.
 - [x] Adopt local development → tests → commit → Git push → identified deployment;
   use the server for bounded external integration smoke tests, not primary development.
+
+### Shared Alerts Management concept — 2026-11-10
+
+- [x] Review supplied End-user/NMVO manuals and document an evidence-guided End-user
+  pilot, pharmacy/wholesaler checks, shared case model and MAH extension in the
+  [Shared Alerts Management concept](../architecture/Shared-Alerts-Management-End-User-Pilot.md).
+- [ ] Agree Collaboration boundary (stateless dedicated API vs outbound projection),
+  participant attribution, access expiry and initial attachment policy.
+- [ ] Build local case/participant/publication model and participant-view preview.
+- [ ] Add scoped invitation/session protocol, guided contributions, proposal
+  responses and NMVO-only local resolution/reopening with auditable bulk scope.
+- [ ] Integrate CRM affiliation change/archive/deletion with grant revocation before
+  external access goes live; preserve internal/external message audiences.
+- [ ] Run synthetic local/adversarial tests and controlled pharmacy/wholesaler
+  release acceptance; gate photos on inspection/storage controls.
+- [ ] Review the actual AMS Hub contract and add MAH participation in phase 2.
+
+### EMVO gold standard and NMVO closure — 2026-11-10
+
+- [x] Directly review the supplied EMVO-00306 copy and record source fingerprint,
+  section/step mapping and owner-confirmed precedence over product manuals in the
+  [EMVO alignment](../architecture/EMVO-Alert-Handling-Alignment.md).
+- [x] Record the SMVS closure policy: the responsible NMVO controls investigation
+  and closure; do not enable the source's optional MAH/End-user closure permissions.
+- [ ] Derive a versioned guidance catalogue from End-User-01/02/03 and wholesaler
+  variations, with source-step references and reuse of existing evidence.
+- [ ] Add two-working-day feedback/progress monitoring with an approved business
+  calendar, urgent-case handling and bounded reminders; monthly reports supplement it.
+- [ ] Separate local work completion, the reasoned NMVO investigation outcome and
+  external acknowledgement. No automatic benign closure on silence or unknown cause.
+- [ ] Define any further Swiss A2/voluntary-serialisation deviation explicitly;
+  never silently substitute monthly-only handling for the designated baseline.
+
+### Shared investigation participant preview — first local increment
+
+- [x] NMVO-only read-only preview from RCA, with explicit limited projection, SAI
+  context, case-specific full transmitted serials and no automatic publication of raw messages or RCA notes.
+- [x] Versioned pharmacy/wholesaler guidance for A2/A3/A7/A24/A52/A68 with source-step
+  references, progress feedback and NMVO closure ownership.
+- [x] Reuse an existing accepted same-location A7 sequence as a limited chronology;
+  opening a preview never acquires a report or writes a review.
+- [x] Local wide/mobile visual review and access/privacy/read-only tests; full suite
+  477 passed. Local portal running at localhost:8012 for user review.
+- [ ] Review the participant projection, then add persistent case/participant/
+  publication records, the approved working-day calendar and scoped access protocol.
+
+### Shared investigation clarification — 2026-11-10
+
+- [x] Analyse Austrian AMVO-005-2.0 with glossary, plus official Irish/German
+  guidance; record national differences in [NMVO guidance comparison](../architecture/NMVO-Guidance-Comparison.md).
+- [x] Adapt local preview for exact serial comparison and bounded Snapshot batch
+  constraints; distinguish A7 participant confirmation from known-issue status.
+- [ ] Add typed source-traceable batch constraints and approved format-code mapping.
+- [ ] Persist participant assessment, known-issue/CAPA references and NMVO decision
+  audit after scoped case/access model.
+- [ ] Deferred: successful-Verify volume/diversity analysis; first establish data
+  coverage, legitimate-process baselines and reviewed exception handling.
+
+### ADAM End-user guide review — 2026-11-10
+
+- [x] Review AMVS-UG-1015 v2.0, including pack-data/step screenshots; document
+  source-backed workflow, audience, notification and delegation behaviour in the
+  [NMVO comparison](../architecture/NMVO-Guidance-Comparison.md).
+- [x] Distinguish reported Austrian L5 error rates from unproven ADAM-only or
+  Europe-wide impact; define candidate evaluation metrics for SMVS.
+- [ ] Include resume, draft and attributed amendments in guided contributions;
+  preserve potential cause separately from confirmed findings and invalidate
+  dependent checks after material evidence changes.
+- [ ] Before MAH participation, enforce explicit audience publication across
+  comments, summaries, attachments and notifications.
+- [ ] Later: scoped upload-only mobile QR and reviewed, revocable location
+  delegation. Obtain remaining workflow/operational appendices if needed.
+
+### Effective, efficient RCA and CAPA — owner decision 2026-11-10
+
+- [x] Document the minimal-input principle and organisational improvement goal in
+  the [Shared Alerts Management concept](../architecture/Shared-Alerts-Management-End-User-Pilot.md#design-principle-effective-efficient-rca-and-organisational-learning).
+- [ ] Implement conditional questions, evidence reuse and concise confirmation;
+  test the routine path with a few meaningful clicks, without mandatory duplicate
+  narratives, unsupported cause confirmation or unnecessary attachments.
+- [ ] Add proportionate corrective/preventive actions, reuse of known issues and
+  external CAPA references; owner/date/effectiveness review for relevant issues.
+- [ ] Keep NMVO case decisions and improvement-action status separate, with
+  attributed amendments and recurrence/effectiveness follow-up.
+- [ ] Evaluate participant effort, clarification/abandonment, decision quality and
+  recurrence; use monthly End-user reports for concrete prevention guidance.
+
+### RCA preparation before participant questions — 2026-11-10
+
+- [x] Add shared read-only automatic pre-checks to RCA and staff preview: exact
+  batch comparison, current Snapshot identity, serial/batch lengths, explicit
+  unknown results and retained same-location repeated-operation evidence.
+- [x] Add explicit, role/origin/source-version guarded **Prepare pack evidence**;
+  reuse the existing exact-pack background queue without duplicate requests.
+- [x] Route A2 to upload history, serial length discrepancies to pack comparison,
+  and IMT/unknown responsibility to NMVO review instead of automatic retrieval.
+- [x] Ask for the reason for an already documented repeat instead of requesting
+  the same sequence again. Keep local work status and source values unchanged.
+- [ ] Replace remaining detailed participant questions with the scoped, persistent
+  short confirmation/action flow after the case/access model is implemented.
+
+Validation for the pre-check increment: 484 tests passed; wide/mobile rendering
+checked without horizontal overflow. Local portal and pack-report-only worker
+started for review; no queued local pack requests existed at worker startup.
+No Jelastic deployment or production source request was performed.
+
+### Local Snapshot refresh and Run now — 2026-11-10
+
+- [x] Process the previously queued local Snapshot request and publish the
+  2026-11-10 Snapshot: 5,737 observed products and 50,584 observed batches;
+  participant Snapshot also advanced to 2026-11-10. Selected SAI remains unchanged.
+- [x] Verify A7 exception 2551: both batch roles found; serial and batch lengths
+  consistent with the retained exact-batch reference.
+- [x] Make normal Snapshot import handlers publish the working catalogue and
+  participants after staging, with retained safe publication-failure diagnostics.
+  Historical backfill remains staging-only; rollback/correction guards remain.
+- [x] Add `--serve-manual`, a distinguishable manual-worker heartbeat and clear
+  UI text: Run now queues work and does not start a scheduler process.
+- [x] Start the local manual-request worker without triggering overdue automatic
+  imports. No Jelastic deployment or automatic cadence changes.
+
+### Origin and predefined measures — 2026-11-10
+
+- [x] Specify Origin separately from cause type, reporting actor, action owner and
+  NMVO decision owner; keep it distinct from AMS Hub Reason and source market.
+- [x] Define an initial SMVS action catalogue for short RCA/CAPA contributions,
+  including existing-action reuse and investigation vs implemented-action states.
+- [ ] Persist reviewed Origin and optional concrete party references with an
+  explicit unknown/disputed state; never infer confirmed responsibility from code
+  A2, a Technical label or transaction origin alone.
+- [ ] Add short selectable measures with independent action status; require text
+  only for relevant gaps/exceptions, and preserve codes/labels/catalogue versions.
+- [ ] Later provide audited administrative catalogue maintenance and confirmed
+  Origin/action/effectiveness reporting; verify any AMS Hub mapping separately.
+
+- [x] Trace proposed measures to reviewed source steps and distinguish explicit
+  corrections from SMVS preventive/CAPA extensions in the
+  [measure provenance table](../architecture/NMVO-Guidance-Comparison.md#which-proposed-measures-are-actually-defined-by-the-reviewed-sources).
+- [ ] Carry source/version/step and action kind (investigation, correction,
+  prevention) in the future versioned action catalogue.
+
+### Simplified participant action confirmation — superseding clarification
+
+- [x] Standard End-user response requires at most the explicit optional commitment
+  checkbox **Corrective measures will be taken**; no mandatory action catalogue,
+  explanation, owner/date or effectiveness form for routine submission.
+- [ ] Persist unchecked/checked confirmation with contribution provenance; never
+  preselect it or interpret it as completed action, confirmed cause or closure.
+- [ ] Keep action details optional and extended CAPA follow-up proportionate to
+  recurrent/systemic or otherwise significant issues, coordinated by SMVS.
+
+### Searchable NMVS organisation assignment — local UI fix
+
+- [x] Add name/organisation-ID search, accent-insensitive matching, empty-result
+  feedback and explicit Use selection / Save link separation; Cancel/Escape do
+  not apply changes. Preserve a standard-select fallback without JavaScript.
+- [x] Display the published participant Snapshot date and explain daily report
+  generation. Browser checks cover search, cancellation and wide/mobile layout;
+  11 CRM portal tests pass.
+- [ ] PROD still requires deliberate deployment/publication review: read-only
+  diagnostics found participant publication 2026-09-26 and newer staged Snapshot
+  acquisitions. Dr. Gmeiner was absent from the inspected latest staged
+  Organisations section; new registrations may await the next daily report.
+  No production data or service changes were made for this investigation.
+
+### Final participant-input clarification
+
+- [x] Record that Shared Investigation is not an audit of the End-user organisation
+  or its quality-management system; no routine CAPA proof or effectiveness audit.
+- [ ] Add optional **Additional findings** and **Corrective measures / comments**
+  fields to the future persisted short response, alongside the explicit commitment
+  checkbox. Our own decision/contribution audit remains required.

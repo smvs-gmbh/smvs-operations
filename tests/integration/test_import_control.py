@@ -161,3 +161,11 @@ def test_heartbeat_is_fresh_during_worker_context_and_stopped_after_exit(control
         assert s.get(SchedulerHeartbeat, identifier).status == "running"
     with factory() as s:
         assert s.get(SchedulerHeartbeat, identifier).status == "stopped"
+
+
+def test_manual_worker_heartbeat_mode(controlled):
+    _, factory, _, _ = controlled
+    with worker_heartbeat(factory, mode="manual") as identifier, factory() as session:
+        assert session.get(SchedulerHeartbeat, identifier).status == "manual"
+    with factory() as session:
+        assert session.get(SchedulerHeartbeat, identifier).status == "stopped"

@@ -1,8 +1,21 @@
 # Shared investigation and integrated CRM
 
+> Current design review (2026-11-10): see [Shared Alerts Management: End-user
+> pilot and MAH extension](Shared-Alerts-Management-End-User-Pilot.md). CRM and the
+> narrow registration gateway are now deployed; collaboration is still proposed.
+> Historical implementation/hosting statements below describe their original date.
+> The new proposal explicitly compares stateless case-scoped API access with the
+> earlier outbound-only publication-store option; the choice needs approval.
+
+
 Status: discussion proposal reflecting product direction agreed on 2026-11-04.
 This records intended behaviour and delivery order; no participant portal, CRM
 migration, external communication or Hub integration is implemented by this document.
+
+The [EMVO gold-standard mapping and explicit SMVS closure policy](EMVO-Alert-Handling-Alignment.md)
+now governs the investigation content. Section 3.11 gives NMVO closure as the
+general rule; SMVS excludes its optional participant closure permissions. Preserve
+this distinction alongside the source's timing and investigation requirements.
 
 ## Product principle
 
