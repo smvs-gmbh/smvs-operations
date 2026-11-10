@@ -1,8 +1,9 @@
 {% extends 'base.html' %}
+{% block module_navigation %}{% set exception_tab='uploads' %}{% include 'exception_tabs.html' %}{% endblock %}
 {% from 'macros.html' import record_bar %}
 {% block heading %}{% if record_nav %}{{ record_bar(record_nav) }}{% else %}<a class="back-link" href="/exceptions/{{ record.id }}">← Exception</a>{% endif %}<div class="heading"><div><div class="eyebrow">PRODUCT & BATCH</div><h1>Upload history</h1><p>{{ record.unique_alert_id }} · {{ record.product_code or 'Product missing' }} · Provided: {{ record.provided_batch or '—' }} · Stored: {{ record.stored_batch or '—' }}</p></div></div>{% endblock %}
 {% block content %}
-{% set exception_tab='uploads' %}{% include 'exception_tabs.html' %}
+
 {% if eligible %}
 <section class="panel detail-card upload-panel"><div class="panel-heading"><h2>Suggested upload search</h2><span class="source-tag">BATCH {{ expected_batch }}</span></div>
 {% if creation %}<p><strong>Pack creation recorded:</strong> {{ creation.strftime('%Y-%m-%d %H:%M:%S') }} UTC · <a href="/exceptions/{{ record.id }}/audit-trail">Pack audit trail →</a></p><p class="card-footnote">The report records creation for this exact pack and batch. Use that date to find the corresponding batch upload. {% if not anchor %}The creation day is not yet complete in UTC.{% endif %}</p>

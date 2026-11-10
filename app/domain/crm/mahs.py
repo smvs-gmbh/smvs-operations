@@ -78,6 +78,10 @@ def seed_staged_mahs(session):
         )
         existing.add(identity)
         created += 1
+    session.flush()
+    from app.domain.crm.mah_contacts import seed_mah_contacts
+
+    seed_mah_contacts(session)
     return created
 
 

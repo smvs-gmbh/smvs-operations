@@ -1,10 +1,11 @@
 {% extends 'base.html' %}
+{% block module_navigation %}{% set exception_tab='analysis' %}{% include 'exception_tabs.html' %}{% endblock %}
 {% macro value(label,content) %}<div><dt>{{ label }}</dt><dd>{{ content if content is not none and content!='' else 'Not supplied' }}</dd></div>{% endmacro %}
 {% set analysis=review.analysis if review and review.analysis else {} %}
 {% from 'macros.html' import record_bar %}
 {% block heading %}{% if record_nav %}{{ record_bar(record_nav) }}{% else %}<a class="back-link" href="/exceptions">← Exceptions</a>{% endif %}<div class="heading"><div><div class="eyebrow">INVESTIGATION · {{ record.error_code or 'NO ERROR CODE' }}</div><h1>Root cause analysis</h1><p>{{ record.unique_alert_id }} · {{ name or record.gtin14 or record.product_code or 'No product matched' }}</p></div></div>{% endblock %}
 {% block content %}
-{% set exception_tab='analysis' %}{% include 'exception_tabs.html' %}
+
 <div class="rca-context"><strong>{{ record.error_code or 'No error code' }} · {{ record.error_message or 'Message not supplied' }}</strong><p>Batch {{ record.provided_batch or 'Not supplied' }} · Serial {{ record.serial_number or 'Not supplied' }} · Requesting market {{ record.source_market or 'Not supplied' }} · {{ record.evidence.get('attemptedOperation') or 'Operation not supplied' }}</p></div>
 {% if review and not review.analysis %}<div class="notice">An earlier free-text assessment is retained below. It has not been classified or automatically confirmed.</div>{% endif %}
 {% if repeat_operation %}

@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block heading %}<a class="back-link" href="{{ back_url }}">← Back to record</a><div class="heading"><div><div class="eyebrow">ADMINISTRATOR · DATA MANAGEMENT</div><h1>Review permanent deletion</h1><p>{{ label }}</p></div></div>{% endblock %}
+{% block content %}
+{% if error %}<p class="notice" role="alert">{{ error }}</p>{% endif %}
+{% if registration_scope %}
+<section class="panel review-body"><h2>Linked registration</h2><p>This CRM record is linked to a registration workflow. Review the complete deletion scope below. Shared records block deletion; nothing is removed unless the complete operation succeeds.</p></section>
+{% for registration, end_user, contact in registration_scope %}
+<section class="panel review-body review-form"><h2>Registration #{{ registration.id }}</h2>
+<dl class="mah-values"><div><dt>CRM End User</dt><dd>{% if end_user %}<a href="/crm/end-users/{{ end_user.id }}">{{ end_user.name }} →</a>{% else %}—{% endif %}</dd></div><div><dt>CRM contact</dt><dd>{% if contact %}<a href="/crm/contacts/{{ contact.id }}">{{ contact.display_name }} →</a>{% else %}—{% endif %}</dd></div></dl>
+<p>This deletes the registration, submitted form data, security answers, confirmation link and workflow notes, together with the End User and contact listed above. It cannot be undone. The NMVS organisation is not deleted.</p>
+<form method="post" action="/workflows/registrations/{{ registration.id }}/delete" class="review-form">
+<input type="hidden" name="version" value="{{ registration.version }}"><input type="hidden" name="include_crm" value="yes">
+<label class="resolve-confirm"><input type="checkbox" name="confirm_delete" value="yes" required>I confirm permanent deletion of this registration and its linked CRM End User and contact.</label>
+<div><button class="portal-button portal-button-secondary">Delete registration and linked CRM data</button> <a class="portal-button portal-button-secondary" href="{{ back_url }}">Cancel</a></div>
+</form>
+<p><a class="audit-link" href="/workflows/registrations/{{ registration.id }}">Review registration or delete the workflow only →</a></p>
+</section>
+{% endfor %}
+{% else %}
+<section class="panel review-body review-form"><h2>{{ 'Delete contact' if delete_type == 'contacts' else 'Delete CRM record' }}</h2>
+{% if delete_type == 'contacts' %}<p>Only this contact will be deleted. Its SPOC and Alert contact assignments will be removed. MAHs and End Users are retained.</p>
+{% if contact_owners %}<p>Contact assignments will be removed from:</p><ul>{% for owner, directory in contact_owners %}<li><a href="/crm/{{ directory }}/{{ owner.id }}">{{ owner.name }} →</a></li>{% endfor %}</ul>{% endif %}
+<p>The deleted contact will not be recreated by repeating its Airtable import. Original imported source files and backups follow their own retention policy.</p>
+{% else %}<p>Permanent deletion cannot be undone. Other linked records must be removed first. Imported source files and backups follow their own retention policy.</p>{% endif %}
+<form method="post" action="/crm/{{ delete_type }}/{{ delete_record.id }}/delete" class="review-form">
+<input type="hidden" name="version" value="{{ delete_record.version }}">
+<label class="resolve-confirm"><input type="checkbox" name="confirm_delete" value="yes" required>{{ 'I confirm permanent deletion of this contact and removal of its contact assignments.' if delete_type == 'contacts' else 'I confirm permanent deletion of this CRM record.' }}</label>
+<div><button class="portal-button portal-button-secondary">Permanently delete</button> <a class="portal-button portal-button-secondary" href="{{ back_url }}">Cancel</a></div>
+</form></section>
+{% endif %}
+<p class="subtle">A minimal deletion audit and a technical duplicate marker remain. External Tally submissions, previously sent email and backups are not erased by this action.</p>
+{% endblock %}

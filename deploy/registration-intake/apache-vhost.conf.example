@@ -1,0 +1,21 @@
+# TEMPLATE: integrate into the dedicated registration virtual host only.
+# Requires mod_proxy and mod_proxy_http. TLS terminates at the existing nginx.
+# Keep the Apache listener and Uvicorn port inaccessible from the public Internet.
+# Replace hostname; preserve it at nginx as well. Remove conflicting WSGI mappings
+# in THIS virtual host, not in other applications.
+ServerName REGISTRATION_HOST
+ProxyRequests Off
+ProxyPreserveHost On
+ProxyPass / http://127.0.0.1:8013/ connectiontimeout=5 timeout=30
+ProxyPassReverse / http://127.0.0.1:8013/
+
+# nginx must enforce the body/rate limits and disable access logging.
+# Also disable inherited access logs in this dedicated virtual host using the
+# host's actual logging configuration; do not enable request/body debug logging.
+LimitRequestBody 131072
+<Location "/exchange/">
+    # Keep blocked until exchange access is restricted at the public nginx to
+    # the internal worker's actual source IP. Do not simply allow loopback here:
+    # nginx may proxy every public caller from loopback.
+    Require all denied
+</Location>

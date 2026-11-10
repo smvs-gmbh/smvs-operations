@@ -46,6 +46,7 @@ def test_list_detail_originals_and_context_are_safe_and_distinct(exceptions_port
         and "Pack audit trail" in detail.text
         and "storedBatch" not in detail.text
     )
+    assert detail.text.index('aria-label="Exception views"') < detail.text.index("<h1")
     assert "BAD" in detail.text and "Lot-001" in detail.text
     assert "request-location" in detail.text and "last-update-location" in detail.text
     assert (

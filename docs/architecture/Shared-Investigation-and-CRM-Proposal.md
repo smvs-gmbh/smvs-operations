@@ -258,3 +258,11 @@ transaction market observations must not be interpreted as physical movement.
 The [evidence guided alert investigation proposal](Evidence-Guided-Alert-Investigation.md)
 records the alert-specific decision paths, evidence reuse, IMT responsibilities and
 requirements for a Monthly Alert Report per End-user.
+
+## Proposed deployment isolation — 2026-11-09
+
+Prefer a VPN-only Operations core with internal passkeys and a separate public
+collaboration application/store. Exchange only deliberately released investigation
+snapshots and bounded participant contributions; the NMVO retains closure authority.
+See [Private core and public collaboration proposal](Operations-Core-and-Collaboration-Portal.md).
+This deployment separation is proposed, not yet implemented.

@@ -282,3 +282,37 @@ def test_boolean_and_relationship_conditions_use_current_crm_evidence(views_port
         "no-signed-agreement",
         "declaration-ready",
     }
+
+
+def test_empty_checkbox_search_urls_and_saved_view_override(views_portal):
+    from app.domain.models import CRMEndUser
+
+    client, factory = views_portal
+    with factory.begin() as session:
+        session.add(CRMEndUser(name="Test registration", profile={}))
+    created = post_view(
+        client, directory="end-users", command="save", name="Unlinked",
+        config={"quick_filters": {"unlinked": "true"}},
+    )
+    assert created.status_code == 200
+    view_id = created.json()["view"]["id"]
+    response = client.get(
+        f"/crm/end-users?view={view_id}&q=Test&unlinked=",
+        headers={"x-test-user": "1"}, follow_redirects=False,
+    )
+    assert response.status_code == 303
+    assert "unlinked=false" in response.headers["location"]
+    assert "q=Test" in response.headers["location"]
+    page = client.get(response.headers["location"], headers={"x-test-user": "1"})
+    assert page.status_code == 200 and "Test registration" in page.text
+    config = client.get(
+        f"/crm/views/end-users?view={view_id}&q=Test&unlinked=false",
+        headers={"x-test-user": "1"},
+    ).json()["config"]
+    assert config["quick_filters"]["unlinked"] == ""
+    assert config["quick_filters"]["q"] == "Test"
+    # The shared CRM toolbar also uses a boolean checkbox for duplicate declarations.
+    page = client.get('/crm/self-declarations?q=Test&duplicates=')
+    assert page.status_code == 200
+    # Invalid non-empty boolean strings are still rejected.
+    assert client.get('/crm/end-users?unlinked=invalid').status_code == 422

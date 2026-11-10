@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     db_name: str
     db_user: str
     db_password: str
+    db_ssl_ca: str | None = None
+    db_ssl_server_cert_sha256: str | None = None
+    db_ssl_legacy_certificate: bool = False
 
     nmvs_reporting_base_url: str | None = Field(
         None,
@@ -48,11 +51,17 @@ class Settings(BaseSettings):
     openai_search_model: str | None = None
     openai_web_model: str | None = None
     declaration_invitation_secret: SecretStr | None = None
+    registration_delivery_mode: str = "buffered"
+    connect_api_secret: SecretStr | None = None
+    registration_intake_url: str | None = None
+    registration_exchange_secret: SecretStr | None = None
+    registration_encryption_key: SecretStr | None = None
 
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
+        hide_input_in_errors=True,
         populate_by_name=True,
     )
 

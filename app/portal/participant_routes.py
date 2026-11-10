@@ -31,6 +31,8 @@ def organisation_list(
     type_filter: str = Query("", alias="type", max_length=100),
     page: int = Query(1, ge=1, le=10000),
 ):
+    from app.portal.table_views import prepare
+    prepare(request, session, "organisations")
     ctx = queries.context(session)
     rows, pagination = (
         queries.organisations(
@@ -39,7 +41,7 @@ def organisation_list(
             q=q,
             status=status,
             type_filter=type_filter,
-            page=page,
+            page=page, view_request=request,
         )
         if ctx["publication"]
         else ([], EMPTY)
@@ -74,6 +76,7 @@ def organisation_navigation(request, session, publication, identifier, *, suffix
         queries.ORGANISATION_ORDER,
         "/organisations",
         "Organisations",
+        view_request=request, table_key="organisations",
         suffix=suffix,
         query=filter_query(request, "q", "status", "type"),
     )
@@ -86,12 +89,14 @@ def organisation_detail(
     session: DbSession,
     page: int = Query(1, ge=1, le=10000),
 ):
+    from app.portal.table_views import prepare
+    prepare(request, session, "organisation-locations")
     ctx = queries.context(session)
     org = require_current(
         session, ctx["publication"], LocalOrganisation, organisation_id
     )
     rows, pagination = queries.locations(
-        session, ctx["publication"], organisation_id=org.id, page=page
+        session, ctx["publication"], organisation_id=org.id, page=page, view_request=request, table_key="organisation-locations"
     )
     return templates.TemplateResponse(
         request=request,
@@ -142,9 +147,11 @@ def location_list(
     status: str = Query("", max_length=100),
     page: int = Query(1, ge=1, le=10000),
 ):
+    from app.portal.table_views import prepare
+    prepare(request, session, "locations")
     ctx = queries.context(session)
     rows, pagination = (
-        queries.locations(session, ctx["publication"], q=q, status=status, page=page)
+        queries.locations(session, ctx["publication"], q=q, status=status, page=page, view_request=request)
         if ctx["publication"]
         else ([], EMPTY)
     )
@@ -180,10 +187,11 @@ def location_navigation(
         queries.LOCATION_ORDER,
         "/locations",
         "Organisation and related locations" if related else "Locations",
+        view_request=request, table_key="organisation-locations" if related else "locations",
         suffix=suffix,
         query=filter_query(request, "q", "status", "related"),
         back_path=f"/organisations/{organisation_id}" if related else None,
-        back_query="" if related else None,
+        back_query=filter_query(request) if related else None,
     )
 
 

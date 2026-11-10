@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% import 'macros.html' as ui %}
+{% block heading %}
+{{ ui.record_bar(record_nav, false) }}
+{{ ui.list_heading('CRM · CONTACTS', 'New contact', 'Create a contact, then assign it from a MAH or End User record.') }}
+{% endblock %}
+{% block content %}
+<form method="post" action="/crm/contacts" class="review-form crm-contact-create">
+<section class="panel review-body">
+<h2>General</h2>
+<div class="review-controls">
+<label>First name<input name="first_name" maxlength="150" autocomplete="given-name"></label>
+<label>Last name<input name="last_name" maxlength="150" autocomplete="family-name"></label>
+<label>Address type<select name="address_type"><option value="">Not specified</option>{% for code, label in address_types.items() %}<option value="{{ code }}">{{ label }}</option>{% endfor %}</select></label>
+</div>
+{% if function_options %}<fieldset class="analysis-edit-fields"><legend>Function</legend><div class="crm-contact-functions">
+{% for role in function_options %}<label class="resolve-confirm"><input type="checkbox" name="function:{{ role }}" value="yes">{{ role }}</label>{% endfor %}
+</div></fieldset>{% endif %}
+</section>
+<section class="panel review-body">
+<h2>Communication</h2>
+<p class="subtle">Enter at least a name or an email address. A shared mailbox can be registered using its email address.</p>
+<div class="review-controls">
+<label>Email<input type="email" name="email" maxlength="254" autocomplete="email"></label>
+<label>Phone<input type="tel" name="phone" maxlength="100" autocomplete="tel"></label>
+<label>Mailbox type<select name="mailbox_type"><option value="">Not specified</option>{% for mailbox in mailbox_types %}<option value="{{ mailbox }}">{{ mailbox }}</option>{% endfor %}</select></label>
+</div>
+<div class="crm-create-actions"><button class="portal-button" type="submit">Create contact</button><a class="portal-button portal-button-secondary" href="/crm/contacts">Cancel</a></div>
+</section>
+</form>
+{% endblock %}

@@ -1,16 +1,23 @@
 # Local Product / Batch portal
 
-Start from the repository root:
+The original catalogue-only prototype described below has evolved into the
+passkey-protected Operations portal. For the current deployment split and release
+process, see the [2026-11-10 checkpoint](../deployment/STATUS-2026-11-10.md).
+
+Start from the repository root using the configured localhost authentication origin:
 
 ```sh
-.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8010
+.venv/bin/alembic upgrade head
+.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8012
 ```
 
-The local portal has no login and is intended for the local development machine.
-Views read stored evidence; explicit same-origin controls can queue Pack Audit and
-Upload report retrieval. It is not published or bound to all network interfaces.
-See [current implementation status](../overview/IMPLEMENTATION-STATUS.md) for the
-dated data snapshot, schedules and outstanding work.
+Open `http://localhost:8012`, matching `PORTAL_AUTH_ORIGIN`. Local MySQL runs at
+`127.0.0.1:55000` and must remain separate from Jelastic. Production-domain passkeys
+are not interchangeable with localhost passkeys. Do not disable authentication on
+any non-development environment. The local synthetic registration workspace
+(`python -m app.registration.test_workspace`) does not call Tally or SendGrid.
+
+The following catalogue behaviour remains relevant:
 
 - `/products`: Swiss SAI labels, GTIN14, holder, observed Product version and match status.
 - `/products/{source_id}`: Swiss reference details, PMD/version context and paginated Batches.
@@ -39,7 +46,7 @@ No historical PMD fields are fabricated for versions known only from Batches.
 The source dates are separate: requested NMVS snapshot day and SAI export filename
 date. Dataset publication is atomic. Filtering/pagination is server-side (40 rows),
 all source strings are HTML-escaped and user search text is bound/LIKE-escaped.
-Login and external NAMS APIs remain outside this portal slice. Import management
+The catalogue slice originally preceded login; the current portal uses passkeys. Import management
 is now available at `/imports`; see [controls and recovery](import-management.md).
 
 Validation uses a guarded database double for Swiss-only names, source/SAI

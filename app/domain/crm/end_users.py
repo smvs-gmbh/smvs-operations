@@ -101,7 +101,10 @@ def contact_reference_index(session):
     for contact, raw in session.execute(
         select(CRMContact, StagingRow.raw_row_json)
         .outerjoin(StagingRow, CRMContact.source_row_id == StagingRow.id)
-        .where(CRMContact.archived_at.is_(None))
+        .where(
+            CRMContact.archived_at.is_(None),
+            CRMContact.profile['registration_pending'].as_boolean().is_not(True),
+        )
     ):
         by_id[contact.airtable_id] = contact.id
         label = (raw or {}).get("Record Id", contact.label).strip()

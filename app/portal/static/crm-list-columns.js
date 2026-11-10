@@ -13,6 +13,7 @@ export function initialiseColumns(form, preference) {
     toolbar.append(explanation);
     const options = document.createElement("div");
     options.className = "crm-column-options";
+    const columnLabel = header => header.textContent.trim() || header.getAttribute('aria-label') || 'Links / actions';
     const keys = headers.map(header => header.dataset.column);
     let order = (preference.column_order || keys).filter(key => keys.includes(key));
     order = [...order, ...keys.filter(key => !order.includes(key))];
@@ -27,11 +28,12 @@ export function initialiseColumns(form, preference) {
         label.className = "resolve-confirm";
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
-        checkbox.checked = index === 0 || (preference.columns
+        const pinned = (table.dataset.pinnedColumns || headers[0].dataset.column).split(',').includes(header.dataset.column);
+        checkbox.checked = pinned || (preference.columns
             ? preference.columns.includes(header.dataset.column)
             : header.dataset.defaultVisible !== "false");
-        checkbox.disabled = index === 0;
-        label.append(checkbox, document.createTextNode(header.textContent.trim()));
+        checkbox.disabled = pinned;
+        label.append(checkbox, document.createTextNode(columnLabel(header)));
         choices.set(header.dataset.column, checkbox);
         checkbox.addEventListener("change", applyColumns);
         const item = document.createElement("div");
@@ -44,7 +46,7 @@ export function initialiseColumns(form, preference) {
             move.type = "button";
             move.className = "portal-button portal-button-secondary";
             move.textContent = symbol;
-            move.setAttribute("aria-label", `Move ${header.textContent.trim()} ${direction < 0 ? "up" : "down"}`);
+            move.setAttribute("aria-label", `Move ${columnLabel(header)} ${direction < 0 ? "up" : "down"}`);
             move.title = move.getAttribute("aria-label");
             move.addEventListener("click", () => {
                 const position = order.indexOf(header.dataset.column);

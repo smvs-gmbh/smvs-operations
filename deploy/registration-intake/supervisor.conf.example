@@ -1,0 +1,31 @@
+; Optional: only if Supervisor is available on the chosen Jelastic node.
+; Replace /srv/registration-intake and registration-service with the actual
+; directory and unprivileged OS account before installation.
+[program:registration-intake]
+directory=/srv/registration-intake
+command=/srv/registration-intake/.venv/bin/uvicorn app.registration.gateway:from_environment --factory --host 127.0.0.1 --port 8013 --no-access-log --no-proxy-headers
+user=registration-service
+umask=0077
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+stdout_logfile=/srv/registration-intake/logs/api.log
+stdout_logfile_maxbytes=5MB
+stdout_logfile_backups=2
+redirect_stderr=true
+
+[program:registration-mail]
+directory=/srv/registration-intake
+command=/srv/registration-intake/.venv/bin/python -m app.registration mail-watch
+user=registration-service
+umask=0077
+; Enable deliberately only after the public synthetic test is ready.
+autostart=false
+autorestart=true
+stopasgroup=true
+killasgroup=true
+stdout_logfile=/srv/registration-intake/logs/mail.log
+stdout_logfile_maxbytes=5MB
+stdout_logfile_backups=2
+redirect_stderr=true

@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 def filter_query(request, *keys):
     if request.url.path.startswith("/crm/"):
         keys = tuple(dict.fromkeys((*keys, "view", "rules", "sort", "direction", "layout", "preset")))
+    keys = tuple(dict.fromkeys((*keys, *(key for key in request.query_params if key.startswith("tv_")))))
     values = {
         key: request.query_params[key] for key in keys if key in request.query_params
     }
@@ -54,8 +55,12 @@ def ordered_neighbours(session, statement, column, identifier, ordering):
 
 
 def list_record_navigation(
-    session, statement, column, identifier, ordering, path, label, **urls
+    session, statement, column, identifier, ordering, path, label, *, view_request=None, table_key=None, **urls
 ):
+    if view_request is not None and table_key:
+        from app.portal.table_views import apply_sql
+        statement = apply_sql(view_request, session, statement.order_by(*ordering), table_key)
+        ordering = tuple(statement._order_by_clauses)
     return record_navigation(
         path,
         label,

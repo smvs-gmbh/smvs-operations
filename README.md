@@ -22,6 +22,10 @@ SMVS Operations is the central operational platform of SMVS for monitoring, anal
 
 ## Documentation
 
+The [local checkpoint and Jelastic deployment overview](docs/deployment/STATUS-2026-11-10.md)
+distinguishes deployed functionality from the next local release and defines the
+local-development → test → commit → push → deployment workflow.
+
 The [User Guide](docs/overview/USER-GUIDE.md) describes portal workflows.
 
 The [portal UI conventions](docs/technical/PORTAL-UI-GUIDELINES.md) define the shared page layout, link styles and editing patterns.

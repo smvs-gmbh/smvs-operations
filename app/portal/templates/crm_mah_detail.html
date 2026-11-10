@@ -100,6 +100,7 @@
 <input type="hidden" name="version" value="{{ mah.version }}">
 <div><button class="portal-button portal-button-secondary" name="command" value="{{ 'restore' if mah.archived_at else 'archive' }}" type="submit">{{ 'Restore MAH' if mah.archived_at else 'Archive MAH' }}</button></div>
 </form>
+{% with delete_type="mahs", delete_record=mah %}{% include "crm_delete_action.html" %}{% endwith %}
 </details>
 </section>
 {% endif %}
@@ -227,6 +228,7 @@
 <div class="mah-wide"><dt>Invoice email</dt><dd data-mah-invoice-email>{% if not mah or edit_section == "invoice" %}<a href="#invoice_email">{{ profile.invoice_email or 'Set invoice email' }}</a>{% else %}{{ profile.invoice_email or '—' }}{% endif %}</dd></div>
 </dl>
 {% endif %}
+{% if pending_contact_references %}<p class="notice">Some imported contact references need review. Use Edit to assign existing contacts.</p><ul>{% for reference in pending_contact_references %}<li>{{ reference }}</li>{% endfor %}</ul>{% endif %}
 {% if source and (source.get('SPOC') or source.get('Alert contacts')) %}
 <details><summary>Imported contact references</summary>
 <dl class="mah-values">

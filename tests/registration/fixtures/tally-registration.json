@@ -1,0 +1,185 @@
+{
+  "eventId": "synthetic-observed-shape-event",
+  "eventType": "FORM_RESPONSE",
+  "createdAt": "2026-11-10T08:00:00Z",
+  "data": {
+    "formId": "w7AWGA",
+    "responseId": "synthetic-response",
+    "submissionId": "synthetic-submission",
+    "createdAt": "2026-11-10T08:00:00Z",
+    "fields": [
+      {
+        "key": "question_GRzBDp",
+        "label": "Label is intentionally irrelevant",
+        "type": "DROPDOWN",
+        "value": [
+          "aead02e0-77ce-4337-961c-7c6b28f27648"
+        ],
+        "options": [
+          {
+            "id": "aead02e0-77ce-4337-961c-7c6b28f27648",
+            "text": "End User"
+          }
+        ]
+      },
+      {
+        "key": "question_GRdqzQ",
+        "label": "Label is intentionally irrelevant",
+        "type": "INPUT_TEXT",
+        "value": "Synthetic real-shape pharmacy"
+      },
+      {
+        "key": "question_O75bzk",
+        "label": "Label is intentionally irrelevant",
+        "type": "INPUT_TEXT",
+        "value": "7601001301252"
+      },
+      {
+        "key": "question_Vz5b0N",
+        "label": "Label is intentionally irrelevant",
+        "type": "INPUT_TEXT",
+        "value": ""
+      },
+      {
+        "key": "question_D7d96q",
+        "label": "Label is intentionally irrelevant",
+        "type": "DROPDOWN",
+        "value": [
+          "c3f451e4-b6be-4328-a7f8-9df1ae0169a1"
+        ],
+        "options": [
+          {
+            "id": "c3f451e4-b6be-4328-a7f8-9df1ae0169a1",
+            "text": "Apotheke"
+          }
+        ]
+      },
+      {
+        "key": "question_l6dXkB",
+        "label": "Label is intentionally irrelevant",
+        "type": "INPUT_TEXT",
+        "value": "Teststrasse 1"
+      },
+      {
+        "key": "question_RD51yd",
+        "label": "Label is intentionally irrelevant",
+        "type": "INPUT_TEXT",
+        "value": "5000"
+      },
+      {
+        "key": "question_o2MYLe",
+        "label": "Label is intentionally irrelevant",
+        "type": "INPUT_TEXT",
+        "value": "Test city"
+      },
+      {
+        "key": "question_GRdaAp",
+        "label": "Label is intentionally irrelevant",
+        "type": "DROPDOWN",
+        "value": [
+          "03e88b05-ce0c-4f4a-9e4c-c83094eefc52"
+        ],
+        "options": [
+          {
+            "id": "03e88b05-ce0c-4f4a-9e4c-c83094eefc52",
+            "text": "Schweiz"
+          }
+        ]
+      },
+      {
+        "key": "question_Pz5b6P",
+        "label": "Label is intentionally irrelevant",
+        "type": "INPUT_TEXT",
+        "value": "Test"
+      },
+      {
+        "key": "question_ExQZXA",
+        "label": "Label is intentionally irrelevant",
+        "type": "INPUT_TEXT",
+        "value": "Person"
+      },
+      {
+        "key": "question_roAJ6p",
+        "label": "Label is intentionally irrelevant",
+        "type": "INPUT_TEXT",
+        "value": "Test SPOC"
+      },
+      {
+        "key": "question_O75KM7",
+        "label": "Label is intentionally irrelevant",
+        "type": "INPUT_EMAIL",
+        "value": "test@example.test"
+      },
+      {
+        "key": "question_Vz5XOJ",
+        "label": "Label is intentionally irrelevant",
+        "type": "INPUT_PHONE_NUMBER",
+        "value": "+41000000000"
+      },
+      {
+        "key": "question_Pz5LJ5",
+        "label": "Label is intentionally irrelevant",
+        "type": "INPUT_TEXT",
+        "value": ""
+      },
+      {
+        "key": "question_ExQe7X",
+        "label": "Label is intentionally irrelevant",
+        "type": "INPUT_TEXT",
+        "value": ""
+      },
+      {
+        "key": "question_WzMdJN",
+        "label": "Label is intentionally irrelevant",
+        "type": "TEXTAREA",
+        "value": ""
+      },
+      {
+        "key": "question_4KxRVk",
+        "label": "Label is intentionally irrelevant",
+        "type": "DROPDOWN",
+        "value": [
+          "038fc435-bcb4-4822-93bd-334fa07839d8"
+        ],
+        "options": [
+          {
+            "id": "038fc435-bcb4-4822-93bd-334fa07839d8",
+            "text": "Synthetic security question"
+          }
+        ]
+      },
+      {
+        "key": "question_z7qrj0",
+        "label": "Label is intentionally irrelevant",
+        "type": "INPUT_TEXT",
+        "value": "  Synthetic answer Ω  "
+      },
+      {
+        "key": "question_jlQXAx",
+        "label": "Label is intentionally irrelevant",
+        "type": "TEXTAREA",
+        "value": "Test fixture only"
+      },
+      {
+        "key": "question_0exPXN",
+        "label": "Label is intentionally irrelevant",
+        "type": "CHECKBOXES",
+        "value": [
+          "18bb85e7-627d-4e2e-9e39-33b5e2fb1947"
+        ],
+        "options": [
+          {
+            "id": "18bb85e7-627d-4e2e-9e39-33b5e2fb1947",
+            "text": "Synthetic acceptance"
+          }
+        ]
+      },
+      {
+        "key": "question_0exPXN_18bb85e7-627d-4e2e-9e39-33b5e2fb1947",
+        "label": "Label is intentionally irrelevant",
+        "type": "CHECKBOXES",
+        "value": true
+      }
+    ]
+  }
+}

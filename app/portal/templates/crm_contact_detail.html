@@ -5,6 +5,7 @@
 <div class="heading"><div><div class="eyebrow">CRM · Contact</div><h1>{{ contact.display_name }}</h1></div></div>
 {% endblock %}
 {% block content %}
+{% if (contact.profile or {}).get('registration_pending') %}<p class="notice">Provisional registration contact · the registration review must be approved before new SPOC or Alert contact assignments.</p>{% endif %}
 <div class="record-detail-workspace" data-record-workspace><div class="record-detail-content">
 {% macro field(label, value) %}
 <div><dt>{{ label }}</dt><dd>{{ value or '—' }}</dd></div>
@@ -34,6 +35,7 @@
 <input type="hidden" name="version" value="{{ contact.version }}">
 <button type="submit" class="portal-button portal-button-secondary" name="command" value="{{ 'restore' if contact.archived_at else 'archive' }}">{{ 'Restore contact' if contact.archived_at else 'Archive contact' }}</button>
 </form>
+{% with delete_type="contacts", delete_record=contact %}{% include "crm_delete_action.html" %}{% endwith %}
 </details>
 </section>
 {% endif %}

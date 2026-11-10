@@ -209,6 +209,17 @@ def apply_view_request(request, session):
     if len(parts) < 2 or parts[0] != "crm" or parts[1] not in FIELDS:
         return
     directory = parts[1]
+    # Older view URLs encoded unchecked checkboxes as an empty boolean value.
+    # Redirect before FastAPI validates the endpoint's typed query parameters.
+    checkbox_filters = CHECKBOX_FILTERS & FIELDS[directory]
+    if any(request.query_params.get(key) == "" for key in checkbox_filters):
+        query = [
+            (key, "false" if key in checkbox_filters and value == "" else value)
+            for key, value in request.query_params.multi_items()
+        ]
+        raise HTTPException(
+            303, headers={"Location": request.url.path + "?" + urlencode(query)}
+        )
     user = getattr(request.state, "portal_user", None)
     if len(parts) == 2 and not request.query_params and user:
         default = session.scalar(

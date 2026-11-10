@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% block module_navigation %}{% if record %}{% set exception_tab='audit' %}{% include 'exception_tabs.html' %}{% endif %}{% endblock %}
 {% macro state(v) %}{{ v if v else 'Not specified' }}{% endmacro %}
 {% macro change(g) %}{% if g.before and g.actual and g.before!=g.actual %}{{ state(g.before) }} → {{ state(g.actual) }}{% elif g.actual %}{{ state(g.actual) }}{% if g.before==g.actual %} · unchanged{% endif %}{% else %}State not specified{% endif %}{% endmacro %}
 {% from 'macros.html' import record_bar %}
@@ -8,7 +9,7 @@
 {% endblock %}
 {% block content %}
 {% if example %}<div class="notice">View of the supplied example report. It is not linked to a current exception and does not assign responsibility.{% if anchor_alert_id %} Alert referenced in the report: <strong>{{ anchor_alert_id }}</strong>.{% endif %}</div>{% endif %}
-{% if record %}{% set exception_tab='audit' %}{% include 'exception_tabs.html' %}{% endif %}
+
 <section class="panel audit-toolbar">
 <div>{% if report %}<strong>Report version {{ report.id }}</strong> · <a class="audit-link" href="/pack-audit/reports/{{ report.id }}/original">Download original report</a><p class="subtle">{{ 'Imported' if example else 'Retrieved' }} {{ report.captured_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC · {{ timeline.event_count }} audit entries · {{ timeline.transaction_count }} transactions{% if report.source_data_as_of %}<br>Source data available at request time: {{ report.source_data_as_of }}{% endif %}</p>{% else %}<strong>No report loaded yet</strong><p class="subtle">An existing report for the same pack is reused for related exceptions.</p>{% endif %}</div>
 {% if record %}<div>{% if task and task.status in ('queued','running') %}<span class="audit-status">{{ 'Report is being generated …' if task.status=='running' else 'Queued …' }}</span><p class="subtle">This view refreshes local processing status only.</p>

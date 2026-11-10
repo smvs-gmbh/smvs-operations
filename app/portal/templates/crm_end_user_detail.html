@@ -22,6 +22,7 @@
 </div>
 {% endmacro %}
 <div class="review-form">
+{% if profile.get('registration_id') %}<p class="notice"><a class="audit-link" href="/workflows/registrations/{{ profile.registration_id }}">Registration review and NMVS onboarding →</a></p>{% endif %}
 {% if user and user.archived_at %}<p class="notice">Archived End User</p>{% endif %}
 {% if user and not edit %}
 <section class="panel review-body" data-record-actions>
@@ -32,6 +33,7 @@
 <input type="hidden" name="version" value="{{ user.version }}">
 <div><button class="portal-button portal-button-secondary" name="command" value="{{ 'restore' if user.archived_at else 'archive' }}" type="submit">{{ 'Restore End User' if user.archived_at else 'Archive End User' }}</button></div>
 </form>
+{% with delete_type="end-users", delete_record=user %}{% include "crm_delete_action.html" %}{% endwith %}
 </details>
 </section>
 {% endif %}

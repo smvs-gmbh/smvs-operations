@@ -943,3 +943,78 @@ def test_mah_edit_keeps_neighbour_controls_visible_and_save_restores_them(portal
     assert 'data-record-editing="false"' in nav
     assert re.search(r'rel="prev"[^>]* href=', nav)
     assert re.search(r'rel="next"[^>]* href=', nav)
+
+
+def test_create_contact_from_directory_then_edit_and_archive(portal):
+    client, factory = portal
+    client.app.include_router(router)
+    with factory.begin() as session:
+        session.add(
+            CRMContact(airtable_id="known-role", label="Existing", function="SPOC")
+        )
+    listing = client.get("/crm/contacts").text
+    assert 'href="/crm/contacts/new"' in listing and "New contact" in listing
+    assert listing.index('aria-label="CRM navigation"') < listing.index("<h1>Contacts")
+    form = client.get("/crm/contacts/new")
+    assert form.status_code == 200 and 'action="/crm/contacts"' in form.text
+    assert (
+        client.post(
+            "/crm/contacts", headers=ORIGIN, data={"first_name": ""}
+        ).status_code
+        == 422
+    )
+    assert (
+        client.post(
+            "/crm/contacts", headers=ORIGIN, data={"email": "invalid"}
+        ).status_code
+        == 422
+    )
+    assert (
+        client.post(
+            "/crm/contacts",
+            headers=ORIGIN,
+            data={"first_name": "Test", "function:unknown": "yes"},
+        ).status_code
+        == 422
+    )
+    response = client.post(
+        "/crm/contacts",
+        headers=ORIGIN,
+        data={
+            "first_name": "Ada",
+            "last_name": "Review",
+            "email": "ada@example.test",
+            "phone": "+41 44 123 45 67",
+            "address_type": "work",
+            "mailbox_type": "Personal Mailbox",
+            "function:SPOC": "yes",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    detail_url = response.headers["location"]
+    with factory() as session:
+        contact = session.scalar(
+            select(CRMContact).where(CRMContact.label == "Ada Review")
+        )
+        assert contact.source_row_id is None and contact.function == "SPOC"
+        assert contact.profile["email"] == "ada@example.test"
+        version = contact.version
+    assert "Ada Review" in client.get(detail_url).text
+    assert "Ada Review" in client.get("/crm/contacts?q=Ada").text
+    assert (
+        client.post(
+            detail_url,
+            headers=ORIGIN,
+            data={"version": str(version), "command": "archive"},
+        ).status_code
+        == 200
+    )
+    assert "Archived contact" in client.get(detail_url).text
+    mailbox = client.post(
+        "/crm/contacts",
+        headers=ORIGIN,
+        data={"email": "alerts@example.test", "mailbox_type": "Shared Mailbox"},
+    )
+    assert mailbox.status_code == 200
+    assert "alerts@example.test" in mailbox.text and "Shared Mailbox" in mailbox.text

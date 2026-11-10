@@ -76,6 +76,7 @@ def test_swiss_only_names_search_filter_and_detail(portal):
     assert "Schweizer Präparat" in client.get("/products?q=Schweizer").text
     detail = client.get("/products/1")
     assert detail.status_code == 200 and "Lot-001" in detail.text
+    assert detail.text.index('aria-label="Product views"') < detail.text.index("<h1>")
     assert "Referenced by batches only" in detail.text
     assert "270000" in detail.text
     assert "Emballage suisse" in detail.text

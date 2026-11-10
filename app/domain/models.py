@@ -19,6 +19,7 @@ from sqlalchemy.dialects.mysql import DATETIME
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db.models import Base
+from app.registration.models import ReceiptColumns
 
 DOMAIN_TABLES = {
     "mapping_runs",
@@ -860,3 +861,65 @@ class CRMListView(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime)
 
     __mapper_args__: ClassVar[dict] = {"version_id_col": version}
+
+
+DOMAIN_TABLES.update({'end_user_registrations', 'registration_events'})
+
+
+class EndUserRegistration(Base):
+    __tablename__ = 'end_user_registrations'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    intake_id: Mapped[str] = mapped_column(String(36), unique=True)
+    intake_revision: Mapped[int] = mapped_column(Integer)
+    end_user_id: Mapped[int | None] = mapped_column(ForeignKey('crm_end_users.id', ondelete='SET NULL'))
+    contact_id: Mapped[int | None] = mapped_column(ForeignKey('crm_contacts.id', ondelete='SET NULL'))
+    confirmation_mail_status: Mapped[str] = mapped_column(String(30), default='unknown')
+    submitted_email: Mapped[str] = mapped_column(String(254))
+    submitted_at: Mapped[datetime] = mapped_column(DateTime)
+    received_at: Mapped[datetime] = mapped_column(DateTime)
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime)
+    status: Mapped[str] = mapped_column(String(30), default='awaiting_email')
+    security_ciphertext: Mapped[str | None] = mapped_column(Text)
+    security_expires_at: Mapped[datetime] = mapped_column(DateTime)
+    reviewed_hash: Mapped[str | None] = mapped_column(String(64))
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime)
+    reviewed_by: Mapped[str | None] = mapped_column(String(254))
+    review_note: Mapped[str | None] = mapped_column(Text)
+    nmvs_organisation_id: Mapped[str | None] = mapped_column(String(100))
+    nmvs_created_at: Mapped[datetime | None] = mapped_column(DateTime)
+    version: Mapped[int] = mapped_column(Integer, default=1, server_default='1')
+    __mapper_args__: ClassVar[dict] = {'version_id_col': version}
+
+
+class RegistrationEvent(Base):
+    __tablename__ = 'registration_events'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    registration_id: Mapped[int] = mapped_column(ForeignKey('end_user_registrations.id'), index=True)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime)
+    actor_user_id: Mapped[int | None] = mapped_column(Integer)
+    actor: Mapped[str] = mapped_column(String(254))
+    action: Mapped[str] = mapped_column(String(50))
+    note: Mapped[str | None] = mapped_column(Text)
+
+
+DOMAIN_TABLES.add("registration_receipts")
+
+
+class RegistrationReceipt(ReceiptColumns, Base):
+    """Internal-only durable registration receipt and confirmation outbox."""
+
+    __tablename__ = "registration_receipts"
+
+
+DOMAIN_TABLES.add("crm_deletion_events")
+
+
+class CRMDeletionEvent(Base):
+    """Minimal erasure evidence without copies of erased personal data."""
+    __tablename__ = "crm_deletion_events"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    record_type: Mapped[str] = mapped_column(String(50))
+    source_identity_hash: Mapped[str | None] = mapped_column(String(64), index=True)
+    record_id: Mapped[int] = mapped_column(Integer)
+    actor_user_id: Mapped[int] = mapped_column(Integer)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime)

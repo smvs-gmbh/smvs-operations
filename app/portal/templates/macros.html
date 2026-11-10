@@ -23,10 +23,10 @@
 {% macro list_heading(keyword, title, description, icon='', action_url='', action_label='') %}
 <div class="heading"><div>
   <div class="eyebrow">{{ keyword }}</div>
-  <h1>{{ title }}{% if icon %}<span class="heading-dot">.</span>{% endif %}</h1>
+  <div class="list-title-row"><h1>{{ title }}{% if icon %}<span class="heading-dot">.</span>{% endif %}</h1>
+  {% if action_url %}<a class="portal-button heading-action" href="{{ action_url }}">{{ action_label }}</a>{% endif %}</div>
   <p>{{ description }}</p>
 </div>
-{% if action_url %}<a class="preview-label" href="{{ action_url }}">{{ action_label }}</a>{% endif %}
 {% if icon %}<span class="section-icon" aria-hidden="true">{{ icon }}</span>{% endif %}
 </div>
 {% endmacro %}

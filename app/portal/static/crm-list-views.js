@@ -1,5 +1,5 @@
 import {rightToolbox} from './right-toolbox.js?v=record-actions-1';
-import {initialiseColumns} from './crm-list-columns.js?v=named-views-2';
+import {initialiseColumns} from './crm-list-columns.js?v=registration-workflow-1';
 
 const form = document.querySelector('form[data-crm-filters]');
 if (form) initialiseViews(form);
@@ -29,11 +29,26 @@ function labelled(text, control) {
     return label;
 }
 
-async function initialiseViews(form) {
+export async function initialiseViews(form) {
     const directory = form.dataset.crmFilters;
-    const endpoint = `/crm/views/${directory}`;
+    const endpoint = form.dataset.viewEndpoint || `/crm/views/${directory}`;
+    const catalogueEndpoint = form.dataset.catalogueEndpoint || `/crm/list-preferences/${directory}`;
+    const viewPath = form.dataset.viewPath || `/crm/${directory}`;
+    const prefix = form.dataset.viewPrefix || '';
+    const key = name => prefix + name;
+    const quickKey = name => prefix && form.dataset.localSearch && name === 'q' ? key(name) : name;
+    const viewQuery = view => {
+        const query = new URLSearchParams(prefix ? window.location.search : '');
+        query.delete('page');
+        if (prefix) {
+            for (const name of [...query.keys()]) if(name.startsWith(prefix)) query.delete(name);
+            for (const control of form.querySelectorAll('input[name],select[name]')) query.delete(quickKey(control.name));
+        }
+        query.set(key('view'), view);
+        return query;
+    };
     const viewFilters = form.querySelector('[data-crm-view-filters]');
-    const controls = Array.from(form.querySelectorAll('.review-controls input[name], .review-controls select[name], [data-crm-view-filters] select[name]'));
+    const controls = Array.from(form.querySelectorAll('.review-controls input[name], .review-controls select[name], [data-crm-view-filters] select[name], [data-crm-view-filters] input[name]'));
     const scope = form.querySelector('input[name="mah_id"]')?.value;
     const status = element('p', 'crm-view-status subtle');
     status.setAttribute('role', 'status');
@@ -48,8 +63,8 @@ async function initialiseViews(form) {
     let response, catalogue;
     try {
         const results = await Promise.all([
-            fetch(endpoint + window.location.search),
-            fetch(`/crm/list-preferences/${directory}`),
+            fetch(endpoint + (endpoint.includes('?') ? '&' + window.location.search.slice(1) : window.location.search)),
+            fetch(catalogueEndpoint),
         ]);
         if (!results.every(result => result.ok)) throw new Error();
         [response, catalogue] = await Promise.all(results.map(result => result.json()));
@@ -59,6 +74,12 @@ async function initialiseViews(form) {
     }
     const config = response.config;
     const selected = response.selected;
+    if (prefix) for (const control of controls) {
+        if (!new URLSearchParams(location.search).has(control.name) && config.quick_filters[control.name] !== undefined) {
+            if (control.type === 'checkbox') control.checked = ['true','yes','on','1'].includes(config.quick_filters[control.name]);
+            else control.value = config.quick_filters[control.name];
+        }
+    }
     const currentPreset = response.presets.find(preset => preset.id === new URLSearchParams(window.location.search).get('preset'));
     chooser.replaceChildren(new Option('All records', 'all'));
     if (response.views.length) {
@@ -75,11 +96,12 @@ async function initialiseViews(form) {
     }
     chooser.value = selected ? String(selected.id) : currentPreset ? `preset:${currentPreset.id}` : 'all';
     chooser.disabled = false;
-    const fields = catalogue.fields;
+    const fields = catalogue.fields.filter(field => !field.column_only);
     const fieldMap = new Map(fields.map(field => [field.key, field]));
     const headers = Array.from(form.closest('section').querySelectorAll('table[data-crm-columns] thead th'));
     const standardOrder = headers.map(header => header.dataset.column);
     const standardColumns = headers.filter(header => header.dataset.defaultVisible !== 'false').map(header => header.dataset.column);
+    form.dispatchEvent(new CustomEvent('portal-view-config', {detail: {config, schema: catalogue.fields, server: response.server_filtered}}));
     const columns = initialiseColumns(form, config);
     // Place view settings and conditions ahead of the column editor.
     const conditionsPanel = element('details', 'crm-filter-settings crm-view-conditions');
@@ -200,10 +222,11 @@ async function initialiseViews(form) {
     bar.append(quick);
     const configure = button('Configure view', true);
     configure.setAttribute('aria-expanded', 'false');
-    configure.setAttribute('aria-controls', 'crm-view-toolbox');
+    const toolboxId = prefix ? 'view-toolbox-' + directory : 'crm-view-toolbox';
+    configure.setAttribute('aria-controls', toolboxId);
     bar.append(configure, status);
     const toolbox = element('aside', 'crm-view-toolbox');
-    toolbox.id = 'crm-view-toolbox';
+    toolbox.id = toolboxId;
     toolbox.hidden = true;
     toolbox.setAttribute('aria-label', 'Configure view');
     const toolboxHeading = element('div', 'crm-toolbox-heading');
@@ -222,12 +245,12 @@ async function initialiseViews(form) {
         ['save', 'Save view', settings],
     ]) {
         const tab = button(title, true);
-        tab.id = `crm-toolbox-tab-${key}`;
+        tab.id = `${toolboxId}-tab-${key}`;
         tab.dataset.tab = key;
         tab.setAttribute('role', 'tab');
-        tab.setAttribute('aria-controls', `crm-toolbox-panel-${key}`);
+        tab.setAttribute('aria-controls', `${toolboxId}-panel-${key}`);
         const panel = element('div', `crm-toolbox-panel crm-toolbox-${key}`);
-        panel.id = `crm-toolbox-panel-${key}`;
+        panel.id = `${toolboxId}-panel-${key}`;
         panel.setAttribute('role', 'tabpanel');
         panel.setAttribute('aria-labelledby', tab.id);
         for (const node of Array.from(original.children)) {
@@ -303,23 +326,25 @@ async function initialiseViews(form) {
         };
     }
     function navigate(configuration, view = selected ? String(selected.id) : 'all', preset = '') {
-        const query = new URLSearchParams({view});
+        const query = viewQuery(view);
         if (scope) query.set('mah_id', scope);
-        for (const [key, value] of Object.entries(configuration.quick_filters || {})) {
-            if (value !== '' || key === 'q') query.set(key, value);
+        for (const [name, value] of Object.entries(configuration.quick_filters || {})) {
+            const control = controls.find(control => control.name === name);
+            // An unchecked checkbox must explicitly override a saved view's true value.
+            query.set(quickKey(name), control?.type === 'checkbox' && value === '' ? 'false' : value);
         }
-        if (preset) query.set('preset', preset);
-        if (configuration.conditions) query.set('rules', JSON.stringify(configuration.conditions));
-        if (configuration.columns || configuration.column_order) query.set('layout', JSON.stringify({columns: configuration.columns, column_order: configuration.column_order}));
-        if (configuration.sort !== undefined) query.set('sort', configuration.sort);
-        if (configuration.direction) query.set('direction', configuration.direction);
+        if (preset) query.set(key('preset'), preset);
+        if (configuration.conditions) query.set(key('rules'), JSON.stringify(configuration.conditions));
+        if (configuration.columns || configuration.column_order) query.set(key('layout'), JSON.stringify({columns: configuration.columns, column_order: configuration.column_order}));
+        if (configuration.sort !== undefined) query.set(key('sort'), configuration.sort);
+        if (configuration.direction) query.set(key('direction'), configuration.direction);
         if (query.toString().length > 12000) {
             status.textContent = 'Save this view to apply these conditions.';
             showToolbox('save');
             return;
         }
         rememberToolbox();
-        window.location.assign(`/crm/${directory}?${query}`);
+        window.location.assign(`${viewPath}?${query}`);
     }
     async function post(command) {
         const body = new URLSearchParams({
@@ -356,10 +381,10 @@ async function initialiseViews(form) {
         status.textContent = 'Saving view…';
         try {
             const data = await post(command);
-            const query = new URLSearchParams({view: data.view ? String(data.view.id) : 'all'});
+            const query = viewQuery(data.view ? String(data.view.id) : 'all');
             if (scope) query.set('mah_id', scope);
             rememberToolbox();
-            window.location.assign(`/crm/${directory}?${query}`);
+            window.location.assign(`${viewPath}?${query}`);
         } catch (error) {
             status.textContent = error.message;
             showToolbox('save');
@@ -380,10 +405,10 @@ async function initialiseViews(form) {
         } else if (value === 'all') {
             navigate({quick_filters: {}, conditions: [], sort: '', direction: 'asc'}, 'all');
         } else {
-            const query = new URLSearchParams({view: value});
+            const query = viewQuery(value);
             if (scope) query.set('mah_id', scope);
             rememberToolbox();
-            window.location.assign(`/crm/${directory}?${query}`);
+            window.location.assign(`${viewPath}?${query}`);
         }
     });
     function markUnsaved(event) {

@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% import 'macros.html' as ui %}
-{% block heading %}{{ ui.list_heading('CRM · CONTACTS', 'Contacts', 'Browse contact details and their organisation assignments.') }}{% endblock %}
+{% block heading %}{{ ui.list_heading('CRM · CONTACTS', 'Contacts', 'Browse contact details and their organisation assignments.', action_url='/crm/contacts/new', action_label='New contact') }}{% endblock %}
 {% block content %}
 
 {{ ui.crm_list_status(imported_at) }}

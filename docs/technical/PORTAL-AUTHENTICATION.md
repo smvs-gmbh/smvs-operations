@@ -49,5 +49,14 @@ outstanding tokens and sessions.
 
 Recovery codes, supervised account recovery and the authentication audit log
 remain planned. Maintain a second internal administrator and enrol spare
-passkeys during the pilot. Twilio SMS, MAH accounts and CRM column preferences
-are separate follow-up work.
+passkeys during the pilot. Twilio SMS and MAH accounts remain separate follow-up work. Personal CRM
+column preferences and views have since been implemented.
+
+## Public production deployment
+
+The target is `https://operations.smvs-gmbh.ch` on Infomaniak Jelastic with DNS
+at Cyon and public passkey access. The current pilot is not a production security
+approval. See [Security Review 2026-11-09](SECURITY-REVIEW-2026-11-09.md) for
+confirmed gaps, separate local/hosting evidence and the required release checks.
+In particular, authenticated identity is not yet propagated into local Resolve
+Audit events, and production DB TLS identity verification needs implementation.

@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% import 'macros.html' as ui %}
+{% block module_navigation %}{% include 'workflow_tabs.html' %}{% endblock %}
 {% block heading %}
 {{ ui.list_heading('WORKFLOWS · ANNUAL BILLING', 'Prepare self-declarations', 'Create and review declaration invitations before sending.') }}
 {% endblock %}

@@ -1,13 +1,14 @@
-{% extends 'base.html' %}{% import 'macros.html' as ui %}
+{% extends 'base.html' %}
+{% block module_navigation %}<nav class="detail-tabs" aria-label="Activity views">
+<a class="{{ 'active' if section=='verification' }}" href="/activity/verification?start={{ start }}&end={{ end }}">Verification</a>
+<a class="{{ 'active' if section=='imt' }}" href="/activity/imt?start={{ start }}&end={{ end }}">IMT Fulfilment</a>
+</nav>{% endblock %}{% import 'macros.html' as ui %}
 {% block heading %}
 {% if org_record %}<a class="back-link" href="/organisations/{{ org_record.id }}">← Organisation details</a>{% endif %}
 {{ ui.list_heading('NMVS · DAILY ACTIVITY', org_record.organisation_name if org_record else 'Activity', ('Verification by organisation' if section=='verification' else 'IMT Fulfilment by foreign market') ~ ' · ' ~ start ~ '–' ~ end) }}
 {% endblock %}
 {% block content %}
-<nav class="detail-tabs" aria-label="Activity views">
-<a class="{{ 'active' if section=='verification' }}" href="/activity/verification?start={{ start }}&end={{ end }}">Verification</a>
-<a class="{{ 'active' if section=='imt' }}" href="/activity/imt?start={{ start }}&end={{ end }}">IMT Fulfilment</a>
-</nav>
+
 
 {% if latest %}
 {% if covered<expected %}<div class="notice">Data gaps in this period: {{ expected-covered }} of {{ expected }} days are missing. Totals and rates cover the {{ covered }} imported days. Comparisons are shown only for complete periods.</div>{% endif %}

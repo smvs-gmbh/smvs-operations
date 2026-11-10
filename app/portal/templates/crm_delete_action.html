@@ -1,0 +1,3 @@
+{% if request.state.portal_user and request.state.portal_user.is_admin %}
+<p><a class="audit-link" href="/crm/{{ delete_type }}/{{ delete_record.id }}/delete">Review permanent deletion →</a></p>
+{% endif %}

@@ -58,12 +58,14 @@ def product_list(
     version: str = Query("", max_length=100),
     page: int = Query(1, ge=1, le=10000),
 ):
+    from app.portal.table_views import prepare
+    prepare(request, session, "products")
     if status and status not in queries.STATUS_LABELS:
         raise HTTPException(422, "Unknown matching status.")
     ctx = queries.context(session)
     rows, pagination = (
         queries.products(
-            session, ctx["publication"], q=q, status=status, version=version, page=page
+            session, ctx["publication"], q=q, status=status, version=version, page=page, view_request=request
         )
         if ctx["publication"]
         else ([], {"page": 1, "pages": 1, "total": 0, "first": 0, "last": 0})
@@ -93,10 +95,12 @@ def batch_list(
     state: str = Query("not_expired", max_length=100),
     page: int = Query(1, ge=1, le=10000),
 ):
+    from app.portal.table_views import prepare
+    prepare(request, session, "batches")
     ctx = queries.context(session)
     rows, pagination = (
         queries.batches(
-            session, ctx["publication"], q=q, version=version, state=state, page=page
+            session, ctx["publication"], q=q, version=version, state=state, page=page, view_request=request
         )
         if ctx["publication"]
         else ([], {"page": 1, "pages": 1, "total": 0, "first": 0, "last": 0})
@@ -135,6 +139,7 @@ def product_navigation(request, session, publication, identifier, *, suffix=""):
         queries.PRODUCT_ORDER,
         "/products",
         "Products",
+        view_request=request, table_key="products",
         suffix=suffix,
         query=filter_query(request, "q", "status", "version"),
     )
@@ -147,6 +152,8 @@ def product_detail(
     session: DbSession,
     page: int = Query(1, ge=1, le=10000),
 ):
+    from app.portal.table_views import prepare
+    prepare(request, session, "product-batches")
     ctx = queries.context(session)
     if ctx["publication"] is None:
         raise HTTPException(404, "No published product dataset.")
@@ -159,7 +166,7 @@ def product_detail(
         raise HTTPException(404, "Product not found in the current dataset.")
     product = queries.product_view(row)
     rows, pagination = queries.batches(
-        session, ctx["publication"], source_id=source_id, page=page
+        session, ctx["publication"], source_id=source_id, page=page, view_request=request, table_key="product-batches"
     )
     versions = session.scalars(
         select(ProductVersion)
@@ -264,9 +271,10 @@ def batch_source(request: Request, batch_id: int, session: DbSession):
                 "/batches",
                 "Product and related batches" if related else "Batches",
                 suffix="/source",
+                view_request=request, table_key="product-batches" if related else "batches",
                 query=filter_query(request, "q", "version", "state", "related"),
                 back_path=f"/products/{product['id']}" if related else None,
-                back_query="" if related else None,
+                back_query=filter_query(request) if related else None,
             ),
             "back_url": f"/products/{product['id']}",
             "back_label": "Product and related batches",

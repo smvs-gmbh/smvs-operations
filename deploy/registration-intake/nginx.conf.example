@@ -1,0 +1,56 @@
+# TEMPLATE: replace hostname, certificate paths and private upstream before use.
+# This file belongs in nginx's http context, not inside an existing server block.
+limit_req_zone $binary_remote_addr zone=registration_webhook:10m rate=10r/s;
+limit_req_zone $binary_remote_addr zone=registration_confirm:10m rate=10r/m;
+
+server {
+    listen 80;
+    server_name REGISTRATION_HOST;
+    return 301 https://REGISTRATION_HOST$request_uri;
+}
+server {
+    listen 443 ssl;
+    server_name REGISTRATION_HOST;
+    ssl_certificate /PATH/TO/fullchain.pem;
+    ssl_certificate_key /PATH/TO/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    client_max_body_size 128k;
+    # Credential-bearing requests and registration contents must not be logged.
+    access_log off;
+    error_log /var/log/nginx/registration-error.log warn;
+    add_header Strict-Transport-Security "max-age=31536000" always;
+
+    location = /webhooks/tally/registrations {
+        limit_req zone=registration_webhook burst=20 nodelay;
+        limit_req_status 429;
+        proxy_pass http://PRIVATE_INTAKE_HOST:8080;
+        proxy_set_header Host REGISTRATION_HOST;
+        proxy_set_header Connection "";
+        proxy_read_timeout 30s;
+    }
+    location = /confirm {
+        limit_req zone=registration_confirm burst=10 nodelay;
+        limit_req_status 429;
+        proxy_pass http://PRIVATE_INTAKE_HOST:8080;
+        proxy_set_header Host REGISTRATION_HOST;
+        proxy_set_header Connection "";
+    }
+    location = /assets/confirmation.js {
+        proxy_pass http://PRIVATE_INTAKE_HOST:8080;
+        proxy_set_header Host REGISTRATION_HOST;
+    }
+    location = /assets/confirmation.css {
+        proxy_pass http://PRIVATE_INTAKE_HOST:8080;
+        proxy_set_header Host REGISTRATION_HOST;
+    }
+    location /exchange/ {
+        # Default deny until the internal worker's actual source IP is known.
+        # Add: allow WORKER_EGRESS_IP; before deny all (VPN/private route preferred).
+        deny all;
+        proxy_pass http://PRIVATE_INTAKE_HOST:8080;
+        proxy_set_header Host REGISTRATION_HOST;
+        proxy_set_header Connection "";
+        proxy_read_timeout 30s;
+    }
+    location / { return 404; }
+}

@@ -52,9 +52,9 @@ Use [Products](../../app/portal/templates/products.html) as the reference layout
 
 Check new pages at narrow and wide widths and with the portal’s text-size control. Verify that keyboard users can reach links, buttons and dialog controls, that the active view is identifiable and that longer values stay readable.
 
-## CRM named views
+## Personal table views
 
-CRM directories use a single compact toolbar: **View**, direct search,
+Record and report tables use a single compact toolbar: **View**, direct search,
 **Search** and **Configure view**. **All records** is an option in the View selector.
 Show a small **Unsaved changes** indicator beside these controls when appropriate.
 
@@ -80,9 +80,8 @@ navigation. Closing the toolbox keeps pending changes on the current page.
 
 Personal defaults apply when opening a bare directory URL; explicit view/query
 parameters take precedence. Views remain private to the account and directory.
-Previous preferences become **My view**; the former **My filters** UI is removed.
-Evaluate the complete scoped candidate list before pagination so counts and
-Previous/Next navigation use the same criteria and ordering. Hidden columns are
+Existing CRM preferences become **My view**; the former **My filters** UI is removed. Do not recreate legacy preset buttons outside the View selector.
+For Products, Batches, Organisations, Locations, Exceptions and their paginated related lists, evaluate conditions and sorting before pagination so counts and Previous/Next navigation use the same criteria and ordering. Other report tables refine their already retrieved report scope; show a row count that explicitly refers to that scope. A personal view never expands report limits or authorisation. Hidden columns are
 presentation preferences, independent of access control.
 
 CRM filter fields use matching heights, borders, padding and type sizes. Align
@@ -118,3 +117,55 @@ read view because a renamed record may have moved in the list. Never hide the
 step container to indicate editing. Suppress shortcuts during IME composition,
 in editable fields, during pending or open section edits, for dirty POST forms,
 and while a toolbox or dialog is open. Ignore repeated keydown events.
+
+## Shared data-first portal hierarchy
+
+CRM module tabs appear first in the main content area, before the title and
+record navigation. Keep them in the same order on lists, detail pages and forms.
+Place creation links such as **New MAH**, **New contact**, **New agreement** and
+**New End User** beside the list title, with the shared soft-blue `portal-button`
+style. Do not use the tiny letter-spaced `preview-label` style for creation actions.
+
+Use relative rem sizes so the global A−/A+ control scales the whole hierarchy.
+All portal pages share `portal-workspace`: table and detail values use
+`--portal-data-size` (.9375rem), button text uses `--portal-control-size` (.8125rem),
+labels use `--portal-label-size` (.8125rem), and ordinary section titles use
+`--portal-section-size` (.9375rem), differentiated by
+weight rather than size. Table headers use .75rem. MAH coloured-card headings
+may use 1rem. Dashboard metrics keep their existing size and spacing.
+
+The main data should remain more prominent than controls. Inputs use .875rem,
+and the list title uses 1.875rem. Preserve this proportion at larger text settings
+and allow the title/action row and toolbar to wrap on smaller screens.
+
+Apply the same hierarchy to Exceptions (including RCA, evidence and audit views),
+Products, Batches, Organisations, Locations, Activity, Reports, Workflows and
+Settings. Keep dashboards and chart/metric sizing unchanged. Existing monospace
+source values and their contents retain their original formatting and meaning.
+Use the `module_navigation` block before the heading for page-level tabs; do not
+move inline timeline/chart controls out of their section. Catalogue and participant
+module navigation comes first, followed by record-view tabs, record navigation
+and title. Active tabs use the shared blue underline. Preserve list filters in
+record-view links. Form submissions share soft-blue buttons; secondary actions
+remain neutral and resolution actions retain their semantic green tint.
+
+
+### Shared table implementation
+
+`portal-list-views.js` enhances read-only record/report tables in `.table-scroll`
+with the existing view and column controllers. CRM directories retain their richer
+field catalogue. Tables embedded in an edit/confirmation form or a dialog remain
+part of that interaction. Each table on a page has an independent identity, toolbar
+and toolbox; IDs must remain unique.
+
+Use `table_views.py` for private per-user view storage and validation. Large
+SQL directories use an explicit trusted expression registry; never derive database
+expressions from client field labels. Persist the report period/scope with the view.
+Keep existing role, publication and namespace constraints. Selection and record
+link columns stay available.
+
+Where a table has existing actions, expose **Actions** alongside **Configure view**.
+Actions are closed initially and use the same right-hand toolbox. Only one toolbox
+may be open per table. Preserve the original POST forms, selected-record scope,
+validation, auditing and confirmation steps. Moving row actions into a toolbox
+does not create a new bulk action: each remains attached to its named record.

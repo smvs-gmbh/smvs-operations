@@ -123,7 +123,7 @@ def candidates(session, year, *, lock=False, mah_id=None):
                 imported_suggestion = True
         options = []
         for contact in contacts:
-            if contact is None or contact.archived_at:
+            if contact is None or contact.archived_at or (contact.profile or {}).get("registration_pending"):
                 continue
             email = ((contact.profile or {}).get("email", contact.label) or "").strip()
             options.append(

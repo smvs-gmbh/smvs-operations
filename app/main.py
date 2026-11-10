@@ -6,18 +6,20 @@ from fastapi.staticfiles import StaticFiles
 
 from app.core.config import get_settings
 from app.core.logging import configure_logging
+from app.portal.activity_routes import router as activity_router
 from app.portal.auth_access import install_portal_access
 from app.portal.auth_routes import router as auth_router
-from app.portal.participant_routes import router as participant_router
-from app.portal.routes import router as portal_router
-from app.portal.activity_routes import router as activity_router
+from app.portal.crm_routes import router as crm_router
 from app.portal.exception_routes import router as exception_router
-from app.portal.pack_audit_routes import router as pack_audit_router
-from app.portal.upload_routes import router as upload_router
+from app.portal.import_routes import router as import_router
 from app.portal.intelligence_routes import router as intelligence_router
 from app.portal.mah_report_routes import router as mah_report_router
-from app.portal.crm_routes import router as crm_router
-from app.portal.import_routes import router as import_router
+from app.portal.pack_audit_routes import router as pack_audit_router
+from app.portal.participant_routes import router as participant_router
+from app.portal.registration_routes import router as registration_router
+from app.portal.routes import router as portal_router
+from app.portal.table_views import router as table_views_router
+from app.portal.upload_routes import router as upload_router
 from app.portal.workflow_routes import router as workflow_router
 
 settings = get_settings()
@@ -44,6 +46,8 @@ app.include_router(intelligence_router)
 app.include_router(mah_report_router)
 app.include_router(crm_router)
 app.include_router(workflow_router)
+app.include_router(table_views_router)
+app.include_router(registration_router)
 
 
 @app.get("/health")

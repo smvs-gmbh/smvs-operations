@@ -100,7 +100,10 @@ def product_view(row):
     }
 
 
-def paged(session, statement, page):
+def paged(session, statement, page, *, view_request=None, table_key=None):
+    if view_request is not None and table_key:
+        from app.portal.table_views import apply_sql
+        statement = apply_sql(view_request, session, statement, table_key)
     total = session.scalar(
         select(func.count()).select_from(statement.order_by(None).subquery())
     )
@@ -141,9 +144,9 @@ def product_statement(publication, *, q="", status="", version=""):
     return statement
 
 
-def products(session, publication, *, q="", status="", version="", page=1):
+def products(session, publication, *, q="", status="", version="", page=1, view_request=None):
     statement = product_statement(publication, q=q, status=status, version=version)
-    rows, pagination = paged(session, statement.order_by(*PRODUCT_ORDER), page)
+    rows, pagination = paged(session, statement.order_by(*PRODUCT_ORDER), page, view_request=view_request, table_key="products")
     return [product_view(r) for r in rows], pagination
 
 
@@ -194,12 +197,12 @@ def batch_statement(publication, *, q="", source_id=None, version="", state=""):
 
 
 def batches(
-    session, publication, *, q="", source_id=None, version="", state="", page=1
+    session, publication, *, q="", source_id=None, version="", state="", page=1, view_request=None, table_key="batches"
 ):
     statement = batch_statement(
         publication, q=q, source_id=source_id, version=version, state=state
     )
-    rows, pagination = paged(session, statement.order_by(*BATCH_ORDER), page)
+    rows, pagination = paged(session, statement.order_by(*BATCH_ORDER), page, view_request=view_request, table_key=table_key)
     output = []
     for row in rows:
         batch, version = row[6:8]

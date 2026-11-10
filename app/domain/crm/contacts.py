@@ -11,6 +11,7 @@ from app.core.db.models import (
     StagingDataset,
     StagingRow,
 )
+from app.domain.crm.contact_deletions import contact_source_hash, erased_contact_sources
 from app.domain.crm.imports import SOURCE, parse_export, stage_export
 from app.domain.models import CRMContact
 
@@ -43,12 +44,15 @@ def seed_staged_contacts(session):
         contact.airtable_id: contact
         for contact in session.scalars(select(CRMContact).with_for_update())
     }
+    suppressed = erased_contact_sources(session)
     changed = 0
     for row in session.scalars(
         select(StagingRow).where(StagingRow.staging_dataset_id == dataset_id)
     ):
         data = row.raw_row_json
         identity = data["RECORD_ID2"].strip()
+        if contact_source_hash(identity) in suppressed:
+            continue
         defaults = {
             field: data[header].strip()
             for field, header in CONTACT_PROFILE_COLUMNS.items()
@@ -72,6 +76,10 @@ def seed_staged_contacts(session):
             )
         )
         changed += 1
+    session.flush()
+    from app.domain.crm.mah_contacts import seed_mah_contacts
+
+    seed_mah_contacts(session)
     return changed
 
 

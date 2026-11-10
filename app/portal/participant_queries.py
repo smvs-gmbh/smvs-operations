@@ -75,12 +75,12 @@ def organisation_statement(
 
 
 def organisations(
-    session, publication, *, q="", status="not_deactivated", type_filter="", page=1
+    session, publication, *, q="", status="not_deactivated", type_filter="", page=1, view_request=None
 ):
     statement = organisation_statement(
         publication, q=q, status=status, type_filter=type_filter
     )
-    rows, pagination = paged(session, statement.order_by(*ORGANISATION_ORDER), page)
+    rows, pagination = paged(session, statement.order_by(*ORGANISATION_ORDER), page, view_request=view_request, table_key="organisations")
     return [
         {"organisation": row[0], "location_count": row[1]} for row in rows
     ], pagination
@@ -125,11 +125,11 @@ def location_statement(publication, *, q="", status="", organisation_id=None):
     return statement
 
 
-def locations(session, publication, *, q="", status="", organisation_id=None, page=1):
+def locations(session, publication, *, q="", status="", organisation_id=None, page=1, view_request=None, table_key="locations"):
     statement = location_statement(
         publication, q=q, status=status, organisation_id=organisation_id
     )
-    rows, pagination = paged(session, statement.order_by(*LOCATION_ORDER), page)
+    rows, pagination = paged(session, statement.order_by(*LOCATION_ORDER), page, view_request=view_request, table_key=table_key)
     return [{"location": row[0], "organisation": row[1]} for row in rows], pagination
 
 

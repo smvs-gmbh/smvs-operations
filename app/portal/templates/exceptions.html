@@ -1,5 +1,5 @@
 {% extends 'base.html' %}{% import 'macros.html' as ui %}
-{% block heading %}{{ ui.list_heading('OPERATIONAL INFORMATION · NMVS', 'Exceptions', 'Review reported alerts with product, batch and participant context.', action_url='/exceptions?work_status=to_do', action_label='To-do list') }}{% endblock %}
+{% block heading %}{{ ui.list_heading('OPERATIONAL INFORMATION · NMVS', 'Exceptions', 'Review reported alerts with product, batch and participant context.') }}{% endblock %}
 {% block content %}
 {{ ui.list_metrics('Exceptions overview', [
     ('Retained alerts', exception_total|number, 'All imported periods'),

@@ -40,6 +40,8 @@ def exception_list(
     work_status: str = Query("open", pattern="^(open|to_do|resolved|all)$"),
     page: int = Query(1, ge=1, le=10000),
 ):
+    from app.portal.table_views import prepare
+    prepare(request, session, "exceptions")
     end = end or datetime.now(UTC).date()
     start = start or end - timedelta(days=29)
     if end < start or (end - start).days > 366:
@@ -59,7 +61,7 @@ def exception_list(
         process=process,
         date_quality=date_quality,
         intermarket=intermarket,
-        page=page,
+        page=page, view_request=request,
         work_status=work_status,
     )
     settings = get_settings()
@@ -83,7 +85,7 @@ def exception_list(
                     "nav_end": end.isoformat(),
                     **{
                         key: request.query_params[key]
-                        for key in EXCEPTION_NAV_FILTERS
+                        for key in (*EXCEPTION_NAV_FILTERS, *(k for k in request.query_params if k.startswith("tv_")))
                         if key in request.query_params
                     },
                 }
@@ -185,7 +187,8 @@ def exception_record_navigation(request, session, record):
     statement, ordering = queries.listing_statement(
         session, start=start, end=end, **filters
     )
-    query = "?" + urlencode({"nav_start": start, "nav_end": end, **filters})
+    view_params = {k: v for k, v in params.items() if k.startswith("tv_")}
+    query = "?" + urlencode({"nav_start": start, "nav_end": end, **filters, **view_params})
     suffix = request.url.path.removeprefix(f"/exceptions/{record.id}")
     navigation = list_record_navigation(
         session,
@@ -195,9 +198,10 @@ def exception_record_navigation(request, session, record):
         ordering,
         "/exceptions",
         "Exceptions",
+        view_request=request, table_key="exceptions",
         suffix=suffix,
         query=query,
-        back_query="?" + urlencode({"start": start, "end": end, **filters}),
+        back_query="?" + urlencode({"start": start, "end": end, **filters, **view_params}),
     )
     navigation["query"] = query
     return navigation

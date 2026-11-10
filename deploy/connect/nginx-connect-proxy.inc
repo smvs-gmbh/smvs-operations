@@ -1,0 +1,13 @@
+proxy_pass http://10.100.37.97:80;
+proxy_http_version 1.1;
+proxy_set_header Host connect.smvs-gmbh.ch;
+proxy_set_header Connection "";
+proxy_set_header Cookie "";
+proxy_set_header Authorization "";
+proxy_set_header X-Forwarded-For $remote_addr;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-Proto https;
+proxy_connect_timeout 5s;
+proxy_read_timeout 20s;
+proxy_send_timeout 15s;
+proxy_next_upstream off;

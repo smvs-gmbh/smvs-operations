@@ -21,3 +21,27 @@ The current portal implements reversible archiving. The erasure action and autom
 
 - [Swiss Federal Act on Data Protection, Article 6](https://www.fedlex.admin.ch/eli/cc/2022/491/de#art_6)
 - [Swiss Code of Obligations, Article 958f](https://www.fedlex.admin.ch/eli/cc/27/317_321_377/de#art_958_f)
+
+
+## New registrations
+
+The registration workflow keeps security questions/answers outside normal CRM
+profiles and raw import artifacts, as temporary encrypted values. They are erased
+after manual NMVS creation, rejection or expiry cleanup. The isolated public intake
+also clears confirmed payloads after durable core acknowledgement. See
+[end-user registration](end-user-registration.md) for worker cleanup, Tally copies
+and backup-retention limitations. Core CRM identity data and the minimal workflow
+audit still require their own purpose-based retention/erasure decisions.
+
+## Administrator erasure of registration test data
+
+Administrators may permanently erase a direct-mode registration and, optionally,
+its unshared CRM End User/contact from the Actions toolbox. Ordinary NMVO users
+retain archive/review capabilities but cannot erase. Minimal technical duplicate
+markers and deletion audit IDs remain; form contents/security data do not. The CRM
+also offers guarded deletion for End Users, contacts and MAHs, blocking linked
+registration records. From migration 0043, standalone contact erasure detaches
+its live contact assignments and suppresses recreation by source fingerprint;
+MAHs and End Users remain. This correction is local-only at the 2026-11-10 checkpoint. This feature is
+not a complete data-subject erasure across retained source exports, Tally, email
+and backups; those remain subject to the wider retention procedure.

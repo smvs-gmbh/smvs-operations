@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% import 'macros.html' as ui %}
+{% block module_navigation %}{% include 'workflow_tabs.html' %}{% endblock %}
 {% block heading %}
 {{ ui.record_bar(record_nav) }}
 {{ ui.list_heading('WORKFLOWS · SELF-DECLARATIONS', mah.name, 'Review the recipients before approving this invitation.') }}

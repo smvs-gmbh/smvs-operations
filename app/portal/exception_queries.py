@@ -244,12 +244,12 @@ def listing_statement(
     return statement, ordering
 
 
-def listing(session, *, page=1, **filters):
+def listing(session, *, page=1, view_request=None, **filters):
     statement, ordering = listing_statement(session, **filters)
     rows, pagination = paged(
         session,
         statement.order_by(*ordering),
-        page,
+        page, view_request=view_request, table_key="exceptions",
     )
     return enriched(session, [r[0] for r in rows]), pagination
 

@@ -6,11 +6,12 @@ from datetime import date
 from decimal import Decimal, InvalidOperation
 from typing import Literal
 from urllib.parse import parse_qsl, quote, unquote, urlencode
+from uuid import uuid4
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse, Response
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 from sqlalchemy.orm.exc import StaleDataError
@@ -74,21 +75,27 @@ from app.domain.models import (
     LocalOrganisation,
 )
 from app.integration.artifacts.storage import utcnow
+from app.portal.crm_list_preferences import (
+    apply_saved_crm_filters,
+)
+from app.portal.crm_list_preferences import (
+    router as preferences_router,
+)
+from app.portal.crm_views import (
+    configured_rows,
+    crm_navigation,
+    crm_paged,
+    list_catalogue_context,
+)
+from app.portal.crm_views import (
+    router as views_router,
+)
 from app.portal.exception_routes import review_form
 from app.portal.record_navigation import (
     filter_query,
     record_navigation,
 )
 from app.portal.routes import DbSession, templates
-
-from app.portal.crm_views import (
-    crm_paged, crm_navigation, configured_rows, list_catalogue_context,
-    router as views_router,
-)
-from app.portal.crm_list_preferences import (
-    apply_saved_crm_filters,
-    router as preferences_router,
-)
 
 router = APIRouter(dependencies=[Depends(apply_saved_crm_filters)])
 router.include_router(preferences_router)
@@ -379,6 +386,14 @@ def crm_end_users(
 
 
 END_USER_FIELDS = {
+    "gln": ("GLN", "GLN"),
+    "uid": ("UID", "UID"),
+    "organisation_type": ("Type", "Organisation type"),
+    "street": ("Street", "Street"),
+    "postal_code": ("Postal Code", "Postal code"),
+    "city": ("City", "City"),
+    "country": ("Country", "Country"),
+    "licence": ("Licence", "Wholesale licence"),
     "software": ("Software Product", "Software product"),
     "supplier": ("Enduser Software Supplier", "IT supplier"),
     "email": ("Email general", "Email"),
@@ -448,6 +463,7 @@ def render_end_user(request, session, user, edit, q="", unlinked=False):
             if edit == "contacts"
             else CRMContact.id.in_(ids)
         )
+        contacts=contacts.where(or_(CRMContact.profile['registration_pending'].as_boolean().is_not(True),CRMContact.id.in_(ids)))
         contact_options = list(session.scalars(contacts))
     pending_contacts = []
     if source.get("SPOC") or source.get("Alert contacts"):
@@ -846,6 +862,75 @@ def contact_organisations(session, contact):
             assigned.setdefault(mah.id, (mah, "Airtable organisation link"))
     pending = [label for label in references if len(matches.get(label, [])) != 1]
     return sorted(assigned.values(), key=lambda row: row[0].name.casefold()), pending
+
+
+@router.get("/crm/contacts/new", include_in_schema=False)
+def new_crm_contact(request: Request, session: DbSession):
+    return templates.TemplateResponse(
+        request=request,
+        name="crm_contact_new.html",
+        context={
+            "title": "New contact",
+            "active": "crm",
+            "crm_section": True,
+            "record_nav": record_navigation("/crm/contacts", "Contacts"),
+            "function_options": contact_functions(session),
+            "address_types": ADDRESS_TYPES,
+            "mailbox_types": MAILBOX_TYPES,
+        },
+    )
+
+
+@router.post("/crm/contacts", include_in_schema=False)
+async def create_crm_contact(request: Request, session: DbSession):
+    data = await review_form(request)
+    fields = {
+        key: data.get(key, "").strip()
+        for key in (
+            "first_name",
+            "last_name",
+            "email",
+            "phone",
+            "address_type",
+            "mailbox_type",
+        )
+    }
+    roles = [
+        key.removeprefix("function:")
+        for key, value in data.items()
+        if key.startswith("function:") and value == "yes"
+    ]
+    if (
+        not any(fields[key] for key in ("first_name", "last_name", "email"))
+        or any(len(fields[key]) > 150 for key in ("first_name", "last_name"))
+        or len(fields["email"]) > 254
+        or len(fields["phone"]) > 100
+        or fields["email"]
+        and not EMAIL.fullmatch(fields["email"])
+        or fields["address_type"]
+        and fields["address_type"] not in ADDRESS_TYPES
+        or fields["mailbox_type"]
+        and fields["mailbox_type"] not in MAILBOX_TYPES
+        or not set(roles).issubset(contact_functions(session))
+    ):
+        raise HTTPException(
+            422, "Enter a name or email address and valid contact details."
+        )
+    label = (
+        " ".join(filter(None, (fields["first_name"], fields["last_name"])))
+        or fields["email"]
+    )
+    buffer = io.StringIO()
+    csv.writer(buffer).writerow(roles)
+    contact = CRMContact(
+        airtable_id="manual:" + str(uuid4()),
+        label=label,
+        function=buffer.getvalue().rstrip("\r\n") or None,
+        profile=fields,
+    )
+    session.add(contact)
+    session.commit()
+    return RedirectResponse(f"/crm/contacts/{contact.id}", status_code=303)
 
 
 @router.get("/crm/contacts/{identifier}", include_in_schema=False)
@@ -1744,6 +1829,13 @@ def render_mah(request, session, mah=None, source=None, *, edit="", summary_draf
         if mah and mah.parent_company_id
         else None
     )
+    from app.domain.crm.mah_contacts import proposed_assignments
+
+    pending_contact_references = []
+    if source:
+        _, pending_contact_references = proposed_assignments(
+            source, saved_profile, contact_reference_index(session)
+        )
     edit_section = edit if mah and not mah.archived_at and edit in EDIT_SECTIONS else ""
     assigned_ids = set(profile.get("alert_contact_ids", [])) | set(spoc_ids(profile))
     contacts = []
@@ -1754,6 +1846,7 @@ def render_mah(request, session, mah=None, source=None, *, edit="", summary_draf
             if edit_section == "contacts"
             else CRMContact.id.in_(assigned_ids)
         )
+        statement=statement.where(or_(CRMContact.profile['registration_pending'].as_boolean().is_not(True),CRMContact.id.in_(assigned_ids)))
         contacts = list(session.scalars(statement))
     agreements = (
         list(
@@ -1872,6 +1965,7 @@ def render_mah(request, session, mah=None, source=None, *, edit="", summary_draf
         "profile_groups": PROFILE_GROUPS,
         "profile": profile,
         "spoc_ids": spoc_ids(profile),
+        "pending_contact_references": pending_contact_references,
         "association_options": sorted(
             set(ASSOCIATIONS) | set(profile["associations"]), key=str.casefold
         ),
@@ -2015,7 +2109,7 @@ def contact_assignments(data, session, profile):
         else {}
     )
     if ids != contacts.keys() or any(
-        contacts[identifier].archived_at and identifier not in existing
+        (contacts[identifier].archived_at or (contacts[identifier].profile or {}).get('registration_pending')) and identifier not in existing
         for selection, existing in (
             (spoc_selection, existing_spocs),
             (alert_selection, existing_alerts),
@@ -2150,3 +2244,51 @@ async def update_crm_mah(request: Request, identifier: int, session: DbSession):
     if command == "save" and data.get("section") in ("contract", "contract-links"):
         query += "#contract"
     return RedirectResponse(f"/crm/mahs/{identifier}{query}", status_code=303)
+
+
+@router.get("/crm/{record_type}/{identifier}/delete", include_in_schema=False)
+def review_crm_deletion(request: Request, record_type: str, identifier: int, session: DbSession):
+    from app.portal.deletion_review import render_deletion_review
+    from app.portal.registration_routes import deletion_admin
+
+    deletion_admin(request)
+    models = {"end-users": CRMEndUser, "contacts": CRMContact, "mahs": CRMMah}
+    model = models.get(record_type)
+    if model is None:
+        raise HTTPException(404, "CRM record type not found.")
+    row = session.get(model, identifier)
+    if row is None:
+        raise HTTPException(404, "CRM record not found.")
+    return render_deletion_review(request, session, row, record_type)
+
+
+@router.post("/crm/{record_type}/{identifier}/delete", include_in_schema=False)
+async def delete_crm_record(request: Request, record_type: str, identifier: int, session: DbSession):
+    from app.domain.crm.deletion import erase_record
+    from app.portal.registration_routes import deletion_admin, validate_deletion
+
+    admin = deletion_admin(request)
+    models = {"end-users": CRMEndUser, "contacts": CRMContact, "mahs": CRMMah}
+    model = models.get(record_type)
+    if model is None:
+        raise HTTPException(404, "CRM record type not found.")
+    data = await review_form(request)
+    row = session.get(model, identifier, with_for_update=True)
+    if row is None:
+        raise HTTPException(404, "CRM record not found.")
+    validate_deletion(data, row)
+    try:
+        erase_record(session, row, admin)
+        session.commit()
+    except ValueError as error:
+        session.rollback()
+        from app.portal.deletion_review import render_deletion_review
+
+        return render_deletion_review(request, session, row, record_type, str(error), 409)
+    except IntegrityError:
+        session.rollback()
+        from app.portal.deletion_review import render_deletion_review
+
+        return render_deletion_review(request, session, row, record_type,
+            "Remove linked records before deleting this CRM record.", 409)
+    return RedirectResponse("/crm/" + record_type, status_code=303)
