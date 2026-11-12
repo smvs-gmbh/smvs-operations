@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SMVS Alert Desk · Two-column case</title><link rel="stylesheet" href="./focused.css"><script src="./columns.js" defer></script><link rel="stylesheet" href="./compact.css"><link rel="stylesheet" href="./columns.css"></head>
+<body>
+<div class="preview"><span>Two-column alternative · Fictional data</span><details><summary>Compare designs</summary><div><label for="scenario">Example</label><select id="scenario">
+<option value="a2-open">A2 · Batch investigation</option>
+<option value="a2">A2 · Deferred batch alert</option>
+<option value="a3">A3 · Pack comparison needed</option>
+<option value="pmd">A3 · Product known, no batches</option>
+<option value="a7-open">A7 · Destroy investigation</option>
+<option value="a7">A7 · Locally resolved Export</option>
+<option value="a24">A24 · Another location</option>
+<option value="a24-imt">A24 · Intermarket Exported pack</option>
+<option value="a52">A52 · Expiry date comparison</option>
+<option value="a68">A68 · Batch number comparison</option>
+</select><a href="/compact">Compact design →</a><a href="/focused">Minimal design →</a><a href="/case-study">Detailed design →</a><small>Responses stay in this tab</small></div></details></div>
+<header><a class="logo" href="/columns" aria-label="SMVS Alert Desk"><span>SMV<b>S</b></span><small>Alert Desk</small></a><div><strong id="viewer-name">Example Healthcare AG</strong><span id="viewer-context">Demo location</span></div></header>
+<main>
+<a class="alert-list-link" href="/alerts">← Alerts</a>
+<div class="case-ref" id="case-ref">DEMO-A7-REPEAT · A7</div>
+<div class="outcome"><span class="outcome-icon" id="outcome-icon" aria-hidden="true">✓</span><h1 id="title">Resolved locally by SMVS</h1></div>
+<p class="explanation" id="explanation">The pack was already marked Exported at your location. The repeated Export request was rejected.</p>
+<p class="case-status" id="case-status">Open · SMVS review pending</p>
+<div class="columns-layout"><aside class="supporting">
+<details id="details" open><summary>Pack details &amp; contacts</summary><div class="disclosure"><div class="left-product"><span>Product</span><strong>Example medicinal product</strong><span>MAH</span><strong>Example Pharma AG</strong></div><dl id="pack-details"></dl><div class="contacts"><section id="location-contact"><h3>Your location</h3><p>Demo location · Example Healthcare AG<br><span>enduser@example.invalid</span></p></section><section><h3>MAH</h3><p>Example Pharma AG · Demo alert contact<br><span>alerts@example.invalid</span></p></section></div></div></details>
+</aside>
+<div class="main-column"><section class="analysis-strip" aria-label="Automatic analysis"><div class="analysis-heading"><span class="intelligence">✦ Intelligence</span><span id="analysis-line">Repeated Export · same location · 3 seconds apart</span></div><details id="inline-evidence"><summary>View evidence</summary><p id="compact-evidence"></p><p class="quiet" id="compact-source"></p></details></section>
+<section class="pack-audit-card" aria-labelledby="audit-title"><div class="audit-heading"><h2 id="audit-title">Pack Audit Trail</h2><button type="button" class="report-link" id="open-report" hidden>View report →</button></div><p id="audit-empty">No report is available for this pack.</p><ol class="audit-sequence" id="audit-sequence" hidden></ol></section>
+<section class="action" id="resolved-action" aria-labelledby="action-title"><h2 id="action-title">Prevent repeated Export requests</h2><p>Please address the process or software issue at your location.</p><form id="commitment-form"><label class="checkbox cause-choice"><input type="checkbox" id="resolved-not-mine"><span>Root cause not on my side</span></label><fieldset class="yes-no capa-status" id="resolved-capa">
+<legend>Corrective and preventive action (CAPA)</legend>
+<div id="resolved-capa-options"></div>
+</fieldset><button class="button primary" id="save-commitment" type="submit" hidden>Send update to SMVS</button><p class="receipt" id="commitment-receipt" role="status" hidden></p></form><p class="quiet">Optional update.</p></section>
+<section class="action" id="guided-action" aria-labelledby="guided-title" hidden><h2 id="guided-title">Your investigation</h2><div id="review-state" role="status" hidden><p>Findings recorded for SMVS review.</p><p id="pack-handling">If the pack is available, keep it out of saleable stock while SMVS reviews the case.</p><button type="button" class="button" id="amend">Update findings</button></div><form id="guided-form">
+<fieldset class="yes-no" id="source-check" aria-describedby="source-check-hint" hidden disabled>
+<legend>Can you confirm where you received this pack from? (optional)</legend>
+<label><input type="radio" name="source" value="yes">Yes</label>
+<label><input type="radio" name="source" value="no">No</label>
+<p class="quiet assessment-note" id="source-check-hint">This helps SMVS trace the pack.</p>
+</fieldset>
+<fieldset class="yes-no" id="comparison-check"><legend id="comparison-question"></legend><p id="comparison-reference" class="quiet" hidden></p><div id="comparison-options"></div></fieldset>
+<fieldset class="yes-no" id="technical-check"><legend id="technical-question"></legend><div id="technical-options"></div></fieldset>
+<p id="next-check" class="quiet" aria-live="polite" hidden></p>
+<div class="compact-photo" id="packshot-control"><button type="button" id="photo-button" class="button">＋ Add packshot</button><input type="file" id="photo-file" accept="image/png,image/jpeg,image/webp" hidden><span class="quiet" id="photo-label">Optional</span></div>
+<div class="other-cause">
+<label class="checkbox"><input type="checkbox" id="other-cause"><span id="other-cause-label">Other issue on my side</span></label>
+</div>
+<fieldset class="finding" aria-describedby="finding-hint">
+<legend>What did you find?</legend>
+<label><input type="radio" name="finding" value="process_error" required>Process or handling error on my side</label>
+<label><input type="radio" name="finding" value="technical_error" required>Scanner or software error on my side</label>
+<label><input type="radio" name="finding" value="other_error" required>Other issue on my side</label>
+<label><input type="radio" name="finding" value="on_my_side" required>Root cause on my side</label>
+<div class="finding-follow-up">
+<label><input type="radio" name="finding" value="not_my_side" required>Root cause not on my side</label>
+<label><input type="radio" name="finding" value="investigating" required>Still investigating</label>
+</div>
+</fieldset>
+<div id="other-comment-field" hidden>
+<label for="other-comment">Comment (optional)</label>
+<p class="quiet" id="other-comment-hint">You can briefly describe the issue here. SMVS may contact you for details.</p>
+<textarea id="other-comment" aria-describedby="other-comment-hint" rows="3" maxlength="2000" disabled></textarea>
+</div>
+<fieldset class="yes-no capa-status" id="own-measures" hidden disabled>
+<legend>Corrective and preventive action (CAPA)</legend>
+<div id="guided-capa-options"></div>
+</fieldset><p id="finding-hint" class="quiet assessment-note"></p><p class="quiet assessment-note" id="finding-change" role="status" hidden></p>
+<div class="compact-submit"><button type="submit" class="button primary">Send findings to SMVS</button><span class="quiet">You + SMVS · Simulation only</span></div></form></section>
+<section class="action" id="deferred-action" hidden><h2>Deferred by rule</h2><p>SMVS will review this case by 2026-11-18. Included in the MAH monthly report.</p></section>
+<div class="conversation-link"><button type="button" id="open-conversation">Contact SMVS →</button></div>
+</div></div><footer id="boundary-note" hidden>Local SMVS resolution does not authorise supply or confirm Hub closure.</footer>
+</main>
+<dialog id="conversation"><div class="dialog-heading"><h2>Conversation with SMVS</h2><button type="button" class="button" id="close-conversation">Close</button></div><p class="quiet">You + SMVS · Nothing is sent in this preview</p><ol id="messages"></ol><form id="message-form"><label for="message">Your question or update</label><textarea id="message" rows="4" maxlength="2000" required></textarea><button type="submit" class="button primary">Send to SMVS</button><p id="message-receipt" class="receipt" role="status" hidden></p></form></dialog>
+<dialog id="report-dialog" aria-labelledby="report-title">
+<div class="dialog-heading"><h2 id="report-title">Pack Audit Trail</h2><button type="button" class="button" id="close-report">Close</button></div>
+<p class="quiet" id="report-meta"></p>
+<p id="report-pack"></p>
+<table class="report-table"><thead><tr><th scope="col">UTC timestamp</th><th scope="col">Reported event</th><th scope="col">Location</th></tr></thead><tbody id="report-events"></tbody></table>
+</dialog>
+</body></html>

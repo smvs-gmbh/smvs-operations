@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% import 'macros.html' as ui %}
+{% block module_navigation %}{% include 'workflow_tabs.html' %}{% endblock %}
+{% block heading %}
+<div class="heading"><div>
+  <div class="eyebrow">Workflows</div><h1>Alert Desk invitations</h1>
+  <p>Invite CRM alert contacts to their organisation’s alerts.</p>
+</div></div>
+{% endblock %}
+{% block content %}
+{{ ui.list_metrics('Invitation overview', [
+  ('CRM alert assignments', rows|length|number, ''),
+  ('Invitation sent', sent_count|number, ''),
+  ('Access confirmed', confirmed_count|number, '')
+]) }}
+<p><a class="audit-link" href="/workflows/alert-desk/review">Priority review →</a></p>
+{% if notice %}<p class="notice" role="status">{{ notice }}</p>{% endif %}
+<section class="panel review-body">
+  <div class="review-controls">
+    <label for="alert-contact-search">Search contact or organisation
+      <input type="search" id="alert-contact-search">
+    </label>
+    <label for="alert-contact-status">Invitation status
+      <select id="alert-contact-status">
+        <option value="">All</option>
+        <option value="not-sent">No invitation sent</option>
+        <option value="sent">Invitation sent</option>
+      </select>
+    </label>
+  </div>
+  <form action="/workflows/alert-desk/send" method="post" id="alert-access-send" class="review-controls">
+    <input type="hidden" name="selected">
+    <button type="submit" class="portal-button" disabled>Send test invitations</button>
+    <output id="alert-access-count" aria-live="polite">0 selected</output>
+    <a class="audit-link" href="http://localhost:18025/" target="_blank" rel="noopener noreferrer">Open test mailbox →</a>
+  </form>
+  <div class="table-scroll">
+    <table>
+      <thead><tr>
+        <th scope="col"><input type="checkbox" id="alert-access-all" aria-label="Select all available contacts shown"></th>
+        <th scope="col">Contact</th><th scope="col">Organisation</th>
+        <th scope="col">Role</th><th scope="col">Invitation</th><th scope="col">Actions</th>
+      </tr></thead>
+      <tbody>
+        {% for row in rows %}
+        <tr data-alert-contact data-sent="{{ 'sent' if row.grant and row.grant.sent_at else 'not-sent' }}">
+          <td><input type="checkbox" value="{{ row.key }}" aria-label="Select {{ row.contact.display_name }} at {{ row.organisation.name }}" {% if not row.sendable %}disabled{% endif %}></td>
+          <td><a href="/crm/contacts/{{ row.contact.id }}">{{ row.contact.display_name }} →</a><br>{{ row.email or 'No email address' }}</td>
+          <td><a href="/crm/{{ 'mahs' if row.role == 'mah' else 'end-users' }}/{{ row.organisation.id }}">{{ row.organisation.name }} →</a></td>
+          <td>{{ 'MAH' if row.role == 'mah' else 'End User' }}</td>
+          <td>{{ row.status }}{% if row.grant and row.grant.sent_at %}<br>{{ row.grant.sent_at.strftime('%Y-%m-%d %H:%M') }} UTC{% endif %}</td>
+          <td>{% if row.grant and not row.grant.revoked_at %}
+            <form method="post" action="/workflows/alert-desk/{{ row.grant.id }}/revoke">
+              <input type="hidden" name="action" value="revoke">
+              <button type="submit" class="portal-button">Revoke access</button>
+            </form>
+          {% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if not rows %}<p>No active CRM alert contacts are assigned.</p>{% endif %}
+</section>
+<script defer src="/portal-static/alert-desk-access.js"></script>
+{% endblock %}

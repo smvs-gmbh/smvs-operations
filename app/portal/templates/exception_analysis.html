@@ -34,7 +34,7 @@
 {% endif %}
 {% if batch_identity %}<p><a href="/exceptions/{{ record.id }}/reopen-batch">Reopen batch exceptions →</a></p>{% endif %}
 {% if request.state.portal_user and (request.state.portal_user.is_nmvo or request.state.portal_user.is_admin) %}
-<section class="panel review-body"><h2>Shared investigation</h2><p>Review the proposed End-user case view and EMVO-guided checks before preparing collaboration.</p><a class="audit-link" href="/exceptions/{{ record.id }}/participant-preview">Preview End-user investigation →</a></section>
+<section class="panel review-body"><h2>Shared investigation</h2>{% if alert_desk_pilot_enabled is defined and alert_desk_pilot_enabled() %}<p>Manage access for CRM alert contacts.</p><a class="audit-link" href="/workflows/alert-desk">Alert Desk invitations →</a><p><a class="audit-link" href="/exceptions/{{ record.id }}/invitations">Review case preview and findings →</a></p>{% else %}<a class="audit-link" href="/exceptions/{{ record.id }}/participant-preview">Preview participant evidence →</a>{% endif %}</section>
 {% endif %}
 <div class="panel investigation-card" id="root-cause">
 <div class="panel-heading"><h2>Root cause analysis</h2><span class="source-tag">LOCAL REVIEW</span></div>

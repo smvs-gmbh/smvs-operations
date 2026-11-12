@@ -133,7 +133,7 @@ roles and hypotheses explicit rather than infer responsibility from its name.
 |---|---|
 | Pharmacy scan / dispensing workflow | What operation was intended? Is the physical pack available? Do printed identifiers match transmitted values? Was the pack handled/scanned again? If scanner behaviour is suspected, compare with the relevant local check. |
 | Wholesaler / automated system | Intended operation (including Export, Destroy, Sample, Stolen or another supported operation); own workflow or on behalf of whom; automatic retries, bulk job, software/robotics and job/device evidence if actually available. |
-| A7/A99 repeated same-operation pattern | Present the successful change and failed repeat. Ask why the second call occurred and which corrective/preventive action is appropriate. Same-location repetition alone does not prove a benign cause. |
+| A7/A99 repeated same-operation pattern | Evidence-led NMVO triage first. A well-supported same-location repeat can be resolved locally without an End-user questionnaire; notify the End-user about prevention. Automatic execution requires an approved, versioned rule. Same-location repetition alone does not prove a benign cause. See the routine A7 / A3-A2 priority decision below. |
 | A2 Batch not found | Reuse Snapshot/upload results and their time coverage. Missing search results are not proof the batch was never uploaded. In the Swiss voluntary-serialisation context, use monthly reporting as a prevention supplement, while preserving timely case-specific investigation/progress feedback under the EMVO mapping; do not ask every End-user to chase every MAH. Ask the End-user when submitted batch/scanner context needs checking. |
 | A3 / A68 | Guided comparison of provided, stored and printed identifiers, pack availability, scanner/software checks and related location history. A remaining discrepancy requires deeper review. |
 | A52 expiry discrepancy | Compare transmitted, stored and printed expiry; preserve the exact source error/operation. Consider scanning/date parsing and serialisation-quality hypotheses without deciding automatically. |
@@ -720,3 +720,237 @@ Further case-specific questions remain possible where evidence is insufficient;
 they must support the alert investigation, not become a routine organisational
 audit. The new participant fields remain specified, not implemented in the local
 read-only preview.
+
+
+## Owner decision: routine A7 handling and A3/A2 priority — 2026-11-10
+
+This decision supersedes the earlier assumption that every accepted A7 repeat
+must enter an End-user confirmation workflow. Shared Investigation is for missing
+information; it must not create work solely to repeat evidence already held.
+
+### Routine same-location A7
+
+The decisive context is a repeated operation at the **same exact reported
+location**, supported by consistent product/pack identifiers, operation/state
+facts and available history. Compare stable source identifiers in their namespace,
+not display names or market alone. Distinguish an exact serial match from a mere
+length/character-pattern match. Missing or contradictory evidence remains visible.
+
+An NMVO may assess this evidence and resolve the case locally without requesting
+an End-user RCA first. A later approved, versioned rule may perform the same local
+resolution automatically when all its explicit conditions hold. Do not broaden the
+currently implemented Export/Destroy evaluator silently to other operations.
+The organisation should receive a concise prevention notice asking it to address
+repeated calls/process or software problems. A participant response or corrective-
+measures checkbox is not a prerequisite for this routine local resolution.
+
+Record the evidence references, rule/version or human decision, rationale,
+actor and time, affected cases and subsequent reopening in the Operations audit.
+Show whether the decision was automatic or manual. Notification delivery has its
+own status and retry history; it is not proof corrective measures were completed.
+Local resolution and formal external alert closure remain distinct until the
+appropriate integration and NMVO authority checks are implemented.
+
+### Shared Investigation priority: A3 first, A2 where evidence is needed
+
+Reuse automatic checks and retain their source/time coverage rather than asking
+staff or participants to re-enter findings. Keep two focused participant paths:
+
+- **MAH:** Was this exact pack uploaded? Supply available serial-level creation/
+  upload evidence and timing, or explain the missing upload. Product or batch
+  upload evidence provides context but does not prove this individual pack exists.
+- **End-user:** Provide a legible pack photograph for comparison of printed and
+  scanned identifiers, and indicate whether relevant scanner/software issues have
+  been checked. Reuse known location/software history to focus the question; keep
+  additional findings and corrective-measures comments optional.
+
+Useful Intelligence observations include serial length against the exact batch
+reference, provided/stored/printed batch comparison, and earlier uploads of other
+batches of this product. Label unavailable references explicitly. A prior product
+upload combined with no matching upload for this batch is an investigation lead,
+not proof the batch was never uploaded; disclose checked periods and coverage.
+A matching serial length does not establish authenticity or serial-level upload.
+
+A3 deserves individual discrepancy review. For A2, use existing upload evidence
+and the Swiss voluntary-serialisation context to decide whether a specific MAH
+query adds value; monthly MAH reporting remains the broader prevention route.
+Do not infer responsibility from an error code or request a full RCA for every A2.
+
+Implementation sequence: first present a compact internal evidence/decision card
+for routine A7; then build the focused A3 participant contribution and pack-photo
+path, with A2 upload questions reusing the same evidence components. MAH external
+access remains the second participant phase; its evidence request can initially
+be managed internally. This documentation does not enable automatic resolution,
+send notifications, publish case data or deploy the preview.
+
+
+### Operation-code refinement — 2026-11-10
+
+Alert type supplies the investigation family, not a complete interpretation.
+Refine it using the exact operation code, API version/source context, attempted
+operation, state and IMT facts. Reuse reviewed source messages and explicitly
+separate their plain-language explanation from Intelligence observations and
+participant assessments. VerifyIt-Guides CH API 3.1 contains finer variants such
+as 41020001 versus 41020010 within A3; the latter adds length/format mismatch and
+a possible technical issue. Multi-alert codes such as 51320801 require operation
+context. Missing/contradictory context falls back to neutral explanation.
+
+An unknown-serial response already records a failed lookup for the submitted
+identifiers, including IMT where evidenced. The investigation asks **why** it
+failed, not whether the same lookup should be repeated. Compare printed and
+reported identifiers and check technical issues; then request exact-pack upload
+evidence from the MAH if it adds missing causal information. Do not display a
+coordination task as “In progress” without an actual recorded task.
+
+
+### Historical specification review of A2 and A3 — 2026-11-10
+
+See [A2/A3 validation and IMT analysis](A2-A3-Verification-and-Intermarket-Analysis.md)
+for source versions, section/step locators, contradictory historical wording and
+proposed FR-INV-CTX-01–08. This refines earlier generic statements: A3 does not
+prove an IMT took place or every NMVS was searched; it can arise in missing-batch
+non-IMT-eligible validation. A2 also covers distribution failures for known Hub
+batches. A returned Pack Not Found label can hide a Batch Not Found condition,
+but the numeric final API alert mapping must be confirmed, not assumed. Batches
+can span multiple uploads and individual pack errors, so batch existence does not
+prove exact serial inclusion/acceptance. No current-release code mapping or live
+behaviour was changed by this review.
+
+## Agreed investigation layout and next design decisions — 2026-11-11
+
+Use the current `/columns` preview as the End-user investigation design baseline.
+The alert title identifies the source result. Pack details and contacts occupy
+one third on desktop. The other two thirds show concise Intelligence, available
+pack history and the highlighted contribution card. Use plain language for the
+End User and show evidence dates and sources on request. Retain the short Yes/No
+checks, one explicit finding, optional comments and the own-side corrective
+commitment. Use the same layout for different alert paths.
+
+### Connect alert overview and account enrolment
+
+Proposed default view is **Action required**, with **All alerts** and **Resolved**
+for history. List alert, date, product, batch, location where authorised, and
+status or next action. Open the investigation to view serials and evidence.
+Notifications link back to the relevant case behind Connect sign-in.
+
+SMVS invites a named, reviewed contact by a short-lived, single-use link. The
+recipient enrols a passkey on `connect.smvs-gmbh.ch`, then uses it to return to
+Connect. The invitation records the intended role and scope before enrolment.
+Keep individual accounts for colleagues and a reviewed recovery/revocation process.
+Use WebAuthn with Connect's own relying party ID and verify its expected origin.
+See [WebAuthn Level 3](https://www.w3.org/TR/webauthn-3/).
+
+On the server, check active membership and case visibility for each list, case,
+attachment and submission. End Users see cases for their assigned organisation
+and locations. MAHs see cases explicitly published to their organisation after
+its SAI identity has been mapped to an approved CRM entity. Apply the same scope
+to search, counts and exports. A named contact, a matching product name and a
+passkey are each insufficient to grant case access. Review invitation redemption,
+credential recovery, revocation, cross-organisation access and attachment access
+before making the overview public.
+
+### Recurrent A2/A3 and monthly MAH reporting
+
+Start with a rule preview for reviewed high-volume locations such as Farmamondo
+or Emergee. Use exact location identifiers, relevant operation codes and the
+observed product/batch context. Assess the batch upload search with its covered
+period and distribution evidence where available. Upload reports at batch level
+provide batch context. They cannot establish the presence of the individual serial.
+A location's volume or an empty search alone cannot establish a benign cause.
+
+Propose **Deferred by rule** as a reversible local work status for a validated
+recurring pattern. It takes the case out of the action queue for a stated period
+and remains visible in All alerts. Keep rule version, rationale, evidence, expiry
+and a manual return to the queue. Expiry, new contradictory evidence or a risk
+signal returns the case for review. Use **Automatically resolved** for a future
+rule that genuinely records a final local resolution. Formal Hub closure follows
+its own authority and process.
+
+Keep deferred events in the MAH monthly A2/A3 report. Show counts, affected
+batches and whether the cases were deferred, reviewed or still open. The existing
+internal report draft queries A2/A3 by SAI holder and period. When adding triage
+status, verify counts are preserved and describe upload evidence with its date.
+Case-specific escalation remains available for suspicious or unresolved cases.
+
+### Alert paths to prioritise
+
+| Path | Primary evidence and participant question |
+| --- | --- |
+| A2/A3 | Use the agreed layout. Compare batch/serial, then seek upload or distribution evidence from the MAH where needed. |
+| A7 | For a supported same-location repeat of the same operation, show the decision and prevention follow-up. For other cases, compare previous and attempted state, operation, location and time. |
+| A24 | Explain why the requested change could not be applied, using the operation code and current state. For a different-location case, ask whether the End User can confirm the pack source and whether they can rule out local process and technical errors. SMVS checks the prior system event and reviews the findings. |
+| A52/A68 | Reuse the identifier-comparison layout. Highlight the expiry date for A52 or batch number for A68 and compare printed, submitted and stored values where available. |
+| A32 | For the recurring A32 cases observed by SMVS, follow-up belongs to the OBP and EMVO. The pilot has no End-user or MAH investigation template for this path. |
+| A54 and unmapped cases | Triage internally first. The current upload view identifies A54 as insufficient serial number randomisation. Confirm context before selecting a MAH or other follow-up. Use the original message and NMVO review for unmapped codes. |
+
+### Structured participant findings and CAPA status
+
+The Connect preview uses closed questions for routine End-user and MAH findings.
+For A24 at another location, the participant confirms whether they can identify
+the physical source of the pack. They also assess local process and technical
+errors separately. The source confirmation records no supplier name or delivery
+details and does not determine responsibility. SMVS reviews the reported state
+change and distinguishes the reported location from the physical supply chain.
+
+Where a participant identifies a cause on their side, the CAPA status is
+**Implemented**, **Planned** or **Not yet planned**. This supersedes the earlier
+commitment checkbox for this preview and also supports follow-up of the resolved
+A7 repeat. The status is self-reported. The organisation keeps its internal CAPA
+records and can contact SMVS separately. SMVS retains the closure decision.
+
+### End-user form rules and source validation
+
+1. Ask one alert-specific question about the pack or operation. The
+   printed-to-submitted comparison has Yes, No and Not checked. An optional
+   packshot can support the comparison. Earlier local transactions and the optional
+   pack-source confirmation are evidence for review.
+2. Use the observation to show a short next check. A match can direct SMVS to
+   upload or stored data. A mismatch can suggest local input and scanner checks
+   and a packshot. For state alerts, focus on the attempted operation and
+   handling history. These observations leave the available findings unchanged.
+3. Ask once what the End User found. Offer own-side process, technical and other
+   causes, followed by a visually separate **Root cause not on my side** and
+   **Still investigating** in the same single-select group. An other cause
+   enables an optional comment. Own-side findings enable CAPA status.
+
+The End User selects the finding explicitly. SMVS assesses it and determines
+the next action or closure.
+
+**Source validation.** EMVO-00306 v2.2 sections 3.2–3.4 distinguish
+participant feedback, comparison or conditional manual verification, and
+investigation of procedural, scanner and IT causes. The result of a pack
+comparison can change the recommended checks. Making the comparison
+independent of the selectable finding is a Connect design decision. Apply
+the pack-handling and manual verification guidance for the relevant scenario.
+The NMVS Alerts End User Manual section 4.2 records confirmed technical and
+procedural causes and supports additional evidence. ADAM End-user Guide
+v2.0 sections 4.3.3, 4.3.8 and 4.4.1 use alert-specific guidance and show submitted
+and stored pack values. The illustrated yes path uses a packshot and a handling
+instruction. The Connect preview uses a short conditional hint and optional
+evidence. AMVO-005 v2.0 sections 7.2.1–7.3 distinguish investigation
+from its outcome, including own-side findings and corrective actions for
+OBP/MAH/RPC. Connect uses optional comments and a short CAPA status for routine
+feedback. SMVS retains closure.
+
+| Form | Evidence and assessment |
+| --- | --- |
+| Open A2, both A3 examples, A52, A68 | Compare the relevant printed data. Show the relevant next check and record a single finding. |
+| Open A7 | Ask whether local records show an earlier successful Destroy for the same pack. Check what triggered the later request and record a single finding. |
+| Both A24 examples | Optionally confirm the pack source. Show the relevant next check and record a single finding. |
+| Resolved A7 / deferred A2 | Optional prevention follow-up / informational status. |
+| MAH A2 / both A3 examples | Retain upload, distribution and serial-acceptance checks. A negative result allows an explicit own-side finding or an interim update. |
+| Operations participant preview and earlier Connect design variants | The Operations preview shows read-only guidance. The earlier Connect alternatives are retained for design comparison. The agreed response rules apply to the two-column Connect form. |
+
+### Origin at local resolution
+
+At final resolution, the NMVO records **Origin** using the four agreed values
+**End User**, **MAH**, **NMVS** and **Other**. Keep this separate from the technical
+cause, participant assessment and reviewer. For Other, allow a short explanation
+such as IT Supplier. An unestablished cause stays unassigned while review remains
+open or is deferred. Record the choice with the reason, reviewer, time and evidence
+in the local decision audit. Confirm any future AMS Hub mapping separately.
+
+The next design increment is a synthetic alert overview linked to the agreed
+detail view, followed by the invitation/passkey and access review before live
+participant data. In Operations, add the four-value Origin to the existing
+resolution flow and preview the deferred A2/A3 rule against historical cases.

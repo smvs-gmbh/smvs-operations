@@ -1,0 +1,42 @@
+<section class="panel review-body review-form">
+  <h2>Invitation history</h2>
+  {% if pilot_grants %}
+  {% if pilot_grants|rejectattr("publication.organisation_access")|list %}<h3>Earlier case invitations</h3>{% endif %}
+  <ul>
+  {% for grant in pilot_grants %}
+    {% if not grant.publication.organisation_access %}
+    <li>
+      #{{ grant.id }} · {{ "MAH" if grant.publication.audience == "mah" else "End User" }} · {% if grant.revoked_at %}Revoked{% elif grant.expires_at <= pilot_now %}Expired{% elif grant.session_hash %}Accepted{% else %}Pending{% endif %}
+      {% if grant.publication.recipient %}
+      · <a href="/crm/contacts/{{ grant.publication.recipient.contact }}">CRM contact →</a>
+      {% endif %}
+      {% if not grant.revoked_at and grant.expires_at > pilot_now %}
+      <form method="post" action="/exceptions/{{ identifier }}/invitations/revoke/{{ grant.id }}?role={{ role }}">
+        <button class="portal-button" type="submit">Revoke access</button>
+      </form>
+      {% endif %}
+    </li>
+    {% endif %}
+  {% endfor %}
+  </ul>
+  <h3>Investigation audit</h3>
+  <ul>
+  {% for event in pilot_events %}
+    <li>
+      <strong>{{ event.kind }}</strong> · #{{ event.grant_id }} · {{ event.occurred_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC
+      {% if event.actor_id %} · NMVO account #{{ event.actor_id }}{% endif %}
+      {% if event.kind == 'Findings submitted' %}
+      <p>{% if event.data.comparison %}Serial comparison · {{ pilot_labels.comparison[event.data.comparison] }}<br>{% endif %}
+        {% if event.data.batch_uploaded %}Batch uploaded · {{ event.data.batch_uploaded|capitalize }}<br>{% endif %}
+        {% if event.data.serial_accepted %}Serial accepted · {{ event.data.serial_accepted|capitalize }}<br>{% endif %}
+        {{ "Root cause on my side" if event.data.finding == "other" and event.data.comparison is none else pilot_labels.finding[event.data.finding] }}
+        {% if event.data.capa %}<br>CAPA · {{ pilot_labels.capa[event.data.capa] }}{% endif %}</p>
+      {% if event.data.batch_count %}<p>Applied to {{ event.data.batch_count }} matching alerts.</p>{% endif %}
+      {% if event.data.batch_source %}<p><a class="audit-link" href="/exceptions/{{ event.data.batch_source }}/invitations">Source finding →</a></p>{% endif %}
+      {% if event.data.comment %}<p>{{ event.data.comment }}</p>{% endif %}
+      {% endif %}
+    </li>
+  {% endfor %}
+  </ul>
+  {% endif %}
+</section>

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Alerts · SMVS Alert Desk</title>
+  <link rel="stylesheet" href="/focused.css">
+  <link rel="stylesheet" href="/alerts.css">
+  <script src="/alerts.js" defer></script>
+</head>
+<body>
+  <div class="preview"><span>Design preview · Fictional data</span><button type="button" class="button" id="settings">Admin settings</button></div>
+  <header>
+    <a class="logo" href="/alerts" aria-label="SMVS Alert Desk"><span>SMV<b>S</b></span><small>Alert Desk</small></a>
+    <div class="viewer"><label for="perspective">Preview as</label><select id="perspective"><option value="end-user">End User</option><option value="mah">MAH</option></select></div>
+  </header>
+  <main>
+    <section id="sign-in" class="action" hidden>
+      <h1>Sign in to Connect</h1>
+      <p>Passkey sign-in is enabled for this preview. Simulate it to open the alert list.</p>
+      <button type="button" class="button primary" id="simulate-sign-in">Simulate passkey sign-in</button>
+    </section>
+    <section id="overview">
+      <h1>Alerts</h1>
+      <p class="organisation" id="organisation">Example Healthcare AG · Demo location</p>
+      <div class="toolbar">
+        <div class="filters" role="group" aria-label="Alert status">
+          <button type="button" data-filter="action" aria-pressed="true">Action required <span id="action-count"></span></button>
+          <button type="button" data-filter="all" aria-pressed="false">All alerts</button>
+          <button type="button" data-filter="resolved" aria-pressed="false">Resolved</button>
+        </div>
+        <label class="sr-only" for="search">Search alerts</label>
+        <input type="search" id="search" placeholder="Search product, batch or alert">
+      </div>
+      <div class="results">
+        <table>
+          <thead><tr><th scope="col">Alert</th><th scope="col">Product / batch</th><th scope="col">Location</th><th scope="col">Status / next action</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <p id="empty" hidden>No alerts match this view.</p>
+      </div>
+      <p id="result-count" class="result-count" role="status"></p>
+    </section>
+  </main>
+  <dialog id="admin-dialog" aria-labelledby="admin-title">
+    <div class="dialog-heading"><h2 id="admin-title">Admin settings · Preview</h2><button type="button" class="button" data-close="admin-dialog">Close</button></div>
+    <label class="checkbox"><input type="checkbox" id="require-passkey"><span>Require passkey</span></label>
+    <p>Default: off. This setting controls the simulated sign-in in this tab.</p>
+    <button type="button" class="button primary" id="save-settings">Save settings</button>
+  </dialog>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block module_navigation %}{% include 'workflow_tabs.html' %}{% endblock %}
+{% block heading %}
+<div class="heading"><div><h1>Alert Desk priority review</h1>
+<p>A2 and A3 cases where both participants reported no cause on their side.</p></div></div>
+{% endblock %}
+{% block content %}
+<section class="panel review-body">
+  {% if rows %}
+  <ul>{% for alert in rows %}
+    <li><a class="audit-link" href="/exceptions/{{ alert.id }}/invitations#smvs-update">{{ alert.unique_alert_id }} · {{ alert.error_code }} →</a></li>
+  {% endfor %}</ul>
+  {% if next %}<a href="?before={{ next }}">More cases →</a>{% endif %}
+  {% else %}<p>No cases are waiting for priority review.</p>{% endif %}
+</section>
+{% endblock %}

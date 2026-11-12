@@ -1,0 +1,36 @@
+main { max-width: 1180px; }
+.preview { align-items: center; }
+.preview .button { font-size: .75rem; padding: .3rem .6rem; }
+.viewer { display: flex; align-items: center; gap: .65rem; }
+.viewer select, #search { font: inherit; font-size: .84rem; background: #fff; color: #223a4e; border: 1px solid #cddce7; border-radius: 7px; padding: .55rem .7rem; }
+.organisation { margin: .55rem 0 1.5rem; color: #5b7284; }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .8rem; margin-bottom: 1rem; }
+.filters { display: flex; flex-wrap: wrap; gap: .3rem; }
+.filters button { font-size: .86rem; color: #466379; background: transparent; border: 1px solid transparent; border-radius: 7px; padding: .5rem .7rem; }
+.filters button[aria-pressed=true] { background: #eaf3fb; border-color: #c5dbea; color: #245f90; font-weight: 600; }
+#action-count { margin-left: .2rem; }
+#search { width: min(100%, 290px); }
+.results { background: #fff; border: 1px solid #dce6ed; border-radius: 10px; overflow: hidden; }
+table { width: 100%; border-collapse: collapse; text-align: left; }
+th, td { padding: .85rem 1rem; vertical-align: top; border-bottom: 1px solid #e4ebf0; }
+th { background: #f2f6f9; font-size: .77rem; color: #496579; font-weight: 600; }
+td { font-size: .86rem; }
+tr:last-child td { border-bottom: 0; }
+td small { display: block; font-size: .75rem; color: #617789; margin-top: .25rem; }
+td a { color: #255f90; font-weight: 550; text-decoration: underline; }
+.status { font-size: .75rem; border-radius: 5px; padding: .22rem .45rem; display: inline-block; background: #eef2f5; color: #465e72; }
+.status.action { margin: 0; border: 0; background: #e7f1fa; color: #245f90; box-shadow: none; }
+.status.resolved { background: #e9f4ee; color: #306951; }
+.status.deferred { background: #fbf2e2; color: #76531d; }
+#empty { padding: 1rem; margin: 0; color: #617789; }
+.result-count { font-size: .75rem; color: #617789; }
+#admin-dialog .checkbox { margin-top: 1rem; }
+#admin-dialog p { font-size: .9rem; }
+@media (max-width: 680px) {
+  table, tbody, tr, td { display: block; }
+  thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  tr { border-bottom: 1px solid #dce6ed; padding: .55rem .8rem; }
+  tr:last-child { border-bottom: 0; }
+  td { padding: .25rem 0; border: 0; }
+  .viewer { flex-wrap: wrap; justify-content: flex-end; }
+}

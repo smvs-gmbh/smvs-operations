@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SMVS Alert Desk</title>
+  <link rel="stylesheet" href="{{ assets }}/design/focused.css">
+  <link rel="stylesheet" href="{{ assets }}/design/compact.css">
+  <link rel="stylesheet" href="{{ assets }}/design/columns.css">
+  <link rel="stylesheet" href="{{ assets }}/case.css">
+  <script defer src="{{ assets }}/case.js"></script>
+</head>
+<body>
+  <header>
+    <div class="logo" aria-label="SMVS Alert Desk"><span>SMV<b>S</b></span><small>Alert Desk</small></div>
+    {% if case %}<div><strong>{{ case.organisation }}</strong><span>{{ "MAH" if case.audience == "mah" else "End User" }}{% if case.location %} · {{ case.location }}{% endif %}</span></div>{% endif %}
+  </header>
+  <main>
+    {% if organisation_case %}<a class="alert-list-link" href="{{ back_url }}">← My cases</a>{% endif %}
+    <p id="access-status" role="status" {% if case and not message %}hidden{% endif %}>{{ message or 'Open your invitation link to view the case.' }}</p>
+    {% if case %}
+    {% set latest = case.latest or {} %}
+    {% set form_path = '/alerts/' ~ case.publication ~ '/findings' if organisation_case else '/alerts/findings' %}
+    {% set mah = case.audience == "mah" %}
+    {% set mah_a7 = case.investigation == "mah_a7" %}
+    {% set a7 = mah_a7 or case.investigation == "end_user_a7" %}
+    <div id="case-content">
+      <div class="case-ref">{{ case.alert }}{% if case.alert_at %} · {{ case.alert_at }}{% endif %}</div>
+      <div class="outcome"><span class="outcome-icon pending" aria-hidden="true">?</span><h1>{{ case.code or ("Alert" if organisation_case else "A3") }} · {{ case.label or "Pack not found" }}</h1></div>
+      {% if case.code == "A3" or (not case.code and not organisation_case) %}<p class="explanation">The system could not find this serial number.</p>{% endif %}
+      {% set smvs_concluded = case.progress and case.progress.concluded %}
+      <p class="case-status" id="case-status" {% if smvs_concluded or case.locally_resolved %}data-smvs-status{% endif %}>{{ "SMVS review complete" if smvs_concluded else "Resolved locally by SMVS" if case.locally_resolved else ("Still investigating" if latest.finding == "investigating" else "Awaiting SMVS review" if latest else "Reported" if organisation_case else "Open") }}</p>
+      {% if case.progress and (case.progress.follow_up or case.progress.instruction != 'none' or case.progress.note or case.progress.concluded or case.progress.unresolved) %}
+      <section class="action case-update {% if case.progress.instruction in ('hold', 'suspected') %}pack-status{% endif %}" aria-label="SMVS update">
+        <h2>{{ case.progress.pack_label if case.progress.instruction != 'none' else 'SMVS update' }}</h2>
+        {% if case.progress.unresolved and case.progress.instruction != "suspected" %}<p><strong>Cause unresolved</strong></p>{% endif %}
+        {% if case.progress.follow_up %}<p>SMVS requests an update from your organisation.</p>{% endif %}
+        {% if case.progress.concluded %}<p>SMVS has completed its review.</p>{% endif %}
+        {% if case.progress.note %}<p>{{ case.progress.note }}</p>{% endif %}
+      </section>
+      {% endif %}
+      <div class="columns-layout">
+        <aside class="supporting">
+          <details open>
+            <summary>Pack details &amp; contacts</summary>
+            <div class="disclosure">
+              <div class="left-product">
+                <span>Product</span><strong>{{ case.product or 'Name unavailable' }}</strong>
+                {% if case.mah %}<span>MAH</span><strong>{{ case.mah }}</strong>{% endif %}
+              </div>
+              <dl>
+                {% for label, value in [('Product code', case.product_code), ('Submitted batch', case.batch), ('Submitted serial number', case.serial), ('Attempted operation', case.operation), ('Operation code', case.operation_code)] %}
+                {% if value %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endif %}
+                {% endfor %}
+              </dl>
+              <div class="contacts">
+                {% if not mah and case.location %}<section><h3>Your location</h3><p>{{ case.location }}{% if case.organisation %} · {{ case.organisation }}{% endif %}</p></section>{% endif %}
+                <section><h3>SMVS</h3><p><a href="mailto:support@smvs-gmbh.ch">Contact SMVS →</a></p></section>
+              </div>
+            </div>
+          </details>
+        </aside>
+        <div class="main-column">
+          <section class="analysis-strip" aria-label="Automatic analysis">
+            <div class="analysis-heading"><span class="intelligence">✦ Intelligence</span><span>{{ case.intelligence.summary if case.intelligence else 'No batch check was published with this invitation.' }}</span></div>
+            {% if case.intelligence and case.intelligence.detail %}
+            <details><summary>View evidence</summary><p>{{ case.intelligence.detail }}</p>{% if case.intelligence.source_date %}<p>Batch records · {{ case.intelligence.source_date }}</p>{% endif %}</details>
+            {% endif %}
+          </section>
+          {% if case.audit or not mah_a7 %}
+          <section class="pack-audit-card" aria-labelledby="audit-title">
+            <div class="audit-heading"><h2 id="audit-title">Pack Audit Trail</h2></div>
+            {% if case.audit %}
+            <details {% if case.code == 'A7' %}open{% endif %}><summary>View report summary</summary>
+              {% if case.audit.captured_at %}<p>Retrieved {{ case.audit.captured_at }}</p>{% endif %}
+              {% if case.audit.events %}
+              <table class="report-table">
+                <thead><tr><th scope="col">Timestamp</th><th scope="col">Reported event</th></tr></thead>
+                <tbody>{% for event in case.audit.events %}<tr><td>{{ event.at }}</td><td>{{ event.title }}</td></tr>{% endfor %}</tbody>
+              </table>
+              {% else %}<p>No shareable events were found in the report.</p>{% endif %}
+            </details>
+            {% else %}<p>No pack report has been shared with this case.</p>{% endif %}
+          </section>
+          {% endif %}
+          {% if not organisation_case or case.investigation %}
+          <section class="action" id="guided-action" aria-labelledby="guided-title">
+            <h2 id="guided-title">Your investigation</h2>
+            <div id="review-state" {% if not latest %}hidden{% endif %}>
+              <p role="status" id="review-message">{{ ("Findings recorded for " ~ latest.batch_count ~ " alerts.") if latest.batch_count else "Findings recorded for SMVS review." }}</p>
+              <button type="button" class="button" id="amend">Update findings</button>
+            </div>
+            <form id="guided-form" method="post" action="{{ request.url.path if preview else form_path }}" {% if preview %}data-preview{% endif %} {% if latest %}hidden{% endif %}>
+              {% if organisation_case %}<input type="hidden" name="basis" value="{{ case.basis }}">{% endif %}
+              <input type="hidden" name="publication" value="{{ case.publication }}">
+              <input type="hidden" name="submission_key" value="{{ key }}">
+              {% if a7 %}
+              <p>Check whether a process or software on your side triggered the request shown above.</p>
+              {% elif mah %}
+              {% set checks = [('batch_uploaded', 'Was this batch uploaded?')] %}
+              {% if case.code != 'A2' %}{% set checks = checks + [('serial_accepted', 'Was this serial accepted in the upload?')] %}{% endif %}
+              {% for field, question in checks %}
+              <fieldset class="yes-no" data-upload-check="{{ field }}" {% if field == 'serial_accepted' %}hidden disabled{% endif %}>
+                <legend>{{ question }}</legend>
+                <div class="radio-options">
+                  {% for value, label in [('yes', 'Yes'), ('no', 'No')] %}
+                  <label><input type="radio" name="{{ field }}" value="{{ value }}" {% if latest[field] == value %}checked{% endif %}>{{ label }}</label>
+                  {% endfor %}
+                </div>
+              </fieldset>
+              {% endfor %}
+              <label class="checkbox"><input type="checkbox" name="other_issue" value="true" {% if latest.other_issue %}checked{% endif %}> Other issue on my side</label>
+              {% else %}
+              <fieldset class="yes-no" id="comparison-check">
+                <legend>{{ 'Does the submitted batch match the one printed on the pack?' if case.code == 'A2' else 'Does the serial number shown match the one printed on the pack?' }}</legend>
+                <p class="comparison-reference">{{ "Submitted batch" if case.code == "A2" else "Submitted serial number" }} · <strong>{{ case.batch if case.code == "A2" else case.serial }}</strong></p>
+                <div class="radio-options">
+                  {% for value, label in comparison.items() %}
+                  <label><input type="radio" name="comparison" value="{{ value }}" {% if latest.comparison == value %}checked{% endif %} required>{{ label }}</label>
+                  {% endfor %}
+                </div>
+              </fieldset>
+              <p id="next-check" class="investigation-hint" aria-live="polite">Check the scanner, software and any manual entry used for this verification.</p>
+              {% endif %}
+              <fieldset class="finding" aria-describedby="finding-hint">
+                <legend>What did you find?</legend>
+                {% if mah %}
+                <label><input type="radio" name="finding" value="other" {% if latest.finding == "other" %}checked{% endif %} data-own-side required>Root cause on my side</label>
+                {% else %}
+                {% for value, label in findings.items() if value in own_side %}
+                <label><input type="radio" name="finding" value="{{ value }}" {% if latest.finding == value %}checked{% endif %} data-own-side required>{{ label }}</label>
+                {% endfor %}
+                {% endif %}
+                <div class="finding-follow-up">
+                  {% for value, label in findings.items() if value not in own_side %}
+                  <label><input type="radio" name="finding" value="{{ value }}" {% if latest.finding == value %}checked{% endif %} required>{{ label }}</label>
+                  {% endfor %}
+                </div>
+              </fieldset>
+              <div id="other-comment-field" hidden>
+                <label for="other-comment">Comment (optional)</label>
+                <p class="investigation-hint" id="other-comment-hint">You can briefly describe the issue here.</p>
+                <textarea id="other-comment" name="comment" aria-describedby="other-comment-hint" rows="3" maxlength="1000" disabled>{{ latest.comment if latest.finding == "other" else "" }}</textarea>
+              </div>
+              <fieldset class="yes-no capa-status" id="own-measures" hidden disabled>
+                <legend>Corrective and preventive action (CAPA)</legend>
+                <div>
+                  {% for value, label in capa.items() %}
+                  <label><input type="radio" name="capa" value="{{ value }}" {% if latest.capa == value %}checked{% endif %} required>{{ label }}</label>
+                  {% endfor %}
+                </div>
+              </fieldset>
+              <p class="investigation-hint" id="finding-hint">SMVS will review your finding.</p>
+              {% if not mah and case.code in ('A2', 'A3') %}
+              <label class="checkbox"><input type="checkbox" name="pack_on_hold" value="true" {% if latest.pack_on_hold and case.progress.instruction != 'released' %}checked{% endif %}> The pack is on hold</label>
+              {% endif %}
+              <div class="compact-submit">
+                <button class="button primary" type="submit" value="single">Update findings</button>
+                {% if case.batch_count %}
+                <button class="button" type="submit" value="batch" data-batch-revision="{{ case.batch_revision if not preview else '' }}" disabled>
+                  Update findings for this batch ({{ case.batch_count }} alerts)
+                </button>
+                {% endif %}
+              </div>
+              {% if case.batch_count %}<p class="investigation-hint">The batch update includes this alert and matching Export alerts that are new or still under investigation by your organisation.</p>{% endif %}
+              <p class="receipt" id="findings-status" role="status"></p>
+            </form>
+          </section>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </main>
+</body>
+</html>

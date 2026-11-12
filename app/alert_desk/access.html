@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SMVS Alert Desk</title>
+  {% if listing %}
+  <link rel="stylesheet" href="/alerts/portal.css">
+  {% else %}
+  <link rel="stylesheet" href="/alerts/design/focused.css">
+  <link rel="stylesheet" href="/alerts/design/columns.css">
+  {% endif %}
+  <link rel="stylesheet" href="/alerts/case.css">
+  <script defer src="/alerts/access.js"></script>
+</head>
+<body>
+<header {% if listing %}class="topbar alert-desk-topbar"{% endif %}>
+  <div class="logo" aria-label="SMVS Alert Desk"><span>SMV<b>S</b></span><small>Alert Desk</small></div>
+</header>
+<main {% if listing %}class="portal-workspace alert-desk-workspace"{% endif %}>
+  {% if listing %}
+  <nav class="portal-module-nav" aria-label="Case views">
+    {% for key, label in [('my_cases','My cases'), ('completed','Completed by us'), ('on_hold','Packs on hold'), ('all','All cases')] %}
+    <a href="{{ request.url.include_query_params(view=key).remove_query_params('before') }}" {% if filters.view == key %}aria-current="page"{% endif %}>{{ label }}{% if key == "on_hold" and listing.hold_count %} ({{ listing.hold_count }}){% endif %}</a>
+    {% endfor %}
+  </nav>
+  <div class="heading"><div>
+    <h1>My cases</h1><p>{{ listing.organisation }} · {{ 'MAH' if listing.role == 'mah' else 'End User' }}</p>
+  </div></div>
+  <section class="panel portal-table-panel">
+    <div class="panel-heading"><h2>Alerts</h2></div>
+    <form class="filters alert-desk-filters" action="/alerts" method="get" role="search">
+      <input type="hidden" name="view" value="{{ filters.view }}">
+      <label>Search <input type="search" name="q" value="{{ filters.q }}" maxlength="100" placeholder="Alert ID, batch, GTIN or alert type"></label>
+      <label>Our finding <select name="finding">
+        {% for key, label in [('all','All findings'), ('new','New'), ('investigating','Still investigating'), ('not_my_side','Root cause not on my side'), ('on_my_side','Root cause on my side')] %}
+        <option value="{{ key }}" {% if filters.finding == key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select></label>
+      <button class="portal-button" type="submit">Search</button>
+    </form>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th scope="col">Alert</th><th scope="col">Reported at</th><th scope="col">Type</th><th scope="col">Our finding</th><th scope="col">Pack instructions</th></tr></thead>
+        <tbody>
+        {% for row in listing.rows %}
+        <tr><td class="name-cell"><a href="/alerts/{{ row.id }}?{{ list_query }}">{{ row.alert }} →</a></td><td>{{ row.at }}</td><td>{{ row.type or '—' }} · {{ row.label }}</td><td>{{ row.finding }}{% if row.follow_up %}<br><strong>SMVS requests an update</strong>{% endif %}</td>
+        <td>{% if row.pack_label %}<strong class="pack-status">{{ row.pack_label }}</strong>{% else %}—{% endif %}</td></tr>
+        {% else %}
+        <tr><td colspan="5" class="empty-state">No cases match this view.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if listing.next %}<div class="pagination"><a class="portal-button portal-button-secondary" href="{{ request.url.include_query_params(before=listing.next) }}">More alerts →</a></div>{% endif %}
+  </section>
+  {% else %}
+  <h1>Confirm access</h1>
+  <section class="action">
+    <form id="request-alert-code" method="post" action="/alerts/access/challenge" hidden>
+      <p>Send a verification code to the email address that received this invitation.</p>
+      <button class="button primary" type="submit">Send verification code</button>
+    </form>
+    <form id="verify-alert-code" method="post" action="/alerts/access/verify" {% if not challenge %}hidden{% endif %}>
+      <label for="mailbox-code">Enter the six-digit code from your email</label>
+      <input id="mailbox-code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required>
+      <button class="button primary" type="submit">Open alerts</button>
+    </form>
+    <p id="alert-access-status" role="status">{% if not challenge %}Open your invitation link to start.{% endif %}</p>
+  </section>
+  {% endif %}
+</main>
+</body>
+</html>

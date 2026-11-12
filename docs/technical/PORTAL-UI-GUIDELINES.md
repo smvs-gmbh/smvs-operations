@@ -169,3 +169,12 @@ Actions are closed initially and use the same right-hand toolbox. Only one toolb
 may be open per table. Preserve the original POST forms, selected-record scope,
 validation, auditing and confirmation steps. Moving row actions into a toolbox
 does not create a new bulk action: each remains attached to its named record.
+
+## External Connect design preview
+
+The [Connect shared-investigation prototype](CONNECT-UI-PREVIEW.md) explores a
+participant-specific shell without the internal Operations sidebar. Keep existing
+SMVS colours, soft action buttons and the evidence/assessment distinction. Its
+three case tabs, explicit sharing audience and minimal optional-text response are
+proposals for review, not yet a live participant workflow or an exception to the
+required case/access security boundary.

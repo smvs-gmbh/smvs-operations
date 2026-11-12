@@ -380,3 +380,141 @@ No Jelastic deployment or production source request was performed.
 - [ ] Add optional **Additional findings** and **Corrective measures / comments**
   fields to the future persisted short response, alongside the explicit commitment
   checkbox. Our own decision/contribution audit remains required.
+
+### Connect shared-investigation design preview — 2026-11-10
+
+- [x] Build a standalone localhost-only synthetic click-through at port 8013, with
+  Investigation / Shared updates / Pack details and A7/A3 scenarios.
+- [x] Demonstrate the minimal finding, proposed Origin, optional corrective-measures
+  commitment and two optional free-text fields; append simulated updates while
+  preserving NMVO decision ownership.
+- [x] Verify responsive/keyboard interaction and the isolated asset-only app; no
+  database, live source/API, registration relay or public gateway changes.
+- [ ] Review the [Connect UI prototype](../technical/CONNECT-UI-PREVIEW.md) with the
+  owner before implementing scoped durable case/publication/contribution access.
+
+### Connect feedback: exception-first view
+
+- [x] Specify a proposed compact explanation/evidence view that works without Pack
+  History, using source-labelled Exception observations without inventing audit
+  events or assuming all IMT data are unavailable.
+- [ ] Review two-tab layout (Investigation / Shared updates), with expandable
+  Alert details and one combined evidence card; remove redundant empty history
+  and Next steps panels from the candidate participant layout.
+- [ ] Add a fictional IMT/no-history scenario after layout agreement; map the
+  English user explanation from verified code/operation/state combinations and
+  retain original messages. Keep real submitted identifiers out of fixtures.
+
+
+### Evidence-led triage and focused Shared Investigation
+
+- [x] Record the owner decision: supported same-location A7 may be resolved locally
+  by the NMVO without a mandatory participant questionnaire; prevention notification
+  follows. Existing preview questions are not the default routine workflow.
+- [ ] Simplify internal A7 evidence/decision presentation; retain source uncertainty,
+  manual/automatic decision attribution, reversible resolution and notification status.
+- [ ] Define and review explicit versioned conditions before enabling automatic local
+  resolution; keep external closure separate and avoid silently expanding operations.
+- [ ] Prioritise the A3 End-user path: reuse pre-checks, request a pack photograph
+  through scoped secure upload, and ask focused technical-check questions.
+- [ ] Reuse upload coverage and product/batch history for A2/A3 MAH questions; require
+  serial-level evidence before claiming this pack was uploaded. MAH external access
+  remains a later phase; support internal follow-up first.
+
+
+### Revised Connect proposal for owner review
+
+- [x] Build `/proposal` beside the initial preview: two tabs, compact pack identity,
+  expandable evidence/details, source-labelled Intelligence and alert-type paths.
+- [x] Demonstrate A3 with matching serial length but unconfirmed pack upload, A2 with
+  explicit upload-search coverage, and an already locally resolved same-location A7.
+- [x] Include short pack comparison/technical checks, filename-only packshot selection,
+  optional comments/commitment and append-only simulated shared updates.
+- [ ] Review the revised layout and per-type questions before implementing durable
+  contributions, controlled photo uploads, coordination tasks or participant access.
+
+
+- [x] Correct the Connect proposal: source-based operation-code explanation above
+  Intelligence; remove the fictional “checking the upload” progress card.
+- [ ] Refine the versioned investigation catalogue by operation code, API context,
+  attempted operation and state/IMT facts, with reviewed variants and safe fallback.
+
+
+- [x] Clarify the Connect prototype as End-user view; add a concise product → MAH →
+  location → attempted operation → alert narrative and expandable fictional contacts.
+- [ ] Add reviewed case-specific location/MAH contact projection (including explicit
+  organisation fallback where no location contact exists); later tailor MAH questions
+  and authority/Swissmedic escalation without inferring access from CRM relationships.
+
+
+### A2/A3 specification review and investigation context
+
+- [x] Analyse supplied Hub FRS, EMVS URS and NBS v16.2 for local validation, IMT
+  routing, distribution-related A2, Pack Not Found wording and partial pack uploads.
+  Record provenance and derived requirements in the A2/A3 architecture analysis.
+- [ ] Verify current EMVS3134/REST/Exceptions mappings: missing-batch condition →
+  final returned operation code versus alert type; resolve historical ambiguities.
+- [ ] Refine Connect explanations by actual local/IMT/business-process context;
+  remove generic assumptions of all-market searches or never-uploaded batches.
+- [ ] Add source-backed rule/mapping acceptance cases from FR-INV-CTX-01–08 before
+  enabling production explanations or any automatic decision for these branches.
+
+### Shared case proposal based on a local exception
+
+- [x] Inspect a local A3 read-only: bulk verification, no IMT, exact organisation/
+  location association, SAI identity available, other product batches present but
+  reported batch absent in the current Snapshot; no exact-batch serial reference.
+- [x] Build `/case-study` with anonymised identifiers, a separate simulated PMD-only
+  branch, participant roles and End-user/MAH-specific questions within one case.
+- [x] Demonstrate submitted-to-SMVS contributions and explicitly simulated sharing
+  of reviewed findings; no real case publication, access, persistence or delivery.
+- [ ] Review the common narrative, participant scope and sharing behaviour before
+  implementing the live case/publication and contribution model.
+
+
+### Focused Connect alternative
+
+- [x] Preserve previous designs and add `/focused`: decision/prevention first for
+  resolved A7, with Intelligence, identifiers and contacts collapsed by default.
+- [x] Demonstrate one-question-at-a-time A3 flow with optional packshot, progress,
+  review/amendment and on-demand conversation; no global feedback banners.
+- [ ] Review whether this simpler hierarchy and guided flow should become the
+  End-user baseline before merging it with the shared-case/MAH design.
+
+
+- [x] Add `/compact` as a separate middle-ground Connect proposal: short visible
+  Intelligence strip, one action card and two same-page A3 questions; preserve
+  previous designs. Review the information hierarchy before selecting a baseline.
+
+
+- [x] Add `/columns` variant: desktop 1/3 pack/contacts and 2/3 Intelligence/input,
+  explicit alert title, unselected Yes/No checks and independent **Root cause not
+  on my side** participant assessment; retain previous designs for comparison.
+
+- [x] Refine `/columns`: readable Intelligence, case-evidence Pack Audit Trail card,
+  **Your investigation** title, exclusive final finding after checks and consistent
+  not-my-side prerequisites/corrective commitment handling. Local simulation only.
+- [ ] Review case-specific publication of retained Pack Audit Trail report content,
+  audience, version and access audit before live Connect delivery.
+
+- [x] Show an unchecked, optional corrective-measures commitment whenever the End
+  User selects own-side root cause in `/columns`, outside optional comments.
+- [ ] Connect retained-evidence checks to reviewed, versioned Intelligence message
+  templates and structured case projection; preview text remains scenario-authored.
+
+### Connect investigation baseline and follow-up — 2026-11-11
+
+- [x] Record `/columns` as the agreed End-user investigation layout.
+- [x] Prototype Connect alert overview at `/alerts` with Action required, All alerts
+  and Resolved, End-user/MAH examples and links to investigation details.
+- [x] Add a demo Admin settings toggle for Require passkey, off by default.
+  The preview simulates sign-in within the current browser tab.
+- [ ] Design named-contact invitation and Connect passkey enrolment. Verify
+  organisation, location and case access including evidence and revocation.
+- [ ] Preview reversible A2/A3 deferral rules for reviewed high-volume locations.
+  Preserve cases in the MAH monthly report and verify counts after deferral.
+- [x] Preview an open A2 with separate End-user and MAH checks, open A7 and A24
+  state investigations, and A52/A68 identifier comparisons in the same Connect layout.
+- [x] Record OBP/EMVO follow-up for recurring A32 cases observed by SMVS.
+- [ ] Review A54 and unmapped cases internally before defining participant tasks.
+- [ ] Add Origin to NMVO resolution and audit with End User, MAH, NMVS and Other.

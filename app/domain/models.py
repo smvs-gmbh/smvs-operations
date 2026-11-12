@@ -5,6 +5,7 @@ from typing import Any, ClassVar
 from sqlalchemy import (
     JSON,
     BigInteger,
+    Boolean,
     Date,
     DateTime,
     ForeignKey,
@@ -923,3 +924,108 @@ class CRMDeletionEvent(Base):
     record_id: Mapped[int] = mapped_column(Integer)
     actor_user_id: Mapped[int] = mapped_column(Integer)
     occurred_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+DOMAIN_TABLES.update({"alert_desk_grants", "alert_desk_events"})
+
+
+class AlertDeskGrant(Base):
+    __tablename__ = "alert_desk_grants"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    exception_id: Mapped[int] = mapped_column(ForeignKey("nmvs_exceptions.id"), index=True)
+    organisation_id: Mapped[int | None] = mapped_column(ForeignKey("local_organisations.id"))
+    location_id: Mapped[int | None] = mapped_column(ForeignKey("local_locations.id"))
+    source_version: Mapped[str] = mapped_column(String(64))
+    publication: Mapped[dict[str, Any]] = mapped_column(JSON)
+    invite_hash: Mapped[str | None] = mapped_column(String(64), unique=True)
+    session_hash: Mapped[str | None] = mapped_column(String(64), unique=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+class AlertDeskEvent(Base):
+    __tablename__ = "alert_desk_events"
+    __table_args__ = (
+        UniqueConstraint("grant_id", "submission_key", name="uq_alert_desk_submission"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    grant_id: Mapped[int] = mapped_column(ForeignKey("alert_desk_grants.id"))
+    actor_id: Mapped[int | None] = mapped_column(ForeignKey("portal_users.id"))
+    kind: Mapped[str] = mapped_column(String(30))
+    occurred_at: Mapped[datetime] = mapped_column(DateTime)
+    submission_key: Mapped[str | None] = mapped_column(String(36))
+    data: Mapped[dict[str, Any]] = mapped_column(JSON)
+
+
+DOMAIN_TABLES.add("alert_desk_access")
+
+
+class AlertDeskAccess(Base):
+    __tablename__ = "alert_desk_access"
+    __table_args__ = (
+        UniqueConstraint("role", "crm_organisation_id", "contact_id", name="uq_alert_desk_access_scope"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    role: Mapped[str] = mapped_column(String(12))
+    crm_organisation_id: Mapped[int] = mapped_column(Integer)
+    contact_id: Mapped[int] = mapped_column(Integer)
+    contact_version: Mapped[int] = mapped_column(Integer)
+    scope_key: Mapped[str] = mapped_column(String(100))
+    invited_by: Mapped[int] = mapped_column(ForeignKey("portal_users.id"))
+    invited_at: Mapped[datetime] = mapped_column(DateTime)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime)
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime)
+    invite_hash: Mapped[str | None] = mapped_column(String(64), unique=True)
+    invite_expires_at: Mapped[datetime] = mapped_column(DateTime)
+    challenge_hash: Mapped[str | None] = mapped_column(String(64), unique=True)
+    code_hash: Mapped[str | None] = mapped_column(String(64))
+    code_expires_at: Mapped[datetime | None] = mapped_column(DateTime)
+    attempts_left: Mapped[int] = mapped_column(Integer)
+    session_hash: Mapped[str | None] = mapped_column(String(64), unique=True)
+    session_expires_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+DOMAIN_TABLES.add("alert_desk_export_attributions")
+
+
+class AlertDeskExportAttribution(Base):
+    __tablename__ = "alert_desk_export_attributions"
+    __table_args__ = (
+        UniqueConstraint("anchor_exception_id", name="uq_alert_desk_export_anchor"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    anchor_exception_id: Mapped[int] = mapped_column(ForeignKey("nmvs_exceptions.id"))
+    end_user_id: Mapped[int] = mapped_column(ForeignKey("crm_end_users.id"), index=True)
+    source_namespace: Mapped[str] = mapped_column(String(255))
+    source_market: Mapped[str] = mapped_column(String(100))
+    source_location_id: Mapped[str] = mapped_column(String(100))
+    gtin14: Mapped[str] = mapped_column(String(14))
+    batch: Mapped[str] = mapped_column(String(100))
+    from_at: Mapped[datetime] = mapped_column(DateTime)
+    until_at: Mapped[datetime] = mapped_column(DateTime)
+    reason: Mapped[str] = mapped_column(Text)
+    confirmed_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+DOMAIN_TABLES.add("alert_desk_case_updates")
+
+
+class AlertDeskCaseUpdate(Base):
+    __tablename__ = "alert_desk_case_updates"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    exception_id: Mapped[int] = mapped_column(ForeignKey("nmvs_exceptions.id"), index=True)
+    source_version: Mapped[str] = mapped_column(String(64))
+    end_user_event_id: Mapped[int | None] = mapped_column(ForeignKey("alert_desk_events.id"))
+    actor_id: Mapped[int] = mapped_column(ForeignKey("portal_users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    pack_instruction: Mapped[str] = mapped_column(String(20))
+    follow_up: Mapped[bool] = mapped_column(Boolean)
+    concluded: Mapped[bool] = mapped_column(Boolean)
+    note: Mapped[str] = mapped_column(Text)
+    notification: Mapped[str] = mapped_column(String(120))

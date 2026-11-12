@@ -123,3 +123,16 @@ SendGrid and temporary security data remain internal. See the current
 
 This decision applies to registration. It does not authorise public CRM access
 or automatically select an architecture for future shared-investigation data.
+
+
+## Public alert investigation name — 2026-11-11
+
+**SMVS Alert Desk** is the public name for shared alert investigation.
+VerifyIt initiates NMVS transactions and Verify displays its transactions.
+Alert Desk gathers findings from end users and MAHs regardless of the
+originating NMVS client. SMVS Operations remains the internal workspace.
+
+The name is independent of the deployment hostname. The registration gateway
+currently uses `connect.smvs-gmbh.ch`. A hostname migration must preserve issued
+confirmation links and the Tally webhook while the new HTTPS endpoint and host
+checks are configured and tested.
