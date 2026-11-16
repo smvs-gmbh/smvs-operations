@@ -2,6 +2,7 @@
 {% import 'macros.html' as ui %}
 {% block module_navigation %}{% include 'workflow_tabs.html' %}{% endblock %}
 {% block heading %}
+{% if case_url %}<a class="back-link" href="{{ case_url }}">← Root cause analysis</a>{% endif %}
 <div class="heading"><div>
   <div class="eyebrow">Workflows</div><h1>Alert Desk invitations</h1>
   <p>Invite CRM alert contacts to their organisation’s alerts.</p>
@@ -28,7 +29,7 @@
       </select>
     </label>
   </div>
-  <form action="/workflows/alert-desk/send" method="post" id="alert-access-send" class="review-controls">
+  <form action="{{ send_url }}" method="post" id="alert-access-send" class="review-controls">
     <input type="hidden" name="selected">
     <button type="submit" class="portal-button" disabled>Send test invitations</button>
     <output id="alert-access-count" aria-live="polite">0 selected</output>

@@ -29,6 +29,8 @@ configure_logging(settings.log_level)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title=settings.app_name, docs_url=None, redoc_url=None, openapi_url=None)
+if settings.environment == "development":
+    app.state.alert_desk_test_url = "http://localhost:8021/"
 install_portal_access(app, settings)
 app.include_router(auth_router)
 app.mount(

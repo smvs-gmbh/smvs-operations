@@ -10,18 +10,59 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import StaleDataError
 from starlette.concurrency import run_in_threadpool
 
+from app.alert_desk.schema import CAPA, COMPARISON, FINDINGS
 from app.core.config import get_settings
 from app.domain.exceptions import causes, repeat_evidence
 from app.domain.exceptions import review as work
 from app.domain.exceptions.list_search import interpret_filters
-from app.domain.investigations.prechecks import collect as investigation_prechecks
+from app.domain.investigations import rca, responses
 from app.domain.models import ExceptionReview, ExceptionReviewEvent, NMVSException
+from app.portal import alert_trends
 from app.portal import exception_queries as queries
 from app.portal.queries import paged
 from app.portal.record_navigation import list_record_navigation
 from app.portal.routes import DbSession, templates
 
 router = APIRouter()
+
+
+@router.get("/exceptions/trends", include_in_schema=False)
+def exception_trends(
+    request: Request,
+    session: DbSession,
+    start: date | None = None,
+    end: date | None = None,
+    alert_group: str = Query("", pattern="^(|a2-a3)$"),
+    country: str = Query("", pattern="^(|CH|LI)$"),
+):
+    today = datetime.now(UTC).date()
+    end = end or today
+    if start is None:
+        year = end.year - (end.month < 12)
+        start = date(year, end.month % 12 + 1, 1) if year else date.min
+    if end < start or (end - start).days > 366 or end > today:
+        raise HTTPException(
+            422, "Select a period of at most 367 days ending today or earlier."
+        )
+    ctx = queries.context(session)
+    report = alert_trends.trends(
+        session, ctx["source_namespace"], start, end, alert_group, country
+    )
+    return templates.TemplateResponse(
+        request=request,
+        name="alert_trends.html",
+        context={
+            **ctx,
+            **report,
+            "title": "Alert Trends",
+            "active": "exceptions",
+            "start": start,
+            "end": end,
+            "alert_group": alert_group,
+            "country": country,
+            "days": (end - start).days + 1,
+        },
+    )
 
 
 @router.get("/exceptions", include_in_schema=False)
@@ -32,6 +73,9 @@ def exception_list(
     end: date | None = None,
     q: str = Query("", max_length=150),
     error: str = Query("", max_length=100),
+    alert_group: str = Query("", pattern="^(|a2-a3)$"),
+    gtin14: str = Query("", pattern="^(|[0-9]{14})$"),
+    country: str = Query("", pattern="^(|CH|LI)$"),
     market: str = Query("", max_length=100),
     organisation: str = Query("", max_length=100),
     location: str = Query("", max_length=100),
@@ -39,13 +83,22 @@ def exception_list(
     date_quality: str = Query("", pattern="^(|unresolved)$"),
     intermarket: str = Query("", pattern="^(|yes|no|unset)$"),
     work_status: str = Query("open", pattern="^(open|to_do|resolved|all)$"),
+    response_status: str = Query(
+        "", pattern="^(|awaiting|overdue|received|not_requested)$"
+    ),
+    response_party: str = Query("", pattern="^(|end_user|mah)$"),
     page: int = Query(1, ge=1, le=10000),
 ):
-    from app.portal.table_views import prepare
+    from app.portal.collaboration_routes import pilot_enabled
+    from app.portal.table_views import has_exception_response_conditions, prepare
+
     prepare(request, session, "exceptions")
+    all_response_dates = bool(
+        response_status or response_party
+    ) or has_exception_response_conditions(request, session)
     end = end or datetime.now(UTC).date()
     start = start or end - timedelta(days=29)
-    if end < start or (end - start).days > 366:
+    if end < start or (end - start).days > 366 or end == date.max:
         raise HTTPException(422, "Select a period of at most 367 days.")
     if work_status == "to_do":
         date_quality = ""
@@ -56,14 +109,21 @@ def exception_list(
         end=end,
         q=q,
         error=error,
+        alert_group=alert_group,
+        gtin14=gtin14,
+        country=country,
         market=market,
         organisation=organisation,
         location=location,
         process=process,
         date_quality=date_quality,
         intermarket=intermarket,
-        page=page, view_request=request,
+        page=page,
+        view_request=request,
         work_status=work_status,
+        response_status=response_status,
+        response_party=response_party,
+        all_response_dates=all_response_dates,
     )
     settings = get_settings()
     return templates.TemplateResponse(
@@ -86,7 +146,10 @@ def exception_list(
                     "nav_end": end.isoformat(),
                     **{
                         key: request.query_params[key]
-                        for key in (*EXCEPTION_NAV_FILTERS, *(k for k in request.query_params if k.startswith("tv_")))
+                        for key in (
+                            *EXCEPTION_NAV_FILTERS,
+                            *(k for k in request.query_params if k.startswith("tv_")),
+                        )
                         if key in request.query_params
                     },
                 }
@@ -95,6 +158,9 @@ def exception_list(
             "end": end,
             "q": q,
             "error": error,
+            "alert_group": alert_group,
+            "gtin14": gtin14,
+            "country": country,
             "market": market,
             "organisation_filter": organisation,
             "location_filter": location,
@@ -102,6 +168,11 @@ def exception_list(
             "date_quality": date_quality,
             "intermarket": intermarket,
             "work_status": work_status,
+            "response_status": response_status,
+            "response_party": response_party,
+            "response_labels": responses.STATUS_LABELS,
+            "all_response_dates": all_response_dates,
+            "reminders_available": bool(rca_staff(request)) and pilot_enabled(),
         },
     )
 
@@ -155,6 +226,9 @@ def current(session, identifier):
 EXCEPTION_NAV_FILTERS = (
     "q",
     "error",
+    "alert_group",
+    "gtin14",
+    "country",
     "market",
     "organisation",
     "location",
@@ -162,12 +236,18 @@ EXCEPTION_NAV_FILTERS = (
     "date_quality",
     "intermarket",
     "work_status",
+    "response_status",
+    "response_party",
 )
 
 
 def exception_record_navigation(request, session, record):
+    from app.portal.table_views import has_exception_response_conditions
+
     params = request.query_params
     filters = {key: params[key] for key in EXCEPTION_NAV_FILTERS if key in params}
+    if filters.get("alert_group", "") not in ("", "a2-a3") or filters.get("country", "") not in ("", "CH", "LI"):
+        raise HTTPException(422, "Choose a valid trend filter.")
     if "nav_start" in params or "nav_end" in params:
         try:
             start = date.fromisoformat(params.get("nav_start", ""))
@@ -185,11 +265,22 @@ def exception_record_navigation(request, session, record):
                 filters["date_quality"] = "unresolved"
     if filters.get("work_status") == "to_do":
         filters["date_quality"] = ""
+    for name, allowed in (
+        ("response_status", responses.STATUS_LABELS),
+        ("response_party", rca.ROLES),
+    ):
+        if filters.get(name) and filters[name] not in allowed:
+            raise HTTPException(422, "Choose a valid response filter.")
+    all_response_dates = bool(
+        filters.get("response_status") or filters.get("response_party")
+    ) or has_exception_response_conditions(request, session)
     statement, ordering = queries.listing_statement(
-        session, start=start, end=end, **filters
+        session, start=start, end=end, all_response_dates=all_response_dates, **filters
     )
     view_params = {k: v for k, v in params.items() if k.startswith("tv_")}
-    query = "?" + urlencode({"nav_start": start, "nav_end": end, **filters, **view_params})
+    query = "?" + urlencode(
+        {"nav_start": start, "nav_end": end, **filters, **view_params}
+    )
     suffix = request.url.path.removeprefix(f"/exceptions/{record.id}")
     navigation = list_record_navigation(
         session,
@@ -199,10 +290,12 @@ def exception_record_navigation(request, session, record):
         ordering,
         "/exceptions",
         "Exceptions",
-        view_request=request, table_key="exceptions",
+        view_request=request,
+        table_key="exceptions",
         suffix=suffix,
         query=query,
-        back_query="?" + urlencode({"start": start, "end": end, **filters, **view_params}),
+        back_query="?"
+        + urlencode({"start": start, "end": end, **filters, **view_params}),
     )
     navigation["query"] = query
     return navigation
@@ -228,40 +321,294 @@ def exception_detail(request: Request, identifier: int, session: DbSession):
 @router.get("/exceptions/{identifier}/analysis", include_in_schema=False)
 def exception_analysis(request: Request, identifier: int, session: DbSession):
     record = current(session, identifier)
-    prechecks = investigation_prechecks(session, record)
     review = session.get(ExceptionReview, identifier)
-    operation = repeat_evidence.operation_for(record)
+    from app.portal.collaboration_routes import pilot_enabled
+
+    can_decide = bool(rca_staff(request))
+    scope = rca.responsibility(session, record)
+    findings = rca.participant_findings(session, [record.id]) if can_decide else {}
+    view = queries.detail(session, record)
+    resolved = rca.resolved_for_source(review, record)
+    batch_groups = (
+        rca.batch_groups(rca.batch_rows(session, record))
+        if can_decide and not resolved and scope != "unconfirmed"
+        else {}
+    )
+    batch_finding_links = {}
+    test_review = None
+    if can_decide and getattr(request.app.state, "alert_desk_test_workspace", False):
+        from app.alert_desk.test_workspace import (
+            batch_finding_links_for, case_id_for_alert, individual_review_reasons,
+        )
+
+        batch_finding_links = batch_finding_links_for(session, record, findings.get(record.id, {}))
+        flags, reasons = individual_review_reasons(session, findings)
+        test_review = {
+            "case_id": case_id_for_alert(record),
+            "flag": flags.get(identifier),
+            "reasons": reasons.get(identifier, []),
+        }
+    response_contacts = {}
+    if can_decide and not resolved and scope != "unconfirmed" and pilot_enabled():
+        for role in responses.applicable_roles(record):
+            crm, _, issue = responses.recipient_scope(session, record, role, view)
+            response_contacts[role] = {
+                "issue": issue,
+                "invitation_url": (
+                    f"/workflows/alert-desk?role={role}&organisation_id={crm.id}&case_id={identifier}"
+                    if crm and issue in responses.INVITATION_ISSUES
+                    else None
+                ),
+            }
     return templates.TemplateResponse(
         request=request,
         name="exception_analysis.html",
         context={
+            **view,
             "record_nav": exception_record_navigation(request, session, record),
-            **queries.context(session),
-            **queries.detail(session, record),
             "review": review,
-            "categories": causes.CATEGORIES,
-            "confidence_labels": causes.CONFIDENCE,
-            "check_labels": causes.CHECKS,
-            "repeat_sequence": prechecks["repeat"],
-            "prechecks": prechecks,
-            "repeat_history": repeat_evidence.history(session, record)
-            if operation
-            else None,
-            "repeat_operation": operation,
-            "batch_identity": repeat_evidence.batch_identity(record),
-            "pending_work": bool(
-                review
-                and (
-                    review.status == "to_do"
-                    or review.next_action.strip()
-                    or review.due_date
-                )
+            "resolved": resolved,
+            "can_decide": can_decide,
+            "scope": scope,
+            "origins": rca.origin_options(scope),
+            "roles": rca.ROLES,
+            "findings": rca.applicable_findings(findings.get(record.id, {}), scope),
+            "finding_labels": FINDINGS,
+            "batch_finding_links": batch_finding_links,
+            "test_review": test_review,
+            "capa_labels": CAPA,
+            "comparison_labels": COMPARISON,
+            "state": rca.fingerprint([(record, review)], findings, scope),
+            "batch_available": any(
+                item.id != identifier
+                for group in batch_groups.values()
+                for item, _ in group
             ),
-            "can_transfer": causes.transferable(review) and review.status == "resolved",
+            "pending": has_pending_review(review),
+            "response_requests": responses.case_requests(session, record)
+            if can_decide
+            else {},
+            "response_today": responses.today(),
+            "response_contacts": response_contacts,
             "title": "Root cause analysis",
             "active": "exceptions",
         },
     )
+
+
+def has_pending_review(review):
+    return bool(
+        review
+        and (review.status == "to_do" or review.next_action.strip() or review.due_date)
+    )
+
+
+def rca_staff(request):
+    actor = getattr(request.state, "portal_user", None)
+    return (
+        actor
+        if actor
+        and (getattr(actor, "is_nmvo", False) or getattr(actor, "is_admin", False))
+        else None
+    )
+
+
+def rca_actor(request):
+    actor = rca_staff(request)
+    if actor is None:
+        raise HTTPException(403, "An NMVO account is required.")
+    return actor
+
+
+def audit_actor(actor):
+    if actor is None:
+        return None
+    email = getattr(actor, "email", "")
+    return email if email and len(email) <= 100 else f"Portal user #{actor.id}"
+
+
+def rca_decision(data, scope):
+    if scope == "unconfirmed":
+        raise HTTPException(
+            409, "Confirm the initiating market and location before closing."
+        )
+    origin = data.get("origin")
+    note = data.get("note", "").strip()
+    if origin not in rca.origin_options(scope) or len(note) > 4000:
+        raise HTTPException(
+            422, "Choose an origin and use at most 4,000 characters for the note."
+        )
+    return origin, note
+
+
+def save_rca_decisions(session, rows, findings, scope, origin, note, actor, anchor):
+    try:
+        for record, review in rows:
+            decision = {
+                "basis": rca.CLOSED_BASIS
+                if scope != "foreign"
+                else "foreign_support_complete",
+                "origin": origin,
+                "actor_id": actor.id,
+                "responsibility": scope,
+                "requesting_market": record.source_market,
+                "reason": note,
+                "resolved_at": datetime.now(UTC).isoformat(),
+                "participant_finding_ids": {
+                    role: event.id
+                    for role, event in rca.applicable_findings(
+                        findings.get(record.id, {}), scope
+                    ).items()
+                },
+            }
+            work.save(
+                session,
+                record,
+                review.version if review else 0,
+                record.payload_hash,
+                {
+                    "status": "resolved",
+                    "cause": review.cause if review else "",
+                    "findings": review.findings if review else "",
+                    "analysis": review.analysis if review else None,
+                    "next_action": "",
+                    "due_date": None,
+                    "review_reason": note,
+                    "resolution": decision,
+                },
+                anchor,
+                actor=audit_actor(actor),
+            )
+        session.commit()
+    except (ValueError, IntegrityError, StaleDataError):
+        session.rollback()
+        raise HTTPException(
+            409, "The selected cases changed. Review them again."
+        ) from None
+
+
+@router.post("/exceptions/{identifier}/analysis/close", include_in_schema=False)
+async def close_rca(request: Request, identifier: int, session: DbSession):
+    actor = rca_actor(request)
+    data = await review_form(request)
+    record = session.get(
+        NMVSException, identifier, with_for_update=True, populate_existing=True
+    )
+    if not record or record.source_namespace != queries.namespace(session):
+        raise HTTPException(404, "Exception not found.")
+    scope = rca.responsibility(session, record)
+    origin, note = rca_decision(data, scope)
+    review = session.get(
+        ExceptionReview, identifier, with_for_update=True, populate_existing=True
+    )
+    rows = [(record, review)]
+    findings = rca.participant_findings(session, [identifier], lock=True)
+    if rca.resolved_for_source(review, record) or data.get("state") != rca.fingerprint(
+        rows, findings, scope
+    ):
+        raise HTTPException(
+            409, "The case changed. Review the latest findings before closing."
+        )
+    if has_pending_review(review) and data.get("complete_pending") != "yes":
+        raise HTTPException(422, "Confirm that the pending follow-up can be closed.")
+    save_rca_decisions(session, rows, findings, scope, origin, note, actor, identifier)
+    return RedirectResponse(
+        f"/exceptions/{identifier}/analysis?notice=case_closed", status_code=303
+    )
+
+
+@router.post("/exceptions/{identifier}/analysis/batches", include_in_schema=False)
+async def close_rca_batches(request: Request, identifier: int, session: DbSession):
+    actor = rca_actor(request)
+    data = await review_form(request)
+    record = current(session, identifier)
+    confirming = data.get("command") == "close_batches"
+    rows = rca.batch_rows(session, record, lock=confirming)
+    anchor = next((row for row in rows if row[0].id == identifier), None)
+    if not anchor:
+        raise HTTPException(409, "The originating case changed. Review it again.")
+    scope = rca.responsibility(session, record)
+    origin, note = rca_decision(data, scope)
+    groups = list(rca.batch_groups(rows).items())
+    if not groups:
+        raise HTTPException(409, "No matching open batch cases are available.")
+    eligible = [row for _, group in groups for row in group]
+    basis = [anchor, *(row for row in eligible if row[0].id != identifier)]
+    findings = rca.participant_findings(
+        session, [item.id for item, _ in basis], lock=confirming
+    )
+    test_workspace = getattr(request.app.state, "alert_desk_test_workspace", False)
+    review_reasons = {}
+    case_ids = {}
+    if test_workspace:
+        from app.alert_desk.test_workspace import case_id_for_alert, individual_review_reasons
+
+        _, review_reasons = individual_review_reasons(session, findings)
+        review_reasons = {
+            item.id: review_reasons[item.id]
+            for item, _ in eligible
+            if item.id in review_reasons
+        }
+        case_ids = {item.id: case_id_for_alert(item) for item, _ in eligible}
+    state = rca.fingerprint(basis, findings, scope)
+    if test_workspace:
+        state = sha256(repr((state, sorted(review_reasons.items()))).encode()).hexdigest()
+    if not confirming:
+        if data.get("state") != rca.fingerprint([anchor], findings, scope):
+            raise HTTPException(409, "The originating case changed. Review it again.")
+        return templates.TemplateResponse(
+            request=request,
+            name="exception_rca_batches.html",
+            context={
+                "title": "Review batch closure",
+                "active": "exceptions",
+                "record": record,
+                "groups": groups,
+                "participant_findings": findings if test_workspace else None,
+                "review_reasons": review_reasons,
+                "case_ids": case_ids,
+                "participant_roles": tuple((role, rca.ROLES[role]) for role in responses.applicable_roles(record)),
+                "finding_labels": FINDINGS,
+                "state": state,
+                "origin": origin,
+                "origin_label": rca.ORIGINS[origin],
+                "note": note,
+                "scope": scope,
+            },
+        )
+    selected = {
+        key
+        for key, value in data.items()
+        if key.startswith("batch_") and value == "yes"
+    }
+    if not selected or not selected <= {f"batch_{i}" for i in range(len(groups))}:
+        raise HTTPException(422, "Select at least one batch from the preview.")
+    if state != data.get("state"):
+        raise HTTPException(409, "The batch selection changed. Review it again.")
+    targets = [
+        row
+        for i, (_, group) in enumerate(groups)
+        if f"batch_{i}" in selected
+        for row in group
+        if row[0].id not in review_reasons
+    ]
+    if not targets or any(
+        f"batch_{i}" in selected and all(item.id in review_reasons for item, _ in group)
+        for i, (_, group) in enumerate(groups)
+    ):
+        raise HTTPException(422, "Select batches with cases eligible for batch closure.")
+    save_rca_decisions(
+        session, targets, findings, scope, origin, note, actor, identifier
+    )
+    return RedirectResponse(
+        f"/exceptions/{identifier}/analysis?notice=cases_closed", status_code=303
+    )
+
+
+@router.get("/exceptions/{identifier}/analysis/worksheet", include_in_schema=False)
+def exception_analysis_worksheet(identifier: int, session: DbSession):
+    current(session, identifier)
+    return RedirectResponse(f"/exceptions/{identifier}/analysis", status_code=303)
 
 
 @router.get("/exceptions/{identifier}/work-audit", include_in_schema=False)
@@ -287,6 +634,7 @@ def exception_work_audit(
             **queries.context(session),
             "record": record,
             "events": [event for (event,) in rows],
+            "origin_labels": rca.ORIGINS,
             "pagination": pagination,
             "audit_fields": (
                 "cause",
@@ -386,7 +734,14 @@ async def save_review(request: Request, identifier: int, session: DbSession):
             )
         values = work.reopen_values(existing, record, reason)
         try:
-            work.save(session, record, *token(data.get("version")), values, identifier)
+            work.save(
+                session,
+                record,
+                *token(data.get("version")),
+                values,
+                identifier,
+                actor=audit_actor(getattr(request.state, "portal_user", None)),
+            )
             session.commit()
         except (ValueError, IntegrityError, StaleDataError):
             session.rollback()

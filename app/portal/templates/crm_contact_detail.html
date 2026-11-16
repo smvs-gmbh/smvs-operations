@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% from 'macros.html' import record_bar %}
+{% from "crm_record_actions.html" import record_actions, archive_action, deletion_action with context %}
 {% block heading %}
 {{ record_bar(record_nav, not edit) }}
 <div class="heading"><div><div class="eyebrow">CRM · Contact</div><h1>{{ contact.display_name }}</h1></div></div>
@@ -27,17 +28,10 @@
 {% if contact.archived_at %}<p class="notice">Archived contact · {{ contact.archived_at.strftime('%Y-%m-%d %H:%M UTC') }}</p>{% endif %}
 <div class="review-form">
 {% if not edit %}
-<section class="panel review-body" data-record-actions>
-<details class="exception-actions">
-<summary><strong>Actions</strong></summary>
-<p>{{ 'Return this contact to the current directory.' if contact.archived_at else 'Move this contact to the archived directory. Existing assignments are retained.' }}</p>
-<form method="post" action="/crm/contacts/{{ contact.id }}">
-<input type="hidden" name="version" value="{{ contact.version }}">
-<button type="submit" class="portal-button portal-button-secondary" name="command" value="{{ 'restore' if contact.archived_at else 'archive' }}">{{ 'Restore contact' if contact.archived_at else 'Archive contact' }}</button>
-</form>
-{% with delete_type="contacts", delete_record=contact %}{% include "crm_delete_action.html" %}{% endwith %}
-</details>
-</section>
+{% call record_actions(contact.display_name) %}
+{{ archive_action('/crm/contacts/' ~ contact.id ~ filter_query(request, 'q', 'archived'), contact, 'contact') }}
+{{ deletion_action('contacts', contact.id) }}
+{% endcall %}
 {% endif %}
 <section class="panel review-body review-form">
 {{ section_heading('General', 'general') }}

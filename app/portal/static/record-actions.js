@@ -1,4 +1,4 @@
-import {rightToolbox} from './right-toolbox.js?v=record-actions-1';
+import {rightToolbox} from './right-toolbox.js?v=mah-actions-1';
 
 const source = document.querySelector('[data-record-actions]');
 const workspace = source?.closest('[data-record-workspace]');
@@ -34,7 +34,24 @@ function initialiseRecordActions() {
     const title = document.createElement('h2');
     title.textContent = 'Actions';
     const close = button('Close', 'Close actions toolbox');
-    header.append(title, close);
+    if (source.hasAttribute('data-crm-actions')) {
+        toolbox.classList.add('crm-actions');
+        const heading = document.createElement('div');
+        const recordName = document.createElement('small');
+        recordName.textContent = source.dataset.crmActions;
+        heading.append(title, recordName);
+        const controls = document.createElement('div');
+        controls.className = 'crm-actions-controls';
+        const help = document.createElement('a');
+        help.className = 'portal-button portal-button-secondary';
+        help.href = '/user-guide';
+        help.textContent = '?';
+        help.setAttribute('aria-label', 'Open the User Guide');
+        controls.append(help, close);
+        header.append(heading, controls);
+    } else {
+        header.append(title, close);
+    }
     const body = document.createElement('div');
     body.className = 'crm-toolbox-body review-form';
     const actions = source.querySelector('details');
@@ -49,6 +66,21 @@ function initialiseRecordActions() {
     workspace.append(backdrop, toolbox);
     source.remove();
     const controller = rightToolbox({toolbox, opener, close, backdrop, workspace});
+    if (toolbox.classList.contains('crm-actions')) {
+        body.querySelectorAll('[data-note-apply]').forEach(node => { node.hidden = true; });
+        body.addEventListener('change', event => {
+            if (event.target.matches('[data-note-choice]')) event.target.form.requestSubmit();
+        });
+        body.addEventListener('click', event => {
+            const link = event.target.closest('[data-action-jump]');
+            if (!link || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            controller.hide(false);
+            document.getElementById(link.hash.slice(1))?.focus({preventScroll: true});
+        });
+        if (new URLSearchParams(location.search).get('actions') === 'notes') {
+            controller.show();
+        }
+    }
 
     // MAH card editing happens without a page reload. Avoid simultaneous
     // record actions while a card has an unsaved editor on the same record.

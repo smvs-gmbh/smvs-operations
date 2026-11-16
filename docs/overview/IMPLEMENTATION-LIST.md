@@ -3,16 +3,33 @@
 This list tracks product work. The Exceptions To-do list tracks individual
 alerts that require follow-up.
 
+The 2026-11-16 checkpoint below tracks the remaining work for the current local
+release. Dated sections further down preserve earlier decisions and milestones.
+
 ## Next
 
-- [ ] Add report coverage and upload evidence to the A2 groups. Retain the
-  pack-level RCA and timely investigation path for A3.
-- [ ] Simplify the Swiss RCA around evidence, assessment and next action.
-  Reuse retained evidence and keep a participant's feedback distinct from
-  the NMVO assessment.
+- [ ] Integrate AMS Hub as an additional source in RCA. Match by unique Alert ID,
+  show the Hub Alert status, attributed findings and investigation history, and
+  implement the [automatic local Case closure rule](../architecture/NAMS-Architecture-Proposal.md#automatic-local-closure-from-ams-hub).
+  Validate incoming OBP feedback and whether A71 can identify failed distribution
+  to the relevant market. Continue to use the Exceptions API for Alert context.
+- [ ] Review the Alert Desk pilot end to end with representative End Users and
+  MAHs. Validate the response deadline, overdue views and reviewed reminders,
+  and complete access and evidence checks before external rollout.
+- [ ] Link the standalone synthetic test workspace from the development menu.
+- [ ] Add live packshot intake and display submitted images in RCA details.
+  Add report coverage and upload evidence to A2 groups and retain pack-level
+  investigation for A3.
 
 ## Planned
 
+- [ ] Centralise portal colours in shared CSS variables for backgrounds, text,
+  borders, controls, status messages and charts. Preserve the current light
+  palette and verify contrast. The dark theme remains deferred.
+- [ ] Add a central task overview for CRM Notes with record links and filters
+  for area, open/completed status and flag (Important, Review later or no flag).
+- [ ] Evaluate the Delta Snapshot report for product, batch and pack history.
+  Confirm which historical periods and data changes can be reconstructed.
 - [ ] Review parent company links for invoice routing.
 - [ ] Design on-demand company summary drafts and review a separate company news
   view for events such as announced acquisitions. Retain imported company size for reference.
@@ -32,12 +49,26 @@ alerts that require follow-up.
 - [ ] Validate event coverage for geographic pattern analysis and document
   exceptions for known workflows.
 - [ ] Configure and validate the OpenAI search prototype with general queries.
-- [ ] Add authenticated actors, Shared Investigation and End-user invitations.
-  Extend the audit trail to registrations and permissions, then integrate AMS Hub.
+- [ ] Extend the audit trail for registrations and permissions and complete
+  participant-access checks before broader rollout.
 - [ ] Prepare Incident Report text for CANEA once the required template is available.
 
 ## Available
 
+- [x] Local Alert Desk pilot with participant invitations, findings and batch
+  updates. Operations RCA summarises participant findings and supports single and
+  batch decisions with an audit trail.
+- [x] Exceptions Case status, Waiting for, Response due and Response status.
+  Admin settings control the response interval. Staff can review overdue
+  reminder recipients before sending.
+- [x] Standalone local Alert Desk test workspace with resettable synthetic cases
+  and Pack Audit Trails.
+- [x] Shared CRM Actions with dated, checkable Notes and Important / Review later
+  flags for MAHs, Agreements, Self-Declarations, Contacts, End Users and IT Suppliers.
+- [x] Catalogue Overview with current counts and Swiss MAH breakdown. Exceptions
+  Alert Trends with monthly counts and drill-downs to the matching alerts.
+- [x] Direct UAT API checks verified Alert and history retrieval and an End-user
+  investigation status update. NMVS Alerts displayed the updated history.
 - [x] Operational imports and scheduler controls.
 - [x] Exceptions, Pack Audit Trail and upload evidence.
 - [x] Local RCA, Resolve and Reopen, including selected batch actions and an
@@ -517,4 +548,7 @@ No Jelastic deployment or production source request was performed.
   state investigations, and A52/A68 identifier comparisons in the same Connect layout.
 - [x] Record OBP/EMVO follow-up for recurring A32 cases observed by SMVS.
 - [ ] Review A54 and unmapped cases internally before defining participant tasks.
-- [ ] Add Origin to NMVO resolution and audit with End User, MAH, NMVS and Other.
+- [x] Add the shared RCA summary, Origin and closure audit in Operations.
+- [x] Apply the [IMT responsibility and investigation scope](../architecture/Shared-Alerts-Management-End-User-Pilot.md#intermarket-responsibility-and-investigation-scope)
+  to participant routing and single or batch closure. Cover foreign-led Swiss-pack
+  cases and End-user-only investigations for EU packs scanned in Liechtenstein.

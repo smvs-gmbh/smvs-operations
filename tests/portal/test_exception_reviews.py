@@ -1,8 +1,10 @@
 import re
+from contextlib import closing
 
 import pytest
 from sqlalchemy import func, select
 
+from app.core.db.session import get_session
 from app.domain.exceptions.mapping import publish_exceptions
 from app.domain.models import ExceptionReview, ExceptionReviewEvent, NMVSException
 from tests.integration.exceptions.test_exceptions import NS, acquire, alert, page
@@ -16,10 +18,11 @@ def seed(factory, rows=None):
 
 
 def version(client, identifier=1):
-    return re.search(
-        r'name="version" value="([^"]+)"',
-        client.get(f"/exceptions/{identifier}/analysis").text,
-    )[1]
+    with closing(client.app.dependency_overrides[get_session]()) as dependency:
+        session = next(dependency)
+        record = session.get(NMVSException, identifier)
+        review = session.get(ExceptionReview, identifier)
+        return f"{review.version if review else 0}:{record.payload_hash}"
 
 
 def save(client, identifier=1, **values):
@@ -164,7 +167,7 @@ def test_origin_and_escaped_content(exceptions_portal):
     assert save(client, cause="<script>unsafe</script>").status_code == 303
     assert (
         "&lt;script&gt;unsafe&lt;/script&gt;"
-        in client.get("/exceptions/1/analysis").text
+        in client.get("/exceptions/1/work-audit").text
     )
 
 
@@ -275,10 +278,11 @@ def test_analysis_is_a_separate_tab_and_legacy_text_is_preserved(exceptions_port
     assert 'href="/exceptions/1/analysis?nav_start=' in context
     assert 'name="cause"' not in context
     analysis = client.get("/exceptions/1/analysis").text
-    assert "Earlier free-text finding" in analysis
-    assert "not been classified or automatically confirmed" in analysis
-    assert "Classify the cause" in analysis and "Check the evidence" in analysis
-    assert "Record the assessment" in analysis and "Decide the next step" in analysis
+    assert "Participant findings" in analysis and "Analysis worksheet" not in analysis
+    assert "Earlier free-text finding" in client.get("/exceptions/1/work-audit").text
+    bookmark = client.get("/exceptions/1/analysis/worksheet", follow_redirects=False)
+    assert bookmark.status_code == 303
+    assert bookmark.headers["location"] == "/exceptions/1/analysis"
     assert (
         client.get("/exceptions/1/source").text.count(
             'href="/exceptions/1/analysis?nav_start='
@@ -310,9 +314,6 @@ def test_structured_assessment_is_saved_and_audited(exceptions_portal):
         assert review.analysis["confidence"] == "confirmed"
         event = session.scalar(select(ExceptionReviewEvent))
         assert event.after["analysis"] == review.analysis
-    text = client.get("/exceptions/1/analysis").text
-    assert '<option value="repeat_operation" selected>' in text
-    assert '<option value="confirmed" selected>' in text
 
 
 @pytest.mark.parametrize(
@@ -426,7 +427,7 @@ def test_resolution_reopen_history_and_locked_resolved_analysis(exceptions_porta
         == 303
     )
     text = client.get("/exceptions/1/analysis").text
-    assert "Reopen exception" in text and 'analysis-edit-fields" disabled' in text
+    assert "Reopen exception" in text and "Other NMVO is responsible" in text
     assert save(client, cause="Silent change").status_code == 409
     assert (
         client.post(
@@ -637,11 +638,7 @@ def test_repeat_short_resolution_requires_matching_audit_location(
         request.latest_report_id = report_id
         request.status = "ready"
         session.commit()
-    analysis = client.get("/exceptions/1/analysis").text
-    assert "Intelligence · Automatic analysis" in analysis
-    assert f"Repeated {operation} evidence" in analysis
     eligible = repeat_location == "L-1"
-    assert ("Resolve locally" in analysis) == eligible
     response = client.post(
         "/exceptions/1/resolve-repeat",
         headers=ORIGIN,
@@ -665,7 +662,7 @@ def test_repeat_short_resolution_requires_matching_audit_location(
 
     batch_url = "/exceptions/1/resolve-export-batch"
     if operation == "Destroy":
-        assert "/resolve-export-batch" not in analysis
+        assert client.get(batch_url).status_code in (409, 422)
         return
     if not eligible:
         assert client.get(batch_url).status_code == 409

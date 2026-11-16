@@ -462,8 +462,10 @@ submission/amendment, switching findings and unchecked progress submission.
 ## Local organisation access pilot
 
 The public Alert Desk and the private Collaboration API run on loopback. Apply
-the local migration with `.venv/bin/alembic upgrade 0048_alert_desk_case_updates` and
-start the services with one temporary, dedicated secret.
+the local migrations with `.venv/bin/alembic upgrade head` and start the services
+with one temporary, dedicated secret. Start the manual scheduler after a restart
+as well. It processes queued Pack Audit Trail, upload history and manual import
+requests while leaving automatic imports paused for the local session.
 
 ```sh
 export ALERT_DESK_PILOT_SECRET="$(.venv/bin/python -c 'import secrets; print(secrets.token_urlsafe(32))')"
@@ -471,6 +473,7 @@ export PORTAL_AUTH_ENABLED=true
 export PORTAL_AUTH_ORIGIN=http://localhost:8016
 .venv/bin/uvicorn app.domain.investigations.pilot_api:local_app --factory --host 127.0.0.1 --port 8015 --no-proxy-headers --no-access-log &
 .venv/bin/uvicorn app.alert_desk.web:local_app --factory --host 127.0.0.1 --port 8014 --no-proxy-headers --no-access-log &
+.venv/bin/python -m app.integration.scheduler --serve-manual &
 .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8016 --no-proxy-headers --no-access-log
 ```
 
@@ -486,8 +489,14 @@ export PORTAL_AUTH_ORIGIN=http://localhost:8016
    see locally reported alerts linked to their NMVS organisation, with the
    location checked where supplied. MAH access uses the unambiguous current SAI
    mapping and CRM GLN. The list omits serials; case details show the reported
-   serial. Eligible local A2/A3 cases and A7 cases accept findings. Other alerts open in a
-   read-only case view.
+   serial. A2/A3 cases from confirmed Swiss locations accept findings, including IMT.
+   Liechtenstein IMT A2/A3 findings are available to the End User at a confirmed
+   location. Eligible A7 cases also accept findings. Other alerts open in a
+   read-only case view. For A2, a batch update applies the finding to matching
+   alerts with the same product, submitted batch, location and operation in the
+   participant's scope. An End User's physical pack comparison is saved on the
+   originating alert. Other alerts record that the comparison was not checked.
+   Quarantine instructions appear as SMVS case updates.
 5. The directory records test-mail acceptance and mailbox confirmation. Revocation
    ends access immediately. Changing the contact record or its CRM scope also
    invalidates the grant. Expired sessions currently require a new invitation.
@@ -542,3 +551,27 @@ delivery and durable retry are outside the local pilot.
 The case overview uses the Operations stylesheet, module navigation, list toolbar
 and table styles. Opening a case from a filtered view preserves the list context
 for the return link.
+
+### Local shared-investigation test workspace
+
+Run `.venv/bin/python -m app.alert_desk.test_workspace` and open
+`http://localhost:8021/`, or select **Test** in the development portal menu.
+The workspace seeds synthetic A2, A3, A7 and A24 alerts in a separate local
+SQLite database at `tmp/alert-desk-test/fixtures.db`. The test findings persist
+across restarts. Open the same alert as End User or MAH
+to submit findings, then open it as NMVO to review the findings and record a
+decision. A2 and the reviewed A7 Export cohort have two alerts each for testing
+batch updates. A24 is read-only for participants. Each product and batch has a
+stable test Case ID. The overview lists the Case ID, status, date of the first
+alert, alert types, End User and MAH. Expand a case to see its Alert IDs, dates
+and organisations. Open an Alert ID to review findings, evidence and actions in
+the RCA, or open the alert as End User or MAH. Follow the batch-finding link in
+the RCA to see the alerts covered by that submission.
+Mark an alert for individual review in the RCA and record the reason. A reported mismatch
+between submitted and printed pack data also marks the alert for review. The
+closure preview shows coverage and the alerts eligible for batch closure.
+Confirm selected batches to close eligible alerts. Alerts requiring individual
+review remain open for a separate decision.
+**Reset all test data** clears findings, decisions, flags and audit entries for
+every test scenario. The
+workspace uses local test identities and sends no invitations or emails.

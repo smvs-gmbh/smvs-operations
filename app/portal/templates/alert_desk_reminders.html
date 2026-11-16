@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block heading %}
+<a class="back-link" href="{{ back }}">← Exceptions</a>
+<div class="heading"><div><h1>Review overdue reminders</h1></div></div>
+{% endblock %}
+{% block content %}
+<section class="panel review-body">
+  {% if sent is defined %}
+    <p class="notice" role="status">{{ sent }} of {{ groups|length }} reminders accepted by the local test mailbox.</p>
+  {% endif %}
+  {% if groups %}
+  <ul>
+    {% for email, items in groups.items() %}
+    <li><strong>{{ email }}</strong><ul>
+      {% for item, record in items %}<li>{{ roles[item.role] }} · {{ record.unique_alert_id }} · Due {{ item.due_on }}</li>{% endfor %}
+    </ul></li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  {% if excluded %}<details><summary>Skipped requests · {{ excluded|length }}</summary>
+    <ul>{% for reference, role, reason in excluded %}<li>{{ reference }} · {{ role }} · {{ reason }}</li>{% endfor %}</ul>
+  </details>{% endif %}
+  {% if not groups %}<p>No reminders available for this selection.</p>{% endif %}
+  {% if groups and sent is not defined %}
+  <form method="post" action="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
+    {% for identifier in identifiers %}<input type="hidden" name="target_{{ identifier }}" value="yes">{% endfor %}
+    <input type="hidden" name="confirm" value="{{ revision }}">
+    <button class="portal-button" type="submit">Send {{ groups|length }} test {{ 'reminder' if groups|length == 1 else 'reminders' }}</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

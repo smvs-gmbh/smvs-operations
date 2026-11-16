@@ -1,6 +1,7 @@
 import re
 from types import SimpleNamespace
 
+from fastapi import Request
 from sqlalchemy import select
 
 from app.domain.crm.contacts import seed_staged_contacts
@@ -11,14 +12,201 @@ from app.domain.models import (
     CRMContact,
     CRMEndUser,
     CRMMah,
+    CRMRecordNote,
     LocalOrganisation,
     ParticipantMappingRun,
     ParticipantPublication,
+    PortalUser,
 )
 from app.integration.artifacts.storage import utcnow
+from app.portal.crm_list_preferences import apply_saved_crm_filters
 from app.portal.crm_routes import router
 
 ORIGIN = {"origin": "http://testserver"}
+
+
+def test_mah_notes_are_scoped_and_survive_archive_until_permanent_deletion(portal):
+    client, factory = portal
+    client.app.include_router(router)
+
+    def identity(request: Request):
+        if request.headers.get("x-test-staff"):
+            request.state.portal_user = SimpleNamespace(
+                id=1, email="operator@example.test", is_admin=True, is_nmvo=True
+            )
+
+    client.app.dependency_overrides[apply_saved_crm_filters] = identity
+    headers = ORIGIN | {"x-test-staff": "yes"}
+    with factory.begin() as session:
+        session.add(
+            PortalUser(
+                id=1,
+                email="operator@example.test",
+                handle="operator",
+                is_admin=1,
+                is_nmvo=1,
+            )
+        )
+        for identifier in (1, 2):
+            session.add(
+                CRMMah(
+                    id=identifier,
+                    name=f"Example MAH {identifier}",
+                    contract_status="unknown",
+                    created_at=utcnow(),
+                    updated_at=utcnow(),
+                )
+            )
+
+    notes = "/crm/mahs/1/notes"
+    entry = {"text": "Check <new> SPOC", "flag": "important"}
+    assert client.post(notes, data=entry, headers=ORIGIN).status_code == 403
+    assert (
+        client.post(notes, data=entry, headers={"x-test-staff": "yes"}).status_code
+        == 403
+    )
+    assert (
+        client.post(
+            notes, data={**entry, "flag": "urgent"}, headers=headers
+        ).status_code
+        == 422
+    )
+    created = client.post(
+        notes + "?q=Example", data=entry, headers=headers, follow_redirects=False
+    )
+    assert created.status_code == 303
+    assert created.headers["location"] == "/crm/mahs/1?q=Example&actions=notes"
+    page = client.get(created.headers["location"], headers=headers).text
+    assert "1 open" in page and "Check &lt;new&gt; SPOC" in page
+    assert "operator@example.test" in page and " UTC</time>" in page
+    with factory() as session:
+        note = session.scalar(select(CRMRecordNote))
+        assert note.author_id == 1 and note.flag == "important"
+        note_id = note.id
+    assert (
+        client.post(
+            f"/crm/mahs/2/notes/{note_id}",
+            data={"field": "status", "completed": "yes"},
+            headers=headers,
+        ).status_code
+        == 404
+    )
+    note_url = f"{notes}/{note_id}"
+    completed = client.post(
+        note_url, data={"field": "status", "completed": "yes"}, headers=headers
+    )
+    assert "Completed · 1" in completed.text and "0 open" in completed.text
+    assert (
+        client.post(
+            note_url, data={"field": "flag", "flag": "review_later"}, headers=headers
+        ).status_code
+        == 200
+    )
+    with factory() as session:
+        note = session.get(CRMRecordNote, note_id)
+        assert note.completed_at and note.flag == "review_later"
+    reopened = client.post(note_url, data={"field": "status"}, headers=headers)
+    assert "1 open" in reopened.text and "Completed · 1" not in reopened.text
+    assert (
+        client.post(
+            "/crm/mahs/1",
+            data={"command": "archive", "version": "1"},
+            headers=headers,
+            follow_redirects=False,
+        ).status_code
+        == 303
+    )
+    assert "Check &lt;new&gt; SPOC" in client.get("/crm/mahs/1", headers=headers).text
+    assert (
+        client.post(
+            "/crm/mahs/1/delete",
+            data={"version": "2", "confirm_delete": "yes"},
+            headers=headers,
+            follow_redirects=False,
+        ).status_code
+        == 303
+    )
+    with factory() as session:
+        assert session.get(CRMRecordNote, note_id) is None
+        assert session.get(CRMMah, 2) is not None
+
+
+def test_record_actions_and_notes_on_other_crm_details(portal):
+    from app.domain.crm.imports import staged_crm_export
+    from app.domain.models import CRMAgreement, CRMSelfDeclaration
+
+    client, factory = portal
+    client.app.include_router(router)
+
+    def identity(request: Request):
+        if request.headers.get("x-test-staff"):
+            request.state.portal_user = SimpleNamespace(
+                id=1, email="operator@example.test", is_admin=True, is_nmvo=True,
+            )
+
+    client.app.dependency_overrides[apply_saved_crm_filters] = identity
+    headers = ORIGIN | {"x-test-staff": "yes"}
+
+    def stage_supplier(session, name):
+        content = f"Record Id,IT Supplier Name\nrecSupplier,{name}\n".encode()
+        stage_export(session, parse_export("IT Suppliers", content), content, "suppliers.csv")
+        return staged_crm_export(session, "IT Suppliers")[3][0].id
+
+    with factory.begin() as session:
+        session.add_all([
+            PortalUser(id=1, email="operator@example.test", handle="operator", is_admin=1, is_nmvo=1),
+            CRMContact(id=1, airtable_id="recContact", label="Example Contact"),
+            CRMEndUser(id=1, name="Example End User"),
+            CRMAgreement(id=1, contract_id="EX-1", contractor="Example Company", status="Signed"),
+            CRMSelfDeclaration(
+                id=1, source_key="example", record_label="Example 2025",
+                source_mah_name="Example Company", declaration_year=2025,
+            ),
+        ])
+        supplier_id = stage_supplier(session, "Example Supplier")
+
+    directories = ("contacts", "end-users", "agreements", "self-declarations", "it-suppliers")
+    for directory in directories:
+        detail = f"/crm/{directory}/{supplier_id if directory == 'it-suppliers' else 1}"
+        entry = f"Note for {directory}"
+        response = client.post(
+            detail + "/notes?q=Example", data={"text": entry, "flag": "important"},
+            headers=headers, follow_redirects=False,
+        )
+        assert response.status_code == 303
+        assert response.headers["location"] == detail + "?q=Example&actions=notes"
+        page = client.get(response.headers["location"], headers=headers)
+        assert page.status_code == 200
+        assert "data-crm-actions" in page.text and "1 open" in page.text and entry in page.text
+        assert all(f"Note for {other}" not in page.text for other in directories if other != directory)
+        assert (("Review permanent deletion" in page.text) == (directory in {"contacts", "end-users"}))
+        assert (("data-action-jump" in page.text) == (directory == "agreements"))
+        assert entry not in client.get(detail).text
+
+    with factory.begin() as session:
+        new_supplier_id = stage_supplier(session, "Example Supplier Renamed")
+        assert new_supplier_id != supplier_id
+    assert "Note for it-suppliers" in client.get(
+        f"/crm/it-suppliers/{new_supplier_id}", headers=headers,
+    ).text
+    assert client.post(
+        f"/crm/it-suppliers/{supplier_id}/notes", data={"text": "Stale row"}, headers=headers,
+    ).status_code == 404
+    with factory() as session:
+        contact_note = session.scalar(select(CRMRecordNote).where(CRMRecordNote.contact_id == 1)).id
+    assert client.post(
+        f"/crm/end-users/1/notes/{contact_note}", data={"field": "status", "completed": "yes"},
+        headers=headers,
+    ).status_code == 404
+    for directory in ("contacts", "end-users"):
+        assert client.post(
+            f"/crm/{directory}/1/delete", data={"version": "1", "confirm_delete": "yes"},
+            headers=headers, follow_redirects=False,
+        ).status_code == 303
+    with factory() as session:
+        assert {note.text for note in session.scalars(select(CRMRecordNote))} == {
+            f"Note for {directory}" for directory in directories[2:]
+        }
 
 
 def test_mah_import_edit_archive_restore_and_create(portal, monkeypatch):
@@ -679,7 +867,7 @@ def test_mah_transfer_records_note_and_allows_separate_archiving(portal):
     source_url = f"/crm/mahs/{source_id}"
     target_url = f"/crm/mahs/{target_id}"
     assert (
-        '<details class="exception-actions">\n<summary><strong>Actions</strong>'
+        '<details class="exception-actions crm-actions">\n<summary><strong>Actions</strong>'
         in client.get(source_url).text
     )
     page = client.get(source_url).text

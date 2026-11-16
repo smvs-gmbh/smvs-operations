@@ -45,6 +45,11 @@ closure paths; it does not remove their investigation and feedback responsibilit
   closure requires an explicitly NMVO-approved, versioned policy, validated scope
   and audit; it is not delegated participant authority.
 
+The [agreed AMS Hub reconciliation rule](NAMS-Architecture-Proposal.md#automatic-local-closure-from-ams-hub)
+covers automatic local Case closure after the Hub confirms `Closed` for every
+linked Alert, including when an authorised OBP or MAH closed the Alert in the Hub.
+This reconciliation updates the local Case only.
+
 For IMT, **responsible** means the initiating NMVO under section 3.7. SMVS must not
 claim formal closure authority for foreign-initiated alerts merely because Swiss
 pack data fulfilled the query. It can complete its own support/local work and

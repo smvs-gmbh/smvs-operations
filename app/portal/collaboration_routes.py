@@ -1,19 +1,31 @@
 """Internal evidence preparation, preview and local pilot access management."""
 
 import os
+import re
+from collections import defaultdict
+from hashlib import sha256
 from typing import Literal
 from urllib.parse import urlsplit
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from starlette.concurrency import run_in_threadpool
 
 from app.alert_desk.schema import CAPA, COMPARISON, FINDINGS
 from app.alert_desk.web import ASSETS, DESIGN_ASSETS, DESIGN_STYLES, render_case
 from app.core.config import get_settings
 from app.core.db.session import SessionFactory
-from app.domain.investigations import access, audience, case_updates, pilot, pilot_mail
+from app.domain.investigations import (
+    access,
+    audience,
+    case_updates,
+    pilot,
+    pilot_mail,
+    rca,
+    responses,
+)
 from app.domain.investigations.prechecks import collect
 from app.domain.investigations.preview import ERRORS, participant_projection
 from app.domain.models import (
@@ -21,7 +33,10 @@ from app.domain.models import (
     AlertDeskCaseUpdate,
     AlertDeskEvent,
     AlertDeskGrant,
+    AlertDeskResponseRequest,
+    AlertDeskSettings,
     CRMContact,
+    ExceptionReview,
     NMVSException,
 )
 from app.domain.pack_audit.service import request_report
@@ -30,6 +45,48 @@ from app.portal.exception_routes import current, review_form
 from app.portal.routes import DbSession, templates
 
 router = APIRouter()
+
+
+def require_alert_desk_admin(request):
+    actor = getattr(request.state, "portal_user", None)
+    if not actor or not getattr(actor, "is_admin", False):
+        raise HTTPException(403, "Only administrators can change Alert Desk settings.")
+
+
+@router.get("/admin/alert-desk", include_in_schema=False)
+def alert_desk_settings(request: Request, session: DbSession):
+    require_alert_desk_admin(request)
+    return templates.TemplateResponse(
+        request=request,
+        name="alert_desk_settings.html",
+        context={
+            "title": "Alert Desk settings",
+            "active": "alert_desk_settings",
+            "response_days": responses.settings_days(session),
+        },
+    )
+
+
+@router.post("/admin/alert-desk", include_in_schema=False)
+async def save_alert_desk_settings(request: Request, session: DbSession):
+    require_alert_desk_admin(request)
+    form = await review_form(request, expected_origin=get_settings().portal_auth_origin)
+    raw = form.get("response_days", "")
+    if not re.fullmatch(r"[0-9]{1,2}", raw) or not 1 <= int(raw) <= 30:
+        raise HTTPException(422, "Enter between 1 and 30 working days.")
+    settings = session.get(AlertDeskSettings, 1, with_for_update=True)
+    if settings is None:
+        settings = AlertDeskSettings(id=1)
+        session.add(settings)
+    settings.response_days = int(raw)
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(
+            409, "The settings changed. Reload and try again."
+        ) from None
+    return RedirectResponse("/admin/alert-desk?saved=yes", status_code=303)
 
 
 @router.get("/exceptions/{identifier}/participant-preview", include_in_schema=False)
@@ -217,6 +274,8 @@ def require_invitation_staff(request):
 
 
 def render_invitations(request, session, record, role):
+    if record.source_market == "LI":
+        role = "end_user"
     view = exception_queries.enriched(session, [record])[0]
     return templates.TemplateResponse(
         request=request,
@@ -229,6 +288,8 @@ def render_invitations(request, session, record, role):
             "record": record,
             "role": role,
             "case_update": case_updates.latest_update(session, record),
+            "can_conclude": rca.responsibility(session, record)
+            in {"local", "liechtenstein"},
             "case_priority": case_updates.priority(session, record),
             "role_findings": {
                 key: case_updates.label(event.data.get("finding") if event else None)
@@ -267,6 +328,8 @@ def live_invitation_preview(
 ):
     require_invitation_staff(request)
     record = current(session, identifier)
+    if record.source_market == "LI" and role == "mah":
+        raise HTTPException(404, "This case is scoped to the End User.")
     if record.error_code not in {"A2", "A3", "A7"}:
         raise HTTPException(404, "No participant template for this alert.")
     view = exception_queries.enriched(session, [record])[0]
@@ -282,22 +345,27 @@ def live_invitation_preview(
         role=role,
         share_report=report_id is not None and report_id == prechecks["report_id"],
     )
+    closed = rca.is_closed(view["review"], record)
     batch_count = 0
-    cohort = access.export_cohort(session, record)
-    if cohort:
+    investigation = pilot.investigation_for(record, organisation, location, role)
+    if not closed and investigation:
+        cohort = access.export_cohort(session, record) if record.error_code == "A7" else None
         crm = (
             session.get(access.DIRECTORIES[role], cohort.end_user_id)
-            if role == "end_user"
-            else audience.organisation_for(session, record, None, role)
+            if cohort and role == "end_user"
+            else audience.organisation_for(
+                session, record, organisation.id if organisation else None, role
+            )
         )
         if crm and not crm.archived_at:
             batch = access.batch_targets(session, role, crm, record)
             batch_count = len(batch) + 1 if batch else 0
     published.update(
         batch_count=batch_count,
+        progress={"closed": closed},
         code=record.error_code,
         label=ERRORS[record.error_code][0],
-        investigation=pilot.investigation_for(record, organisation, location, role),
+        investigation=investigation,
     )
     response = render_case(
         request, published, preview=True, assets="/exceptions/invitation-assets"
@@ -403,8 +471,41 @@ def access_directory(session):
     )
 
 
-def render_access_directory(request, session, notice=None):
+def invitation_directory_scope(request):
+    role = request.query_params.get("role")
+    organisation_id = request.query_params.get("organisation_id")
+    case_id = request.query_params.get("case_id")
+    if role is None and organisation_id is None and case_id is None:
+        return None
+    try:
+        scope = (role, int(organisation_id), int(case_id))
+    except (TypeError, ValueError):
+        raise HTTPException(422, "Choose a valid invitation scope.") from None
+    if role not in rca.ROLES or min(scope[1:]) < 1:
+        raise HTTPException(422, "Choose a valid invitation scope.")
+    return scope
+
+
+def invitation_rows(session, scope):
     rows = access_directory(session)
+    if scope:
+        role, organisation_id, _ = scope
+        rows = [
+            row for row in rows
+            if row["role"] == role and row["organisation"].id == organisation_id
+        ]
+    return rows
+
+
+def render_access_directory(request, session, notice=None):
+    scope = invitation_directory_scope(request)
+    rows = invitation_rows(session, scope)
+    send_url = "/workflows/alert-desk/send"
+    case_url = None
+    if scope:
+        role, organisation_id, case_id = scope
+        send_url += f"?role={role}&organisation_id={organisation_id}&case_id={case_id}"
+        case_url = f"/exceptions/{case_id}/analysis"
     return templates.TemplateResponse(
         request=request,
         name="alert_desk_access.html",
@@ -413,6 +514,8 @@ def render_access_directory(request, session, notice=None):
             "title": "Alert Desk invitations",
             "active": "workflows",
             "rows": rows,
+            "send_url": send_url,
+            "case_url": case_url,
             "notice": notice,
             "sent_count": sum(
                 bool(row["grant"] and row["grant"].sent_at) for row in rows
@@ -436,7 +539,7 @@ async def send_access_invitations(request: Request, session: DbSession):
         return render_access_directory(
             request, session, "Select at least one alert contact."
         )
-    rows = {row["key"]: row for row in access_directory(session)}
+    rows = {row["key"]: row for row in invitation_rows(session, invitation_directory_scope(request))}
     if not selected <= rows.keys():
         raise HTTPException(
             409, "The selected CRM assignments changed. Reload the directory."
@@ -538,6 +641,13 @@ async def publish_case_update(request: Request, identifier: int, session: DbSess
     note = form.get("note", "").strip()
     follow_up = form.get("follow_up") == "yes"
     concluded = form.get("concluded") == "yes"
+    if concluded and rca.responsibility(session, record) not in {
+        "local",
+        "liechtenstein",
+    }:
+        raise HTTPException(
+            409, "Confirm SMVS responsibility before concluding this case."
+        )
     if (
         pack not in case_updates.PACK_LABELS
         or not note
@@ -573,6 +683,22 @@ async def publish_case_update(request: Request, identifier: int, session: DbSess
         or follow_up
     )
     addresses = case_updates.end_user_recipients(session, record) if notify else []
+    response_request = None
+    if follow_up and addresses:
+        view = exception_queries.enriched(session, [record])[0]
+        crm, recipients, issue = responses.recipient_scope(
+            session, record, "end_user", view
+        )
+        if not issue:
+            scoped_baseline = case_updates.latest_finding(
+                session, record, "end_user", crm.id
+            )
+            response_request = (
+                crm.id,
+                {email.casefold() for email in recipients},
+                scoped_baseline.id if scoped_baseline else 0,
+                responses.settings_days(session),
+            )
     update = AlertDeskCaseUpdate(
         exception_id=record.id,
         source_version=record.payload_hash,
@@ -593,6 +719,7 @@ async def publish_case_update(request: Request, identifier: int, session: DbSess
     session.commit()
     if addresses:
         sent = 0
+        accepted = set()
         for email in addresses:
             try:
                 await run_in_threadpool(
@@ -604,10 +731,209 @@ async def publish_case_update(request: Request, identifier: int, session: DbSess
             except (OSError, ValueError):
                 continue
             sent += 1
+            accepted.add(email.casefold())
         update.notification = f"{sent} of {len(addresses)} accepted by test mailbox"
+        if response_request and accepted & response_request[1]:
+            current_record = session.get(
+                NMVSException, identifier, with_for_update=True, populate_existing=True
+            )
+            if current_record.payload_hash == form[
+                "basis"
+            ] and not rca.resolved_for_source(
+                session.get(ExceptionReview, identifier), current_record
+            ):
+                previous_request = responses.case_requests(session, current_record).get(
+                    "end_user"
+                )
+                if not previous_request or previous_request[1]:
+                    crm_id, _, after_event_id, days = response_request
+                    session.add(
+                        AlertDeskResponseRequest(
+                            exception_id=identifier,
+                            role="end_user",
+                            crm_organisation_id=crm_id,
+                            source_version=current_record.payload_hash,
+                            after_event_id=after_event_id,
+                            actor_id=actor.id,
+                            requested_at=pilot.now(),
+                            due_on=responses.deadline(responses.today(), days),
+                        )
+                    )
         session.commit()
     return RedirectResponse(
         f"/exceptions/{identifier}/invitations#smvs-update", status_code=303
+    )
+
+
+@router.post(
+    "/exceptions/{identifier}/analysis/request-response", include_in_schema=False
+)
+async def request_alert_response(request: Request, identifier: int, session: DbSession):
+    actor, form = await pilot_form(request)
+    role = form.get("role")
+    if role not in rca.ROLES:
+        raise HTTPException(422, "Choose a participant.")
+    record = session.get(NMVSException, identifier, with_for_update=True)
+    if not record or record.source_namespace != exception_queries.namespace(session):
+        raise HTTPException(404, "Exception not found.")
+    if record.payload_hash != form.get("basis") or rca.resolved_for_source(
+        session.get(ExceptionReview, identifier), record
+    ):
+        raise HTTPException(
+            409, "Review the current open case before requesting findings."
+        )
+    previous = responses.case_requests(session, record).get(role)
+    if previous and not previous[1]:
+        raise HTTPException(409, "A response from this participant is already pending.")
+    view = exception_queries.enriched(session, [record])[0]
+    crm, recipients, issue = responses.recipient_scope(session, record, role, view)
+    if issue:
+        raise HTTPException(409, issue)
+    baseline = case_updates.latest_finding(session, record, role, crm.id)
+    due_on = responses.deadline(responses.today(), responses.settings_days(session))
+    requested_at = pilot.now()
+    sent = 0
+    for email in recipients:
+        try:
+            await run_in_threadpool(
+                pilot_mail.send_response_request,
+                email,
+                record.unique_alert_id,
+                record.id,
+                due_on,
+            )
+        except (OSError, ValueError):
+            continue
+        sent += 1
+    if not sent:
+        raise HTTPException(
+            503, "The test mailbox did not accept the request. No deadline was started."
+        )
+    session.add(
+        AlertDeskResponseRequest(
+            exception_id=identifier,
+            role=role,
+            crm_organisation_id=crm.id,
+            source_version=record.payload_hash,
+            after_event_id=baseline.id if baseline else 0,
+            actor_id=actor.id,
+            requested_at=requested_at,
+            due_on=due_on,
+        )
+    )
+    session.commit()
+    notice = (
+        "response_requested"
+        if sent == len(recipients)
+        else "response_partially_requested"
+    )
+    return RedirectResponse(
+        f"/exceptions/{identifier}/analysis?notice={notice}", status_code=303
+    )
+
+
+@router.post("/exceptions/response-reminders", include_in_schema=False)
+async def alert_response_reminders(
+    request: Request,
+    session: DbSession,
+    response_party: Literal["", "end_user", "mah"] = "",
+):
+    _, form = await pilot_form(request)
+    identifiers = sorted(
+        {int(key[7:]) for key in form if re.fullmatch(r"target_[0-9]{1,10}", key)}
+    )
+    if not identifiers or len(identifiers) > 50:
+        raise HTTPException(422, "Select up to 50 cases to review.")
+    confirming = "confirm" in form
+    query = (
+        select(NMVSException)
+        .where(NMVSException.id.in_(identifiers))
+        .order_by(NMVSException.id)
+    )
+    if confirming:
+        query = query.with_for_update()
+    records = session.scalars(query).all()
+    namespace = exception_queries.namespace(session)
+    if len(records) != len(identifiers) or any(
+        record.source_namespace != namespace for record in records
+    ):
+        raise HTTPException(404, "A selected case is unavailable.")
+    groups = defaultdict(list)
+    addresses = {}
+    excluded = []
+    today = responses.today()
+    for view in exception_queries.enriched(session, records):
+        record = view["record"]
+        if rca.resolved_for_source(view["review"], record):
+            continue
+        for role, (item, received) in responses.case_requests(session, record).items():
+            if (
+                (response_party and role != response_party)
+                or received
+                or item.due_on >= today
+            ):
+                continue
+            crm, recipients, issue = responses.recipient_scope(
+                session, record, role, view
+            )
+            if issue or crm.id != item.crm_organisation_id or item.reminded_on == today:
+                reason = issue or (
+                    "CRM assignment changed"
+                    if crm.id != item.crm_organisation_id
+                    else "Already reminded today"
+                )
+                excluded.append((record.unique_alert_id, rca.ROLES[role], reason))
+                continue
+            for email in recipients:
+                groups[addresses.setdefault(email.casefold(), email)].append(
+                    (item, record)
+                )
+    revision = sha256(
+        repr(
+            [
+                (email, [item.id for item, _ in items])
+                for email, items in sorted(groups.items())
+            ]
+        ).encode()
+    ).hexdigest()
+    back = "/exceptions?response_status=overdue"
+    if response_party:
+        back += f"&response_party={response_party}"
+    context = {
+        "title": "Review overdue reminders",
+        "active": "exceptions",
+        "back": back,
+        "groups": dict(sorted(groups.items())),
+        "excluded": excluded,
+        "identifiers": identifiers,
+        "revision": revision,
+        "roles": rca.ROLES,
+    }
+    if confirming:
+        if form["confirm"] != revision or not groups:
+            raise HTTPException(
+                409, "The reminder selection changed. Review the cases again."
+            )
+        sent = 0
+        for email, items in groups.items():
+            cases = [
+                (record.unique_alert_id, rca.ROLES[item.role], item.due_on, record.id)
+                for item, record in items
+            ]
+            try:
+                await run_in_threadpool(pilot_mail.send_response_reminder, email, cases)
+            except (OSError, ValueError):
+                continue
+            sent += 1
+            for item, _ in items:
+                item.reminded_on = today
+        session.commit()
+        context["sent"] = sent
+    return templates.TemplateResponse(
+        request=request,
+        name="alert_desk_reminders.html",
+        context=context,
+        headers={"Cache-Control": "no-store"},
     )
 
 

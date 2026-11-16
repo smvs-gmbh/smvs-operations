@@ -10,6 +10,7 @@ if (actionsForm && selectPage) {
     const count = document.getElementById("exception-selection-count");
     const previewButton = document.getElementById("preview-selected-rule");
     const reopenButton = document.getElementById("reopen-selected-exceptions");
+    const remindersButton = document.getElementById("preview-response-reminders");
 
     function updatePageSelection() {
         const selected = rows.filter(row => row.checked).length;
@@ -17,6 +18,9 @@ if (actionsForm && selectPage) {
         selectPage.indeterminate = selected > 0 && selected < rows.length;
         count.textContent = selected + " selected on this page";
         if (previewButton) previewButton.disabled = selected === 0;
+        if (remindersButton) {
+            remindersButton.disabled = !rows.some(row => row.checked && row.dataset.overdue === "yes");
+        }
         if (reopenButton) {
             reopenButton.disabled = selected === 0 || rows.some(row => row.checked && row.dataset.resolved !== "yes");
         }

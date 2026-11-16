@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% import 'participant_finding.html' as participant %}
+{% block heading %}
+<a class="back-link" href="/exceptions/{{ record.id }}/analysis">← Root cause analysis</a>
+<div class="heading"><div><h1>{{ 'Complete support by batch' if scope == 'foreign' else 'Close cases by batch' }}</h1><p>{{ record.unique_alert_id }} · {{ record.error_code }} · {{ record.gtin14 or record.product_code }}</p></div></div>
+{% endblock %}
+{% block content %}
+<form class="panel" method="post" action="/exceptions/{{ record.id }}/analysis/batches">
+  <input type="hidden" name="command" value="close_batches">
+  <input type="hidden" name="state" value="{{ state }}">
+  <input type="hidden" name="origin" value="{{ origin }}">
+  <input type="hidden" name="note" value="{{ note }}">
+  <div class="panel-heading"><h2>Matching open cases</h2></div>
+  <div class="review-body">
+    <p>Select the batches this decision applies to. Cases with pending Operations follow-up are excluded.{% if case_ids %} Alerts marked for individual review stay open.{% endif %}</p>
+    <p><strong>Origin</strong> · {{ origin_label }}</p>
+    {% if note %}<p class="rca-note">{{ note }}</p>{% endif %}
+    {% if scope == 'foreign' %}<p>{{ record.source_market }} NMVO retains responsibility for closure.</p>{% endif %}
+  </div>
+  <div class="table-scroll"><table>
+    <thead><tr><th scope="col">Select</th><th scope="col">Reported batch</th><th scope="col">Stored batch</th><th scope="col">Open cases</th>{% if participant_findings is not none %}{% for role, label in participant_roles %}<th scope="col">{{ label }} findings</th>{% endfor %}{% endif %}</tr></thead>
+    <tbody>
+      {% for (provided, stored), group in groups %}
+      {% set flagged = namespace(count=0) %}
+      {% for item, _ in group if item.id in review_reasons %}{% set flagged.count = flagged.count + 1 %}{% endfor %}
+      <tr>
+        <td><input type="checkbox" name="batch_{{ loop.index0 }}" value="yes" aria-label="Select reported batch {{ provided or 'not supplied' }}, stored batch {{ stored or 'not supplied' }}" {{ 'disabled' if flagged.count == group|length }}></td>
+        <td>{{ provided or '—' }}{% if case_ids %}<small class="activity-row-meta"><a class="audit-link" href="/?case={{ case_ids[group[0][0].id] }}">{{ case_ids[group[0][0].id] }} →</a></small>{% endif %}</td><td>{{ stored or '—' }}</td>
+        <td>
+        {% if flagged.count %}<strong>{{ group|length - flagged.count }} eligible for batch closure</strong><small class="activity-row-meta test-review-flag">{{ flagged.count }} require individual review</small>{% endif %}
+        <details {{ 'open' if flagged.count }}><summary>{{ group|length }} {{ 'alerts' if case_ids else 'cases' }}</summary><ul>
+          {% for item, _ in group %}<li><a class="audit-link" href="/exceptions/{{ item.id }}/analysis" target="_blank" rel="noopener">{{ item.unique_alert_id }} →</a>
+          {% if item.id in review_reasons %}<strong class="activity-row-meta test-review-flag">Individual review required</strong>
+            {% for reason in review_reasons[item.id] %}<small class="activity-row-meta">{{ reason }}</small>{% endfor %}
+          {% endif %}
+          {% if participant_findings is not none %}{% for role, label in participant_roles %}
+            {% set event = participant_findings.get(item.id, {}).get(role) %}
+            <small class="activity-row-meta">{{ label }} · {{ participant.summary(role, event.data, finding_labels) if event else 'No finding' }}</small>
+          {% endfor %}{% endif %}
+          </li>{% endfor %}
+        </ul></details></td>
+        {% if participant_findings is not none %}{% for role, label in participant_roles %}
+        {% set coverage = namespace(count=0, labels=[]) %}
+        {% for item, _ in group %}
+          {% set event = participant_findings.get(item.id, {}).get(role) %}
+          {% if event %}
+            {% set coverage.count = coverage.count + 1 %}
+            {% set result = participant.summary(role, event.data, finding_labels) %}
+            {% if result not in coverage.labels %}{% set coverage.labels = coverage.labels + [result] %}{% endif %}
+          {% endif %}
+        {% endfor %}
+        <td><strong>{{ coverage.count }}/{{ group|length }}</strong>
+          {% if coverage.count < group|length %}<small class="activity-row-meta">{{ group|length - coverage.count }} missing</small>{% endif %}
+          {% if coverage.labels|length > 1 %}<small class="activity-row-meta">Different findings</small>{% endif %}
+          {% for result in coverage.labels %}<small class="activity-row-meta">{{ result }}</small>{% endfor %}
+        </td>
+        {% endfor %}{% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
+  <div class="review-body review-controls">
+    <button class="portal-button" type="submit">{{ 'Complete support for selected batches' if scope == 'foreign' else 'Close cases for selected batches' }}</button>
+    <a class="portal-button portal-button-secondary" href="/exceptions/{{ record.id }}/analysis">Cancel</a>
+  </div>
+</form>
+{% endblock %}

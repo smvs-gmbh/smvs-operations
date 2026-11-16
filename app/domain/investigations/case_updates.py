@@ -3,12 +3,13 @@
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import aliased
 
-from app.domain.investigations import access
+from app.domain.investigations import access, rca
 from app.domain.models import (
     AlertDeskAccess,
     AlertDeskCaseUpdate,
     AlertDeskEvent,
     AlertDeskGrant,
+    ExceptionReview,
     NMVSException,
 )
 
@@ -94,7 +95,9 @@ def with_status(query, role, organisation_id):
         NMVSException, event, event.id == event_id
     ).outerjoin_from(NMVSException, update, update.id == update_id)
     finding = event.data["finding"].as_string()
+    closed = rca.closed_condition()
     follow_up = and_(
+        ~closed,
         role == "end_user",
         update.id.is_not(None),
         update.follow_up.is_(True),
@@ -118,8 +121,15 @@ def with_status(query, role, organisation_id):
             participant_hold(role, organisation_id),
         ),
     )
-    open_case = or_(event.id.is_(None), finding == "investigating", follow_up)
-    return query.add_columns(event, update, held, follow_up), finding, held, open_case
+    open_case = and_(
+        ~closed, or_(event.id.is_(None), finding == "investigating", follow_up)
+    )
+    return (
+        query.add_columns(event, update, held, follow_up, closed),
+        finding,
+        held,
+        open_case,
+    )
 
 
 def label(finding):
@@ -142,6 +152,7 @@ def public_progress(session, record, role, organisation_id, latest):
     update = latest_update(session, record)
     instruction = update.pack_instruction if update else "none"
     stale = bool(update and update.source_version != record.payload_hash)
+    closed = rca.is_closed(session.get(ExceptionReview, record.id), record)
     if stale and instruction == "released":
         instruction = "hold"
     if instruction in {"none", "released"}:
@@ -158,20 +169,22 @@ def public_progress(session, record, role, organisation_id, latest):
         "instruction": instruction,
         "pack_label": PACK_LABELS[instruction],
         "follow_up": bool(
-            role == "end_user"
+            not closed
+            and role == "end_user"
             and update
             and update.follow_up
             and (not latest or latest.id <= (update.end_user_event_id or 0))
         ),
         "concluded": bool(update and update.concluded and not stale),
+        "closed": closed,
         "note": update.note if update and not stale else "",
         "unresolved": priority(session, record)
-        and not bool(update and update.concluded and not stale),
+        and not (closed or bool(update and update.concluded and not stale)),
     }
 
 
 def priority(session, record):
-    if record.error_code not in {"A2", "A3"}:
+    if record.error_code not in {"A2", "A3"} or record.source_market == "LI":
         return False
     events = [latest_finding(session, record, role) for role in ("end_user", "mah")]
     return all(event and event.data.get("finding") == "not_my_side" for event in events)
@@ -204,6 +217,8 @@ def priority_cases(namespace):
     query = select(NMVSException).where(
         NMVSException.source_namespace == namespace,
         NMVSException.error_code.in_(("A2", "A3")),
+        or_(NMVSException.source_market.is_(None), NMVSException.source_market != "LI"),
+        ~rca.closed_condition(),
     )
     for role in ("end_user", "mah"):
         result = (

@@ -4,6 +4,7 @@ import re
 from collections import Counter, defaultdict
 from datetime import date
 from decimal import Decimal, InvalidOperation
+from hashlib import sha256
 from typing import Literal
 from urllib.parse import parse_qsl, quote, unquote, urlencode
 from uuid import uuid4
@@ -70,9 +71,11 @@ from app.domain.models import (
     CRMEndUser,
     CRMMah,
     CRMMahTransfer,
+    CRMRecordNote,
     CRMSelfDeclaration,
     EndUserImportReview,
     LocalOrganisation,
+    PortalUser,
 )
 from app.integration.artifacts.storage import utcnow
 from app.portal.crm_list_preferences import (
@@ -485,6 +488,7 @@ def render_end_user(request, session, user, edit, q="", unlinked=False):
         request=request,
         name="crm_end_user_detail.html",
         context={
+            **(crm_notes_context(request, session, "end-users", user.id) if user and not edit else {}),
             "title": user.name if user else "New End User",
             "active": "crm",
             "crm_section": True,
@@ -738,6 +742,10 @@ def crm_it_supplier(request: Request, identifier: int, session: DbSession):
         request=request,
         name="crm_it_supplier_detail.html",
         context={
+            **crm_notes_context(
+                request, session, "it-suppliers", identifier,
+                supplier_key=supplier_note_key(export[3], identifier),
+            ),
             "title": supplier["IT Supplier Name"],
             "active": "crm",
             "crm_section": True,
@@ -984,6 +992,7 @@ def crm_contact_detail(
         request=request,
         name="crm_contact_detail.html",
         context={
+            **(crm_notes_context(request, session, "contacts", identifier) if edit not in CONTACT_SECTIONS else {}),
             "title": contact.display_name,
             "active": "crm",
             "crm_section": True,
@@ -1280,6 +1289,7 @@ def crm_agreement(request: Request, identifier: int, session: DbSession):
         request=request,
         name="crm_agreement_detail.html",
         context={
+            **crm_notes_context(request, session, "agreements", identifier),
             "title": agreement.contract_id,
             "active": "crm",
             "crm_section": True,
@@ -1578,6 +1588,7 @@ def crm_self_declaration(
         request=request,
         name="crm_self_declaration_detail.html",
         context={
+            **crm_notes_context(request, session, "self-declarations", identifier),
             "title": declaration.record_label,
             "active": "crm",
             "crm_section": True,
@@ -1716,6 +1727,125 @@ def crm_mah_detail(
     return render_mah(
         request, session, mah, source.raw_row_json if source else None, edit=edit
     )
+
+
+NOTE_FLAGS = {"": "No flag", "important": "Important", "review_later": "Review later"}
+NOTE_RECORDS = {
+    "mahs": (CRMMah, "mah_id", ("q", "agreement", "archived")),
+    "agreements": (CRMAgreement, "agreement_id", AGREEMENT_FILTERS),
+    "self-declarations": (CRMSelfDeclaration, "self_declaration_id", DECLARATION_FILTERS),
+    "contacts": (CRMContact, "contact_id", ("q", "archived")),
+    "end-users": (CRMEndUser, "end_user_id", ("q", "unlinked", "archived")),
+    "it-suppliers": (None, "it_supplier_key", ("q",)),
+}
+
+
+def crm_note_actor(request):
+    actor = getattr(request.state, "portal_user", None)
+    return actor if actor and (
+        getattr(actor, "is_admin", False) or getattr(actor, "is_nmvo", False)
+    ) else None
+
+
+def supplier_note_key(rows, identifier):
+    supplier = next((row for row in rows if row.id == identifier), None)
+    if supplier is None:
+        return None
+    source_id = (supplier.raw_row_json.get("Record Id") or "").strip()
+    if not source_id or sum(
+        (row.raw_row_json.get("Record Id") or "").strip() == source_id for row in rows
+    ) != 1:
+        return None
+    return sha256(source_id.encode()).hexdigest()
+
+
+def crm_notes_context(request, session, directory, identifier, *, supplier_key=None):
+    if not crm_note_actor(request):
+        return {}
+    _, field, filters = NOTE_RECORDS[directory]
+    owner = supplier_key if directory == "it-suppliers" else identifier
+    if owner is None:
+        return {"notes_unavailable": True}
+    notes = session.execute(
+        select(CRMRecordNote, PortalUser.email)
+        .join(PortalUser, PortalUser.id == CRMRecordNote.author_id)
+        .where(getattr(CRMRecordNote, field) == owner)
+        .order_by(CRMRecordNote.created_at.desc(), CRMRecordNote.id.desc())
+    ).all()
+    return {
+        "notes_url": f"/crm/{directory}/{identifier}/notes",
+        "notes_query": filter_query(request, *filters),
+        "open_notes": [row for row in notes if row[0].completed_at is None],
+        "completed_notes": [row for row in notes if row[0].completed_at is not None],
+        "note_flags": NOTE_FLAGS,
+    }
+
+
+def note_owner(session, directory, identifier):
+    if directory not in NOTE_RECORDS:
+        raise HTTPException(404, "CRM record not found.")
+    model, field, _ = NOTE_RECORDS[directory]
+    if model is None:
+        export = staged_crm_export(session, "IT Suppliers")
+        key = supplier_note_key(export[3], identifier) if export else None
+        if key is None:
+            raise HTTPException(404, "IT supplier with a unique import reference not found.")
+        return field, key
+    if session.get(model, identifier, with_for_update=True) is None:
+        raise HTTPException(404, "CRM record not found.")
+    return field, identifier
+
+
+def crm_notes_redirect(request, directory, identifier):
+    query = filter_query(request, *NOTE_RECORDS[directory][2])
+    return RedirectResponse(
+        f"/crm/{directory}/{identifier}{query}{'&' if query else '?'}actions=notes",
+        status_code=303,
+    )
+
+
+@router.post("/crm/{directory}/{identifier}/notes", include_in_schema=False)
+async def add_crm_note(request: Request, directory: str, identifier: int, session: DbSession):
+    actor = crm_note_actor(request)
+    if not actor:
+        raise HTTPException(403, "An NMVO account is required.")
+    data = await review_form(request)
+    body = data.get("text", "").strip()
+    flag = data.get("flag", "")
+    if not 1 <= len(body) <= 2000 or flag not in NOTE_FLAGS:
+        raise HTTPException(422, "Enter a note of up to 2,000 characters and choose a valid flag.")
+    field, owner = note_owner(session, directory, identifier)
+    session.add(CRMRecordNote(
+        **{field: owner}, author_id=actor.id, text=body, flag=flag or None, created_at=utcnow(),
+    ))
+    session.commit()
+    return crm_notes_redirect(request, directory, identifier)
+
+
+@router.post("/crm/{directory}/{identifier}/notes/{note_id}", include_in_schema=False)
+async def update_crm_note(
+    request: Request, directory: str, identifier: int, note_id: int, session: DbSession
+):
+    if not crm_note_actor(request):
+        raise HTTPException(403, "An NMVO account is required.")
+    data = await review_form(request)
+    field, owner = note_owner(session, directory, identifier)
+    note = session.scalar(
+        select(CRMRecordNote)
+        .where(CRMRecordNote.id == note_id, getattr(CRMRecordNote, field) == owner)
+        .with_for_update()
+    )
+    if not note:
+        raise HTTPException(404, "Note not found.")
+    match data.get("field"):
+        case "status" if data.get("completed") in (None, "yes"):
+            note.completed_at = (note.completed_at or utcnow()) if data.get("completed") == "yes" else None
+        case "flag" if data.get("flag") in NOTE_FLAGS:
+            note.flag = data["flag"] or None
+        case _:
+            raise HTTPException(422, "Choose a valid note action.")
+    session.commit()
+    return crm_notes_redirect(request, directory, identifier)
 
 
 @router.post("/crm/mahs/{identifier}/transfer", include_in_schema=False)
@@ -2008,6 +2138,7 @@ def render_mah(request, session, mah=None, source=None, *, edit="", summary_draf
             "mah": mah,
             "record_nav": navigation,
             "source": source,
+            **(crm_notes_context(request, session, "mahs", mah.id) if mah and not edit_section else {}),
         },
     )
 

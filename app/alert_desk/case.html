@@ -16,7 +16,7 @@
     {% if case %}<div><strong>{{ case.organisation }}</strong><span>{{ "MAH" if case.audience == "mah" else "End User" }}{% if case.location %} · {{ case.location }}{% endif %}</span></div>{% endif %}
   </header>
   <main>
-    {% if organisation_case %}<a class="alert-list-link" href="{{ back_url }}">← My cases</a>{% endif %}
+    {% if organisation_case %}<a class="alert-list-link" href="{{ back_url }}">← {{ back_label }}</a>{% endif %}
     <p id="access-status" role="status" {% if case and not message %}hidden{% endif %}>{{ message or 'Open your invitation link to view the case.' }}</p>
     {% if case %}
     {% set latest = case.latest or {} %}
@@ -28,8 +28,8 @@
       <div class="case-ref">{{ case.alert }}{% if case.alert_at %} · {{ case.alert_at }}{% endif %}</div>
       <div class="outcome"><span class="outcome-icon pending" aria-hidden="true">?</span><h1>{{ case.code or ("Alert" if organisation_case else "A3") }} · {{ case.label or "Pack not found" }}</h1></div>
       {% if case.code == "A3" or (not case.code and not organisation_case) %}<p class="explanation">The system could not find this serial number.</p>{% endif %}
-      {% set smvs_concluded = case.progress and case.progress.concluded %}
-      <p class="case-status" id="case-status" {% if smvs_concluded or case.locally_resolved %}data-smvs-status{% endif %}>{{ "SMVS review complete" if smvs_concluded else "Resolved locally by SMVS" if case.locally_resolved else ("Still investigating" if latest.finding == "investigating" else "Awaiting SMVS review" if latest else "Reported" if organisation_case else "Open") }}</p>
+      {% set smvs_concluded = case.progress and (case.progress.closed or case.progress.concluded) %}
+      <p class="case-status" id="case-status" {% if smvs_concluded or case.locally_resolved %}data-smvs-status{% endif %}>{{ "Closed by SMVS" if case.progress and case.progress.closed else "SMVS review complete" if smvs_concluded else "Resolved locally by SMVS" if case.locally_resolved else ("Still investigating" if latest.finding == "investigating" else "Awaiting SMVS review" if latest else "Reported" if organisation_case else "Open") }}</p>
       {% if case.progress and (case.progress.follow_up or case.progress.instruction != 'none' or case.progress.note or case.progress.concluded or case.progress.unresolved) %}
       <section class="action case-update {% if case.progress.instruction in ('hold', 'suspected') %}pack-status{% endif %}" aria-label="SMVS update">
         <h2>{{ case.progress.pack_label if case.progress.instruction != 'none' else 'SMVS update' }}</h2>
@@ -83,14 +83,14 @@
             {% else %}<p>No pack report has been shared with this case.</p>{% endif %}
           </section>
           {% endif %}
-          {% if not organisation_case or case.investigation %}
+          {% if not (case.progress and case.progress.closed) and (not organisation_case or case.investigation) %}
           <section class="action" id="guided-action" aria-labelledby="guided-title">
             <h2 id="guided-title">Your investigation</h2>
             <div id="review-state" {% if not latest %}hidden{% endif %}>
               <p role="status" id="review-message">{{ ("Findings recorded for " ~ latest.batch_count ~ " alerts.") if latest.batch_count else "Findings recorded for SMVS review." }}</p>
               <button type="button" class="button" id="amend">Update findings</button>
             </div>
-            <form id="guided-form" method="post" action="{{ request.url.path if preview else form_path }}" {% if preview %}data-preview{% endif %} {% if latest %}hidden{% endif %}>
+            <form id="guided-form" method="post" action="{{ request.url.path if preview else (findings_url or form_path) }}" {% if preview %}data-preview{% endif %} {% if latest %}hidden{% endif %}>
               {% if organisation_case %}<input type="hidden" name="basis" value="{{ case.basis }}">{% endif %}
               <input type="hidden" name="publication" value="{{ case.publication }}">
               <input type="hidden" name="submission_key" value="{{ key }}">
@@ -151,9 +151,6 @@
                 </div>
               </fieldset>
               <p class="investigation-hint" id="finding-hint">SMVS will review your finding.</p>
-              {% if not mah and case.code in ('A2', 'A3') %}
-              <label class="checkbox"><input type="checkbox" name="pack_on_hold" value="true" {% if latest.pack_on_hold and case.progress.instruction != 'released' %}checked{% endif %}> The pack is on hold</label>
-              {% endif %}
               <div class="compact-submit">
                 <button class="button primary" type="submit" value="single">Update findings</button>
                 {% if case.batch_count %}
@@ -162,7 +159,7 @@
                 </button>
                 {% endif %}
               </div>
-              {% if case.batch_count %}<p class="investigation-hint">The batch update includes this alert and matching Export alerts that are new or still under investigation by your organisation.</p>{% endif %}
+              {% if case.batch_count %}<p class="investigation-hint">{% if a7 %}Applies to this alert and matching Export alerts that are new or still under investigation.{% else %}Applies to matching A2 alerts for this product, batch and location that are new or still under investigation.{% if not mah %} The pack comparison is saved for this alert only.{% endif %}{% endif %}</p>{% endif %}
               <p class="receipt" id="findings-status" role="status"></p>
             </form>
           </section>

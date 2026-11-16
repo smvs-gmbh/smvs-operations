@@ -6,6 +6,7 @@ from sqlalchemy import (
     JSON,
     BigInteger,
     Boolean,
+    CheckConstraint,
     Date,
     DateTime,
     ForeignKey,
@@ -657,6 +658,43 @@ class CRMMah(Base):
     __mapper_args__: ClassVar[dict] = {"version_id_col": version}
 
 
+DOMAIN_TABLES.add("crm_record_notes")
+
+CRM_NOTE_OWNERS = (
+    "mah_id", "agreement_id", "self_declaration_id", "contact_id", "end_user_id", "it_supplier_key",
+)
+
+
+class CRMRecordNote(Base):
+    __tablename__ = "crm_record_notes"
+    __table_args__ = (
+        CheckConstraint("flag IN ('important', 'review_later')", name="ck_crm_record_note_flag"),
+        CheckConstraint(
+            " + ".join(f"(CASE WHEN {owner} IS NULL THEN 0 ELSE 1 END)" for owner in CRM_NOTE_OWNERS)
+            + " = 1",
+            name="ck_crm_record_note_owner",
+        ).ddl_if(
+            callable_=lambda ddl, target, bind, **kw: kw["dialect"].name not in {"mysql", "mariadb"}
+        ),
+        *(Index(f"ix_crm_record_notes_{owner}_status", owner, "completed_at") for owner in CRM_NOTE_OWNERS),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    mah_id: Mapped[int | None] = mapped_column(ForeignKey("crm_mahs.id", ondelete="CASCADE"))
+    agreement_id: Mapped[int | None] = mapped_column(ForeignKey("crm_agreements.id", ondelete="CASCADE"))
+    self_declaration_id: Mapped[int | None] = mapped_column(
+        ForeignKey("crm_self_declarations.id", ondelete="CASCADE")
+    )
+    contact_id: Mapped[int | None] = mapped_column(ForeignKey("crm_contacts.id", ondelete="CASCADE"))
+    end_user_id: Mapped[int | None] = mapped_column(ForeignKey("crm_end_users.id", ondelete="CASCADE"))
+    it_supplier_key: Mapped[str | None] = mapped_column(String(64))
+    author_id: Mapped[int] = mapped_column(ForeignKey("portal_users.id"))
+    text: Mapped[str] = mapped_column(Text)
+    flag: Mapped[str | None] = mapped_column(String(20))
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
 class CRMContact(Base):
     __tablename__ = "crm_contacts"
 
@@ -1029,3 +1067,31 @@ class AlertDeskCaseUpdate(Base):
     concluded: Mapped[bool] = mapped_column(Boolean)
     note: Mapped[str] = mapped_column(Text)
     notification: Mapped[str] = mapped_column(String(120))
+
+
+DOMAIN_TABLES.update({"alert_desk_settings", "alert_desk_response_requests"})
+
+
+class AlertDeskSettings(Base):
+    __tablename__ = "alert_desk_settings"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    response_days: Mapped[int] = mapped_column(Integer)
+
+
+class AlertDeskResponseRequest(Base):
+    __tablename__ = "alert_desk_response_requests"
+    __table_args__ = (
+        Index("ix_alert_desk_response_case_role", "exception_id", "role", "source_version"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    exception_id: Mapped[int] = mapped_column(ForeignKey("nmvs_exceptions.id"))
+    role: Mapped[str] = mapped_column(String(12))
+    crm_organisation_id: Mapped[int] = mapped_column(Integer)
+    source_version: Mapped[str] = mapped_column(String(64))
+    after_event_id: Mapped[int] = mapped_column(Integer)
+    actor_id: Mapped[int] = mapped_column(ForeignKey("portal_users.id"))
+    requested_at: Mapped[datetime] = mapped_column(DateTime)
+    due_on: Mapped[date] = mapped_column(Date)
+    reminded_on: Mapped[date | None] = mapped_column(Date)

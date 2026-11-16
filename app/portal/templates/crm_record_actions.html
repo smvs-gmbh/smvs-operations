@@ -1,0 +1,27 @@
+{% macro record_actions(record_name) %}
+<section class="panel review-body" data-record-actions data-crm-actions="{{ record_name }}">
+<details class="exception-actions crm-actions"{% if request.query_params.get('actions') == 'notes' %} open{% endif %}>
+<summary><strong>Actions</strong></summary>
+{% if notes_url %}{% include "crm_record_notes.html" %}{% endif %}
+{% if notes_unavailable %}<p class="subtle crm-actions-message">Notes require a unique IT supplier import reference.</p>{% endif %}
+{{ caller() }}
+</details>
+</section>
+{% endmacro %}
+
+{% macro archive_action(url, record, label) %}
+<form method="post" action="{{ url }}">
+<input type="hidden" name="version" value="{{ record.version }}">
+<button class="crm-action-row crm-action-button" name="command" value="{{ 'restore' if record.archived_at else 'archive' }}" type="submit">{{ 'Restore' if record.archived_at else 'Archive' }} {{ label }} <span aria-hidden="true">→</span></button>
+</form>
+{% endmacro %}
+
+{% macro deletion_action(directory, identifier) %}
+{% if request.state.portal_user and request.state.portal_user.is_admin %}
+<a class="crm-action-row crm-action-delete" href="/crm/{{ directory }}/{{ identifier }}/delete">Review permanent deletion <span aria-hidden="true">→</span></a>
+{% endif %}
+{% endmacro %}
+
+{% macro jump_action(target, label) %}
+<a class="crm-action-row crm-action-link" href="#{{ target }}" data-action-jump>{{ label }} <span aria-hidden="true">→</span></a>
+{% endmacro %}

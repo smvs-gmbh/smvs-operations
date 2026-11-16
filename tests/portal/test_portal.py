@@ -7,6 +7,8 @@ from sqlalchemy.orm import sessionmaker
 from app.core.db.models import Base, ImportMutex
 from app.core.db.session import GuardedSession, get_session
 from app.domain.mapping import MUTEX, publish
+from app.domain.models import CRMAgreement, CRMMah
+from app.integration.artifacts.storage import utcnow
 from app.portal.routes import router
 from tests.domain.test_mapping import datasets, seed
 
@@ -62,6 +64,49 @@ def test_portal_empty_state_and_root_redirect(portal):
     client, _ = portal
     assert client.get("/").status_code == 200
     assert "No product/batch dataset" in client.get("/products").text
+    assert "No product/batch dataset" in client.get("/catalogue").text
+
+
+def test_catalogue_counts_packs_once_and_resolves_only_unique_crm_matches(portal):
+    client, factory = portal
+    data = datasets()
+    data["Batches"].append(
+        {**data["Batches"][0], "Batch Id": "Lot-002", "Batch State": "Expired"}
+    )
+    publish(factory, *seed(factory, data), "synthetic-nmvs")
+    with factory.begin() as session:
+        mah = CRMMah(
+            name="CRM name",
+            gln="1234567890128",
+            created_at=utcnow(),
+            updated_at=utcnow(),
+            contract_status="unknown",
+        )
+        agreement = CRMAgreement(
+            contract_id="TEST-1", contractor=mah.name, status="Signed", mahs=[mah]
+        )
+        session.add(agreement)
+    page = client.get("/catalogue")
+    assert page.status_code == 200
+    assert 'href="/catalogue" aria-current="page"' in page.text
+    assert "Schweizer Inhaberin" in page.text and "WRONG NMVS MAH" not in page.text
+    assert "<span>Reported batches</span><strong>2</strong>" in page.text
+    assert "<span>Reported packs</span><strong>100</strong>" in page.text
+    assert "<td>Signed</td>" in page.text
+    with factory.begin() as session:
+        session.query(CRMAgreement).one().status = "Terminated"
+    assert "<td>No signed agreement</td>" in client.get("/catalogue").text
+    with factory.begin() as session:
+        session.add(
+            CRMMah(
+                name="Duplicate CRM record",
+                gln="1234567890128",
+                created_at=utcnow(),
+                updated_at=utcnow(),
+                contract_status="unknown",
+            )
+        )
+    assert "<td>Unassigned</td>" in client.get("/catalogue").text
 
 
 def test_swiss_only_names_search_filter_and_detail(portal):

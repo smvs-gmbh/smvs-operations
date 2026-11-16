@@ -8,7 +8,7 @@
 {% block content %}
 <nav class="detail-tabs" aria-label="Invitation audience">
   <a href="?role=end_user" {% if role == 'end_user' %}class="active" aria-current="page"{% endif %}>End User</a>
-  <a href="?role=mah" {% if role == 'mah' %}class="active" aria-current="page"{% endif %}>MAH</a>
+  {% if record.source_market != 'LI' %}<a href="?role=mah" {% if role == 'mah' %}class="active" aria-current="page"{% endif %}>MAH</a>{% endif %}
 </nav>
 <p><a class="audit-link" href="/workflows/alert-desk">Manage organisation invitations →</a></p>
 <section class="panel review-body">
@@ -21,7 +21,7 @@
 </section>
 <section class="panel review-body review-form" id="smvs-update">
   <h2>SMVS case update</h2>
-  <p>End User · {{ role_findings.end_user }}<br>MAH · {{ role_findings.mah }}</p>
+  <p>End User · {{ role_findings.end_user }}{% if record.source_market != 'LI' %}<br>MAH · {{ role_findings.mah }}{% endif %}</p>
   {% if case_priority %}<p class="notice"><strong>Priority review</strong> · Both participants report no cause on their side.</p>{% endif %}
   <form method="post" action="/exceptions/{{ identifier }}/invitations/case-update">
     <input type="hidden" name="basis" value="{{ record.payload_hash }}">
@@ -36,7 +36,7 @@
         {% endfor %}
       </select></label>
       <label><input type="checkbox" name="follow_up" value="yes"> Request an End User update</label>
-      <label><input type="checkbox" name="concluded" value="yes" {% if case_update and case_update.concluded %}checked{% endif %}> SMVS review complete</label>
+      {% if can_conclude %}<label><input type="checkbox" name="concluded" value="yes" {% if case_update and case_update.concluded %}checked{% endif %}> SMVS review complete</label>{% endif %}
     </div>
     <label>Message for participants<textarea name="note" rows="3" maxlength="1500" required>{{ case_update.note if case_update else '' }}</textarea></label>
     <p class="subtle">Record the applicable pack-handling instructions here. A request for an update, a change in pack instruction or completion of SMVS review notifies the End User.</p>

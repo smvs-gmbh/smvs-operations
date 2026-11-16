@@ -44,7 +44,7 @@ export function rightToolbox({toolbox, opener, close, backdrop, workspace, initi
         if (toolbox.hidden) return;
         if (event.key === 'Escape') { event.preventDefault(); hide(); }
         if (event.key === 'Tab' && overlay.matches) {
-            const focusable = Array.from(toolbox.querySelectorAll('button, input, select, textarea, a[href]'))
+            const focusable = Array.from(toolbox.querySelectorAll('button, input, select, textarea, a[href], details > summary'))
                 .filter(node => !node.disabled && node.tabIndex !== -1 && node.getClientRects().length);
             const first = focusable[0], last = focusable[focusable.length - 1];
             if (event.shiftKey && (document.activeElement === first || !toolbox.contains(document.activeElement))) {

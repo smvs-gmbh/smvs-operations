@@ -43,7 +43,7 @@
         <thead><tr><th scope="col">Alert</th><th scope="col">Reported at</th><th scope="col">Type</th><th scope="col">Our finding</th><th scope="col">Pack instructions</th></tr></thead>
         <tbody>
         {% for row in listing.rows %}
-        <tr><td class="name-cell"><a href="/alerts/{{ row.id }}?{{ list_query }}">{{ row.alert }} →</a></td><td>{{ row.at }}</td><td>{{ row.type or '—' }} · {{ row.label }}</td><td>{{ row.finding }}{% if row.follow_up %}<br><strong>SMVS requests an update</strong>{% endif %}</td>
+        <tr><td class="name-cell"><a href="/alerts/{{ row.id }}?{{ list_query }}">{{ row.alert }} →</a></td><td>{{ row.at }}</td><td>{{ row.type or '—' }} · {{ row.label }}</td><td>{{ row.finding }}{% if row.closed %}<br><strong>Closed by SMVS</strong>{% elif row.follow_up %}<br><strong>SMVS requests an update</strong>{% endif %}</td>
         <td>{% if row.pack_label %}<strong class="pack-status">{{ row.pack_label }}</strong>{% else %}—{% endif %}</td></tr>
         {% else %}
         <tr><td colspan="5" class="empty-state">No cases match this view.</td></tr>

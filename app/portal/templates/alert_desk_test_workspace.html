@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% import 'participant_finding.html' as participant %}
+{% block table_views %}{% endblock %}
+{% macro organisation_names(group, field) %}
+  {% set names = group|map(attribute=field)|reject('none')|unique|list %}
+  {% if names|length > 1 %}{{ names|length }} organisations
+  {% else %}{{ names|first|default('Unassigned') }}{% endif %}
+{% endmacro %}
+{% block heading %}
+<div class="heading"><div><div class="eyebrow">LOCAL TEST WORKSPACE</div><h1>Alert Desk test cases</h1></div></div>
+{% endblock %}
+{% block content %}
+<section class="panel">
+  <div class="panel-heading">
+    <h2>{{ 'Alerts covered by the batch finding' if batch_source else 'Test cases' }}</h2>
+    <form method="post" action="/reset"><button class="portal-button portal-button-secondary" name="reset" value="yes">Reset all test data</button></form>
+  </div>
+  {% if batch_source or mah_finding %}<div class="review-body"><a class="audit-link" href="/">← All test cases</a></div>{% endif %}
+  <div class="table-scroll">
+    <div class="test-case-list">
+      <div class="test-case-columns" aria-hidden="true">
+        <span>Case ID</span><span>Case status</span><span>Date (UTC)</span><span>Alert</span><span>End User</span><span>MAH</span>
+      </div>
+      {% set visible = namespace(count=0) %}
+      {% for case_id, group in groups.items() %}
+        {% set matching = namespace(rows=[]) %}
+        {% for alert in group if alert.id in visible_ids %}
+          {% set mah = findings.get(alert.id, {}).get('mah') %}
+          {% set label = participant.summary('mah', mah.data, finding_labels) if mah else 'No finding' %}
+          {% if not mah_finding or mah_finding == label %}{% set matching.rows = matching.rows + [alert] %}{% endif %}
+        {% endfor %}
+        {% if matching.rows %}
+          {% set visible.count = visible.count + 1 %}
+          {% set dates = group|map(attribute='date')|reject('none')|list %}
+          <details class="test-case-group" {{ 'open' if expanded_case == case_id or batch_source }}>
+            <summary class="test-case-columns">
+              <strong>{{ case_id }}</strong>
+              <span>{{ 'Open' if group|rejectattr('closed')|list else 'Closed' }}</span>
+              <span>{{ dates|min if dates else '—' }}</span>
+              <span>
+                {% for code in group|map(attribute='code')|unique %}
+                  {{ code or 'Unclassified' }}{% if code in labels %} · {{ labels[code][0] }}{% endif %}{% if not loop.last %}<br>{% endif %}
+                {% endfor %}
+                {% if group|length > 1 %}<small>{{ group|length }} alerts</small>{% endif %}
+              </span>
+              <span>{{ organisation_names(group, 'end_user') }}</span>
+              <span>{{ organisation_names(group, 'mah') }}</span>
+            </summary>
+            <table class="test-case-alerts">
+              <thead><tr><th scope="col">Alert ID</th><th scope="col">Date (UTC)</th><th scope="col">End User</th><th scope="col">MAH</th></tr></thead>
+              <tbody>
+                {% for alert in matching.rows %}
+                <tr id="alert-{{ alert.id }}">
+                  <th scope="row">
+                    <a class="audit-link" href="/exceptions/{{ alert.id }}/analysis">{{ alert.alert_id }} →</a>
+                    {% if alert.id in review_reasons and not alert.closed %}<small class="activity-row-meta test-review-flag">Individual review required</small>{% endif %}
+                  </th>
+                  <td>{{ alert.date or '—' }}</td>
+                  <td>{{ alert.end_user or 'Unassigned' }}</td>
+                  <td>{{ alert.mah or 'Unassigned' }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </details>
+        {% endif %}
+      {% endfor %}
+      {% if not visible.count %}<p class="review-body">No test cases match this selection.</p>{% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

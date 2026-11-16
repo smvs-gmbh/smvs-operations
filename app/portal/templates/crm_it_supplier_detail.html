@@ -1,14 +1,20 @@
 {% extends 'base.html' %}
 {% from 'macros.html' import record_bar %}
+{% from "crm_record_actions.html" import record_actions with context %}
 {% block heading %}
 {{ record_bar(record_nav) }}
 <div class="heading"><div><div class="eyebrow">CRM · IT Supplier</div><h1>{{ supplier['IT Supplier Name'] }}</h1></div></div>
 {% endblock %}
 {% block content %}
+<div class="record-detail-workspace" data-record-workspace><div class="record-detail-content">
 {% macro field(label, value) %}
 <div><dt>{{ label }}</dt><dd>{{ value or '—' }}</dd></div>
 {% endmacro %}
 <div class="review-form">
+{% if notes_url or notes_unavailable %}
+{% call record_actions(supplier['IT Supplier Name']) %}
+{% endcall %}
+{% endif %}
 <section class="panel review-body review-form">
 <h2>General</h2>
 <dl class="mah-values">
@@ -40,4 +46,5 @@
 <p><a href="/crm/imports">Review candidate links →</a></p>
 </section>
 </div>
+</div></div>
 {% endblock %}

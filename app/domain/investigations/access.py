@@ -6,7 +6,7 @@ from datetime import timedelta
 
 from sqlalchemy import and_, case, func, or_, select
 
-from app.domain.investigations import audience, pilot
+from app.domain.investigations import audience, pilot, rca
 from app.domain.models import (
     AlertDeskAccess,
     AlertDeskEvent,
@@ -160,7 +160,10 @@ def cases(session, role, crm, namespace):
                     NMVSException.source_market.in_(("CH", "LI")),
                     NMVSException.organisation_id == org.source_organisation_id,
                     or_(
-                        NMVSException.source_location_id.is_(None),
+                        and_(
+                            NMVSException.source_market == "CH",
+                            NMVSException.source_location_id.is_(None),
+                        ),
                         NMVSException.source_location_id.in_(locations),
                     ),
                 ),
@@ -192,7 +195,10 @@ def cases(session, role, crm, namespace):
             func.max(SAIHolder.is_observed) == 1,
         )
     )
-    return statement.where(NMVSException.gtin14.in_(packages))
+    return statement.where(
+        NMVSException.gtin14.in_(packages),
+        or_(NMVSException.source_market.is_(None), NMVSException.source_market != "LI"),
+    )
 
 
 def export_cohort(session, record, *, end_user_id=None, lock=False):
@@ -222,17 +228,42 @@ def export_cohort(session, record, *, end_user_id=None, lock=False):
 
 
 def batch_targets(session, role, crm, record, *, lock=False):
-    """Return pending alerts within the participant's reviewed Export cohort."""
-    cohort = export_cohort(
-        session, record, end_user_id=crm.id if role == "end_user" else None, lock=lock
+    """Return pending alerts with the same actionable batch context."""
+    query = cases(session, role, crm, record.source_namespace).where(
+        NMVSException.id != record.id,
+        NMVSException.error_code == record.error_code,
+        ~rca.closed_condition(),
     )
-    if not cohort:
-        return []
-    query = (
-        cases(session, role, crm, record.source_namespace)
-        .where(
-            NMVSException.id != record.id,
-            NMVSException.error_code == "A7",
+    if record.error_code == "A2":
+        operation = (record.evidence or {}).get("attemptedOperation")
+        if not (
+            record.source_market in {"CH", "LI"}
+            and (record.source_market != "LI" or role == "end_user")
+            and record.is_intermarket in {0, 1}
+            and record.organisation_id
+            and record.source_location_id
+            and record.gtin14
+            and record.provided_batch
+            and operation
+        ):
+            return []
+        query = query.where(
+            NMVSException.source_market == record.source_market,
+            NMVSException.organisation_id == record.organisation_id,
+            NMVSException.source_location_id == record.source_location_id,
+            NMVSException.gtin14 == record.gtin14,
+            NMVSException.provided_batch == record.provided_batch,
+            NMVSException.is_intermarket == record.is_intermarket,
+            NMVSException.business_process == record.business_process,
+            NMVSException.evidence["attemptedOperation"].as_string() == operation,
+        )
+    else:
+        cohort = export_cohort(
+            session, record, end_user_id=crm.id if role == "end_user" else None, lock=lock
+        )
+        if not cohort:
+            return []
+        query = query.where(
             NMVSException.evidence["attemptedOperation"].as_string() == "EXPORTED",
             NMVSException.source_market == cohort.source_market,
             NMVSException.source_location_id == cohort.source_location_id,
@@ -243,8 +274,7 @@ def batch_targets(session, role, crm, record, *, lock=False):
             NMVSException.organisation_id.is_(None),
             NMVSException.business_process == "National System Intermarket",
         )
-        .order_by(NMVSException.id)
-    )
+    query = query.order_by(NMVSException.id)
     targets = session.scalars(query.with_for_update() if lock else query).all()
     if not targets:
         return []

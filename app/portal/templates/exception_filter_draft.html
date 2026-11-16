@@ -8,7 +8,7 @@
 {% if filters %}
 <p>Check these filters before opening the local Exceptions results.</p>
 <dl class="mah-values">
-{% for key, label in [('start', 'From (UTC)'), ('end', 'To (UTC)'), ('error', 'Alert code'), ('market', 'Requesting market'), ('work_status', 'Work status'), ('q', 'Search term')] %}
+{% for key, label in [('start', 'From (UTC)'), ('end', 'To (UTC)'), ('error', 'Alert code'), ('market', 'Requesting market'), ('work_status', 'Case status'), ('q', 'Search term')] %}
 <div><dt>{{ label }}</dt><dd>{{ filters[key] or '—' }}</dd></div>
 {% endfor %}
 </dl>

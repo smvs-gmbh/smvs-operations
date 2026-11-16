@@ -14,8 +14,8 @@ from app.alert_desk.schema import Capability, Findings
 from app.connect.protocol import PRIVATE_HEADERS
 from app.core.config import get_settings
 from app.core.db.session import SessionFactory
-from app.domain.investigations import access_api, pilot
-from app.domain.models import AlertDeskEvent
+from app.domain.investigations import access_api, pilot, rca
+from app.domain.models import AlertDeskEvent, ExceptionReview, NMVSException
 
 
 def create_app(sessions, secret):
@@ -71,6 +71,8 @@ def create_app(sessions, secret):
     def read(token: Annotated[str, Depends(session_token)]):
         with sessions() as session:
             grant = require_grant(session, token)
+            record = session.get(NMVSException, grant.exception_id)
+            closed = rca.is_closed(session.get(ExceptionReview, record.id), record)
             latest = session.scalar(
                 select(AlertDeskEvent)
                 .where(
@@ -88,11 +90,19 @@ def create_app(sessions, secret):
                     if key != "recipient"
                 },
                 "latest": latest.data if latest else None,
+                "progress": {"closed": closed},
             }
 
     @app.post("/findings")
     def submit(body: Findings, token: Annotated[str, Depends(session_token)]):
         with sessions() as session, session.begin():
+            initial = require_grant(session, token)
+            record = session.get(
+                NMVSException,
+                initial.exception_id,
+                with_for_update=True,
+                populate_existing=True,
+            )
             grant = require_grant(session, token, lock=True)
             if (
                 grant.id != body.publication
@@ -126,6 +136,9 @@ def create_app(sessions, secret):
                     409, "Reload the case before submitting a new finding."
                 )
             if not previous:
+                review = session.get(ExceptionReview, record.id, with_for_update=True)
+                if rca.is_closed(review, record):
+                    raise HTTPException(409, "SMVS has closed this case.")
                 pilot.append_event(
                     session, grant, "Findings submitted", data=data, key=key
                 )

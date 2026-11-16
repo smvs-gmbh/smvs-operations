@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy import select
 
-from app.domain.investigations import audience
+from app.domain.investigations import audience, rca
 from app.domain.investigations.preview import OPERATIONS, utc
 from app.domain.models import (
     AlertDeskEvent,
@@ -26,32 +26,39 @@ def digest(token):
     return hashlib.sha256(token.encode()).hexdigest()
 
 
+def has_identifier_to_check(record):
+    if record.error_code == "A2":
+        return bool(record.provided_batch)
+    return record.error_code == "A3" and bool(record.serial_number)
+
+
 def in_scope(record, organisation, location):
     return bool(
         record
-        and record.error_code in {"A2", "A3"}
-        and record.source_market in {"CH", "LI"}
+        and record.source_market == "CH"
         and record.is_intermarket == 0
-        and (
-            record.provided_batch if record.error_code == "A2" else record.serial_number
-        )
-        and organisation
-        and location
-        and organisation.is_observed
-        and location.is_observed
-        and organisation.source_namespace
-        == location.source_namespace
-        == record.source_namespace
-        and organisation.source_organisation_id == record.organisation_id
-        and location.source_location_id == record.source_location_id
-        and location.organisation_id == organisation.id
+        and has_identifier_to_check(record)
+        and rca.confirmed_location(organisation, location, record)
     )
 
 
 def investigation_for(record, organisation, location, role):
+    market = record.source_market
+    if market == "LI" and (
+        role != "end_user"
+        or record.is_intermarket != 1
+        or not rca.confirmed_location(organisation, location, record)
+    ):
+        return None
     if record.error_code == "A7":
         return "mah_a7" if role == "mah" else "end_user_a7"
-    if in_scope(record, organisation, location):
+    if not has_identifier_to_check(record):
+        return None
+    if in_scope(record, organisation, location) or (
+        market in {"CH", "LI"}
+        and record.is_intermarket == 1
+        and rca.confirmed_location(organisation, location, record)
+    ):
         return record.error_code.lower()
     return None
 
@@ -163,6 +170,7 @@ def publication(
         review
         and review.status == "resolved"
         and review.basis_payload_hash == record.payload_hash
+        and (review.resolution or {}).get("basis") != "foreign_support_complete"
     )
     return {
         "audience": role,

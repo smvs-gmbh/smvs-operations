@@ -49,12 +49,16 @@ NMVO assessment and final decision remain distinguishable.
 | MAH / OBP | Product, batch, serialisation and upload findings | Contribute through the verified Hub workflow or a later permitted channel |
 | NMVO | Reconcile findings, ask questions, assess cause and propose resolution | Make and record the final closure decision |
 
-**Only the NMVO closes the Alert in this proposed workflow.** A participant's
+**Only the NMVO closes the Alert through the local pilot workflow.** A participant's
 “Ready for closure” is an attributed response to a particular closure proposal,
 not an Alert status change. Material changes require renewed confirmation from
 the relevant participants. Silence is not consent. The NMVO determines whose
 input is necessary and records the decision and any unresolved disagreement;
 a universal veto by every participant is not assumed.
+
+For the later Hub integration, see the
+[agreed rule for automatic local Case closure](NAMS-Architecture-Proposal.md#automatic-local-closure-from-ams-hub)
+when AMS Hub confirms closure.
 
 Internal notes and shared information have explicit, separate visibility. Neither
 opening a case nor adding a contact publishes internal notes or full audit reports.

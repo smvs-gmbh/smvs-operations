@@ -62,7 +62,7 @@ class Findings(BaseModel):
             audience != "end_user" or alert_code not in {"A2", "A3"}
         ):
             return False
-        if self.batch_revision and alert_code != "A7":
+        if self.batch_revision and (alert_code not in {"A2", "A7"} or self.pack_on_hold):
             return False
         if alert_code == "A7":
             return not (

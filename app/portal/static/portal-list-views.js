@@ -82,7 +82,19 @@ for(const [index,table] of [...document.querySelectorAll('main .table-scroll > t
             const numeric=Number(value.replace(/[’,\s']/g,'')),n=Number(expected);
             return c.operator==='equals'?numeric===n:c.operator==='less_than'?numeric<n:numeric>n;
         })).filter(entry=>!form.querySelector('[name="q"]')?.value||entry.row.textContent.toLowerCase().includes(form.querySelector('[name="q"]').value.toLowerCase()));
-        if(config.sort) matched.sort((a,b)=>cellValue(a,config.sort).localeCompare(cellValue(b,config.sort),undefined,{numeric:true})*(config.direction==='desc'?-1:1));
+        if(config.sort) {
+            const numeric = schema.find(field => field.key === config.sort)?.type === 'number';
+            const numberValue = value => value && value !== '—' ? Number(value.replace(/[’,\s']/g, '')) : NaN;
+            const direction = config.direction === 'desc' ? -1 : 1;
+            matched.sort((a,b) => {
+                const left = cellValue(a,config.sort), right = cellValue(b,config.sort);
+                if (!numeric) return left.localeCompare(right,undefined,{numeric:true}) * direction;
+                const first = numberValue(left), second = numberValue(right);
+                if (Number.isNaN(first)) return Number.isNaN(second) ? 0 : 1;
+                if (Number.isNaN(second)) return -1;
+                return (first - second) * direction;
+            });
+        }
         for(const entry of original)entry.row.hidden=!matched.includes(entry);
         for(const entry of matched) table.tBodies[0].append(entry.row);
         result.textContent=`${matched.length} of ${original.length} rows in this table’s current report scope`;

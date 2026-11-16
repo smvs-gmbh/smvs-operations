@@ -96,10 +96,22 @@ explicitly; do not derive investigation requirements from product screenshots.
    records its decision and rationale. A prevention task can remain open after
    local alert work is resolved. Reopening retains prior contributions/decisions.
 
-Pilot cases must have a reviewed Swiss End-user/location link. Foreign-initiated
-IMT cases or uncertain market responsibility stay in internal triage; they are not
-routed to a Swiss End-user by guessing from a batch, market label or company name.
-Local completion of such work remains distinct from responsible-market closure.
+Participant routing requires a reviewed End-user and location link. Cases with
+uncertain market responsibility stay in internal triage. Use the rules below
+for foreign-initiated and Liechtenstein intermarket cases.
+
+### Intermarket responsibility and investigation scope
+
+| Scenario | SMVS role | Alert Desk and RCA |
+| --- | --- | --- |
+| A Swiss pack is scanned abroad and an alert is raised | The NMVO responsible for the market that initiated the transaction leads the investigation and owns closure. SMVS can support it with Swiss-side evidence or findings. | Show the responsible NMVO and the SMVS support scope in Operations. SMVS may mark its support work complete locally. The responsible NMVO decides whether to close the alert. |
+| An EU pack is scanned by an End User in Liechtenstein and an alert is raised | SMVS investigates the Liechtenstein End-user side. This is an IMT case because Liechtenstein scans EU packs. | Request findings from the linked Liechtenstein End User and summarise them in the RCA. The SMVS investigation scope is End User only. MAH feedback is out of scope and is not counted as an outstanding response. |
+
+Determine responsibility from the initiating transaction and the confirmed
+location. Keep it separate from the product market, the IMT flag and the final
+**Origin** of the cause. If the initiating market or location is unclear, review
+the case before routing it or offering closure. Apply the same responsibility
+and participant-scope checks to each case in a batch closure.
 
 ## 4. A simple End-user page
 
@@ -941,16 +953,48 @@ feedback. SMVS retains closure.
 | MAH A2 / both A3 examples | Retain upload, distribution and serial-acceptance checks. A negative result allows an explicit own-side finding or an interim update. |
 | Operations participant preview and earlier Connect design variants | The Operations preview shows read-only guidance. The earlier Connect alternatives are retained for design comparison. The agreed response rules apply to the two-column Connect form. |
 
-### Origin at local resolution
+### Root cause analysis and closure in Operations
 
-At final resolution, the NMVO records **Origin** using the four agreed values
-**End User**, **MAH**, **NMVS** and **Other**. Keep this separate from the technical
-cause, participant assessment and reviewer. For Other, allow a short explanation
-such as IT Supplier. An unestablished cause stays unassigned while review remains
-open or is deferred. Record the choice with the reason, reviewer, time and evidence
-in the local decision audit. Confirm any future AMS Hub mapping separately.
+The RCA tab shows the latest participant finding, its date and reported CAPA
+status per applicable role. Details show the retained answers and comments.
+The Pack Audit Trail and Upload History stay available through links. Packshot
+capture in the design preview is simulated and needs a live evidence upload
+before a submitted image can appear in the RCA.
 
-The next design increment is a synthetic alert overview linked to the agreed
-detail view, followed by the invitation/passkey and access review before live
-participant data. In Operations, add the four-value Origin to the existing
-resolution flow and preview the deferred A2/A3 rule against historical cases.
+The NMVO chooses **Origin** as **End User**, **MAH**, **Both**, **NMVS**,
+**Other** or **Undetermined** and may add a closing note. Liechtenstein's
+End-user-only review offers **End User** and **Undetermined**. The audit records
+the decision, reviewer, time and IDs of the latest applicable findings.
+
+**Close case** publishes the closure status to the Alert Desk and retains
+any existing pack-handling instruction. For foreign-led cases, **Mark support
+complete** records the end of SMVS support in Operations. NMVS and AMS Hub
+closure remain external to this workflow.
+
+**Close cases by batch** previews counts and case links for matching open
+cases. Candidates share product, error, operation, initiating market,
+location, organisation and business process. Reported and stored batch
+values identify each selectable group. The preview excludes cases with a
+pending follow-up. Confirmation rechecks the cases and findings before saving
+the selected decisions together.
+
+### Response deadlines and reminders
+
+In **Settings → Alert Desk**, administrators set the response deadline for new
+requests. The default is three working days, counted Monday to Friday in
+Europe/Zurich. Operations retains the calculated date on each individual
+End User or MAH request. An organisation invitation does not start a deadline.
+A finding or progress update submitted after the request satisfies it. SMVS can
+request a new follow-up. Liechtenstein cases only allow End User requests.
+
+**Exceptions → Configure view** supports **Case status**, **Waiting for**,
+**Response due** and **Response status**. To review MAH deadlines, combine
+**Response party = MAH** with **Response status = Overdue** under **Report scope**.
+Response filters consider all source alert dates. The RCA shows each party's own
+deadline and whether a contact or invitation is missing.
+
+Use **Actions → Review overdue reminders** on a selection of cases to review one
+message per eligible Alert SPOC address. Sending is explicit and confined to
+the local test mailbox. The preview reports skipped cases, and a request
+successfully reminded today is excluded from another reminder on the same day.
+Participants need a valid Alert Desk invitation or session to open case links.

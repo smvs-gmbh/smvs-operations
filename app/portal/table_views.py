@@ -34,7 +34,7 @@ SQL_KEYS = {
 }
 
 
-def sql_fields(key):
+def sql_fields(key, *, response_party=""):
     if key == "product-batches":
         fields = sql_fields("batches")
         return [fields[0], *fields[2:]]
@@ -110,7 +110,15 @@ def sql_fields(key):
     )
     work_status = case(
         (R.basis_payload_hash != E.payload_hash, "Needs review"),
+        (R.status == "to_do", "To do"),
         else_=func.coalesce(R.status, "open"),
+    )
+    from app.domain.investigations import responses
+
+    response_columns = (
+        responses.columns(responses.today(), response_party)
+        if key == "exceptions"
+        else ()
     )
     return {
         "registrations": [
@@ -193,6 +201,12 @@ def sql_fields(key):
                     E.source_location_id,
                 ),
                 "text",
+            ),
+            *(
+                (column, kind)
+                for column, kind in zip(
+                    response_columns, ("text", "date", "text"), strict=False
+                )
             ),
         ],
     }[key]
@@ -515,9 +529,23 @@ def prepare(request, session, key):
             )
 
 
+def has_exception_response_conditions(request, session):
+    _, config = resolve(request, session, "exceptions")
+    return (
+        any(
+            isinstance(condition, dict) and condition.get("field") in {"c6", "c7", "c8"}
+            for condition in config.get("conditions", [])
+        )
+        if isinstance(config.get("conditions"), list)
+        else False
+    )
+
+
 def apply_sql(request, session, statement, key):
     _, config = resolve(request, session, key)
-    expressions = sql_fields(key)
+    expressions = sql_fields(
+        key, response_party=request.query_params.get("response_party", "")
+    )
     fields = {
         f"c{i}": {"key": f"c{i}", "label": f"Column {i + 1}", "type": kind}
         for i, (_, kind) in enumerate(expressions)

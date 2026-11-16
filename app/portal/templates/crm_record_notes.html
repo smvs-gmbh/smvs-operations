@@ -1,0 +1,48 @@
+{% macro note_item(note, author) %}
+<li class="crm-note">
+  {% set note_url = notes_url ~ "/" ~ note.id ~ notes_query %}
+  <form class="crm-note-status" method="post" action="{{ note_url }}">
+    <input type="hidden" name="field" value="status">
+    <input type="checkbox" name="completed" value="yes" aria-label="Mark note {{ note.id }} completed" {% if note.completed_at %}checked{% endif %} data-note-choice>
+    <button class="portal-button" type="submit" data-note-apply>Save status</button>
+  </form>
+  <div class="crm-note-content">
+    <p>{{ note.text }}</p>
+    <small><time datetime="{{ note.created_at.isoformat() }}Z">{{ note.created_at.strftime('%Y-%m-%d %H:%M') }} UTC</time> · {{ author }}</small>
+  </div>
+  <form class="crm-note-flag" method="post" action="{{ note_url }}">
+    <input type="hidden" name="field" value="flag">
+    <select name="flag" aria-label="Flag for note {{ note.id }}" data-note-choice>
+      {% for value, label in note_flags.items() %}<option value="{{ value }}" {% if value == (note.flag or '') %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <button class="portal-button" type="submit" data-note-apply>Save flag</button>
+  </form>
+</li>
+{% endmacro %}
+<details class="crm-action-disclosure" {% if request.query_params.get('actions') == 'notes' %}open{% endif %}>
+  <summary class="crm-action-row"><span>Notes</span><span class="crm-note-count">{{ open_notes|length }} open</span></summary>
+  <div class="crm-notes">
+    <form class="review-form" method="post" action="{{ notes_url ~ notes_query }}">
+      <textarea name="text" aria-label="New note" placeholder="Add a note…" rows="2" maxlength="2000" required></textarea>
+      <div class="crm-note-composer">
+        <select name="flag" aria-label="Flag for new note">
+          {% for value, label in note_flags.items() %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+        </select>
+        <button class="portal-button" type="submit">Add note</button>
+      </div>
+    </form>
+    {% if open_notes %}
+    <ul class="crm-note-list">
+      {% for note, author in open_notes %}{{ note_item(note, author) }}{% endfor %}
+    </ul>
+    {% endif %}
+    {% if completed_notes %}
+    <details class="crm-notes-completed">
+      <summary>Completed · {{ completed_notes|length }}</summary>
+      <ul class="crm-note-list">
+        {% for note, author in completed_notes %}{{ note_item(note, author) }}{% endfor %}
+      </ul>
+    </details>
+    {% endif %}
+  </div>
+</details>

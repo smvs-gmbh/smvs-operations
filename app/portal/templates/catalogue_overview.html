@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% import 'macros.html' as ui %}
+{% block heading %}
+{{ ui.list_heading('CATALOGUE & REFERENCES', 'Catalogue Overview', 'Current NMVS product, batch and pack counts, with Swiss marketing authorisation holders from SAI.') }}
+{% endblock %}
+{% block content %}
+{% if publication %}
+<section class="metrics" aria-label="Snapshot totals">
+  <div class="metric"><span>Products in NMVS</span><strong>{{ totals.products|number }}</strong><small>{{ totals.matched|number }} matched to SAI</small></div>
+  <div class="metric"><span>Products with reported packs</span><strong>{{ totals.products_with_packs|number }}</strong><small>Products with a pack count above zero</small></div>
+  <div class="metric"><span>Reported batches</span><strong>{{ totals.batches|number }}</strong><small>All batch states in the snapshot</small></div>
+  <div class="metric"><span>Reported packs</span><strong>{{ totals.packs|number }}</strong><small>Sum of reported counts in the Products dataset</small></div>
+</section>
+<section class="panel">
+  <div class="panel-heading"><h2>Serialisation by Swiss MAH</h2><span class="subtle">{{ rows|length|number }} MAHs</span></div>
+  <div class="table-scroll"><table>
+    <thead><tr>
+      <th scope="col">MAH · SAI</th>
+      <th scope="col" class="numeric">Products</th>
+      <th scope="col" class="numeric">Products with reported packs</th>
+      <th scope="col" class="numeric">Batches</th>
+      <th scope="col" class="numeric">Reported packs</th>
+      <th scope="col">SMVS agreement · CRM</th>
+    </tr></thead>
+    <tbody>
+    {% for row in rows %}
+      <tr>
+        <td>{% if row.crm_id %}<a class="audit-link" href="/crm/mahs/{{ row.crm_id }}">{{ row.holder }} →</a>{% else %}{{ row.holder }}{% endif %}</td>
+        <td class="numeric">{{ row.products|number }}</td>
+        <td class="numeric">{{ row.products_with_packs|number }}</td>
+        <td class="numeric">{{ row.batches|number }}</td>
+        <td class="numeric">{{ row.packs|number }}</td>
+        <td>{{ row.agreement }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6" class="empty-state">No SAI-matched marketing authorisation holders in this snapshot.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  <p class="card-footnote">Agreement status uses a unique GLN match in CRM. Pack counts are snapshot values. Use the Pack Upload report to review upload activity.</p>
+</section>
+{% endif %}
+{% endblock %}

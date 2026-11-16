@@ -43,3 +43,28 @@ def send_case_update(email, alert_reference, identifier):
         f"Open the case to review the current instructions: {PUBLIC_ORIGIN}/alerts/{identifier}\n\n"
         "Kind regards,\nSMVS",
     )
+
+
+def send_response_request(email, reference, identifier, due_on):
+    deliver(
+        email,
+        "SMVS Alert Desk | Findings requested",
+        f"Please share your findings or a progress update for alert {reference} by {due_on}.\n\n"
+        f"Open your case: {PUBLIC_ORIGIN}/alerts/{identifier}\n\n"
+        "If your session has expired, open a valid invitation or contact SMVS to renew access.\n\n"
+        "Kind regards,\nSMVS",
+    )
+
+
+def send_response_reminder(email, cases):
+    items = "\n".join(
+        f"- {reference} ({role}, due {due_on}): {PUBLIC_ORIGIN}/alerts/{identifier}"
+        for reference, role, due_on, identifier in cases
+    )
+    deliver(
+        email,
+        "SMVS Alert Desk | Overdue responses",
+        f"Please share your findings or a progress update for these alerts:\n\n{items}\n\n"
+        "If your session has expired, open a valid invitation or contact SMVS to renew access.\n\n"
+        "Kind regards,\nSMVS",
+    )

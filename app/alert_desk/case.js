@@ -43,7 +43,7 @@ if (form) {
   const guidance = {
     yes: "Check for a local workflow or software issue.",
     no: "Check manual entry and scanner settings.",
-    not_checked: "If the pack becomes available, compare the printed serial and update your findings.",
+    not_checked: "If the pack becomes available, compare the printed identifier and update your findings.",
   };
   const serialCheck = form.querySelector('[data-upload-check="serial_accepted"]');
   const syncForm = () => {

@@ -22,12 +22,13 @@
   {% set resolved = after_status == 'resolved' and (before_status != 'resolved' or event.before.get('resolution') != decision) %}
   {% set reopened = before_status == 'resolved' and after_status == 'open' %}
   <article class="review-body review-event">
-    <strong>{% if resolved %}Resolved locally{% elif reopened %}Reopened{% elif before_status != after_status %}Work status changed{% else %}Analysis saved{% endif %}</strong>
+    <strong>{% if resolved and decision.get('basis') == 'shared_investigation' %}Closed by SMVS{% elif resolved and decision.get('basis') == 'foreign_support_complete' %}SMVS support complete{% elif resolved %}Resolved locally{% elif reopened %}Reopened{% elif before_status != after_status %}Case status changed{% else %}Analysis saved{% endif %}</strong>
     <p><time datetime="{{ event.occurred_at.isoformat() }}Z">{{ event.occurred_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</time> · {{ event.actor }} · Entry {{ event.id }}</p>
-    <p><strong>Work status</strong> {{ before_status|replace('_',' ')|title }} → {{ after_status|replace('_',' ')|title }}</p>
+    <p><strong>Case status</strong> {{ before_status|replace('_',' ')|title }} → {{ after_status|replace('_',' ')|title }}</p>
     {% if resolved or reopened %}
     <p><strong>Reason</strong> {{ decision.get('reopened_reason') if reopened else decision.get('reason') or event.after.get('review_reason') or 'Not recorded' }}</p>
     {% if resolved and decision.get('basis') %}<p><strong>Basis</strong> {{ decision.basis|replace('_',' ')|capitalize }}</p>{% endif %}
+    {% if resolved and decision.get('origin') %}<p><strong>Origin</strong> {{ origin_labels.get(decision.origin, decision.origin) }}</p>{% endif %}
     {% endif %}
     {% if event.originating_exception_id != record.id %}<p><a href="/exceptions/{{ event.originating_exception_id }}/work-audit">Originating exception {{ event.originating_exception_id }} →</a></p>{% endif %}
     {% if decision.get('rule_id') %}
@@ -41,7 +42,7 @@
       <div class="table-scroll"><table>
         <thead><tr><th scope="col">Field</th><th scope="col">Before</th><th scope="col">After</th></tr></thead>
         <tbody>
-          <tr><td>Work status</td><td>{{ before_status|replace('_',' ')|title }}</td><td>{{ after_status|replace('_',' ')|title }}</td></tr>
+          <tr><td>Case status</td><td>{{ before_status|replace('_',' ')|title }}</td><td>{{ after_status|replace('_',' ')|title }}</td></tr>
           {% for field in audit_fields if event.before.get(field) != event.after.get(field) %}
           <tr><td>{{ field|replace('_',' ')|capitalize }}</td><td>{{ audit_value(event.before.get(field)) }}</td><td>{{ audit_value(event.after.get(field)) }}</td></tr>
           {% endfor %}

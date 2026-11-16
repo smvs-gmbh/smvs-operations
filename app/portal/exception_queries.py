@@ -3,9 +3,11 @@ from datetime import datetime, timedelta
 
 from sqlalchemy import func, or_, select
 
+from app.core.db.models import StagingRow
 from app.domain.mapping import key
 from app.domain.models import (
     Batch,
+    CRMEndUser,
     CurrentPublication,
     ExceptionPublication,
     ExceptionReview,
@@ -165,6 +167,9 @@ def listing_statement(
     end,
     q="",
     error="",
+    alert_group="",
+    gtin14="",
+    country="",
     market="",
     organisation="",
     location="",
@@ -172,9 +177,15 @@ def listing_statement(
     date_quality="",
     intermarket="",
     work_status="open",
+    response_status="",
+    response_party="",
+    all_response_dates=False,
 ):
+    from app.domain.investigations import responses
+
     ns = namespace(session)
     statement = select(NMVSException).where(NMVSException.source_namespace == ns)
+    statement = apply_trend_scope(statement, alert_group, gtin14, country)
     statement = statement.outerjoin(
         ExceptionReview, ExceptionReview.exception_id == NMVSException.id
     )
@@ -191,9 +202,15 @@ def listing_statement(
         statement = statement.where(ExceptionReview.status == "to_do")
     elif work_status == "resolved":
         statement = statement.where(ExceptionReview.status == "resolved", ~stale)
-    if date_quality == "unresolved":
+    if response_status or response_party:
+        waiting, _, status = responses.columns(responses.today(), response_party)
+        if response_status:
+            statement = statement.where(status == responses.STATUS_LABELS[response_status])
+        else:
+            statement = statement.where(waiting.is_not(None))
+    if date_quality == "unresolved" and not all_response_dates:
         statement = statement.where(NMVSException.alert_at.is_(None))
-    elif work_status != "to_do":
+    elif work_status != "to_do" and not all_response_dates:
         statement = statement.where(
             NMVSException.alert_at >= datetime.combine(start, datetime.min.time()),
             NMVSException.alert_at
@@ -244,14 +261,81 @@ def listing_statement(
     return statement, ordering
 
 
+def apply_trend_scope(statement, alert_group, gtin14, country):
+    if alert_group == "a2-a3":
+        statement = statement.where(NMVSException.error_code.in_(("A2", "A3")))
+    if gtin14:
+        statement = statement.where(NMVSException.gtin14 == gtin14)
+    if country:
+        names = (
+            ("li", "lie", "liechtenstein")
+            if country == "LI"
+            else (
+                "ch",
+                "che",
+                "schweiz",
+                "suisse",
+                "svizzera",
+                "switzerland",
+                "svizra",
+            )
+        )
+        country_match = (
+            select(CRMEndUser.id)
+            .join(LocalOrganisation, LocalOrganisation.id == CRMEndUser.organisation_id)
+            .outerjoin(StagingRow, StagingRow.id == CRMEndUser.source_row_id)
+            .outerjoin(
+                LocalLocation,
+                (LocalLocation.source_namespace == NMVSException.source_namespace)
+                & (
+                    LocalLocation.source_location_id == NMVSException.source_location_id
+                ),
+            )
+            .where(
+                CRMEndUser.archived_at.is_(None),
+                LocalOrganisation.source_namespace == NMVSException.source_namespace,
+                or_(
+                    LocalOrganisation.source_organisation_id
+                    == NMVSException.organisation_id,
+                    NMVSException.organisation_id.is_(None)
+                    & (LocalLocation.organisation_id == LocalOrganisation.id),
+                ),
+                or_(
+                    LocalLocation.organisation_id.is_(None),
+                    LocalLocation.organisation_id == LocalOrganisation.id,
+                ),
+                func.lower(
+                    func.trim(
+                        func.coalesce(
+                            CRMEndUser.profile["country"].as_string(),
+                            StagingRow.raw_row_json["Country"].as_string(),
+                        )
+                    )
+                ).in_(names),
+            )
+            .correlate(NMVSException)
+            .exists()
+        )
+        statement = statement.where(
+            NMVSException.source_market.in_(("CH", "LI")), country_match
+        )
+    return statement
+
+
 def listing(session, *, page=1, view_request=None, **filters):
+    from app.domain.investigations import responses
+
     statement, ordering = listing_statement(session, **filters)
+    statement = statement.add_columns(*responses.columns(responses.today(), filters.get("response_party", "")))
     rows, pagination = paged(
         session,
         statement.order_by(*ordering),
         page, view_request=view_request, table_key="exceptions",
     )
-    return enriched(session, [r[0] for r in rows]), pagination
+    views = enriched(session, [r[0] for r in rows])
+    for view, (_, waiting, due, status) in zip(views, rows, strict=True):
+        view.update(waiting_for=waiting, response_due=due, response_status=status)
+    return views, pagination
 
 
 def options(session):

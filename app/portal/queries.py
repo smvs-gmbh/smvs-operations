@@ -1,8 +1,12 @@
+from collections import defaultdict
+
 from sqlalchemy import case, func, or_, select
 
 from app.core.db.models import StagingDataset, StagingRow
+from app.domain.crm.declaration_workflow import signed_agreement
 from app.domain.models import (
     Batch,
+    CRMMah,
     CurrentPublication,
     MappingRun,
     Product,
@@ -58,6 +62,104 @@ def base_query(publication):
             ProductSourceRecord.last_mapping_run_id == publication.mapping_run_id,
         )
     )
+
+
+def catalogue_summary(session, publication):
+    batch_counts = (
+        select(Batch.product_source_id, func.count().label("batches"))
+        .where(
+            Batch.is_observed == 1,
+            Batch.last_mapping_run_id == publication.mapping_run_id,
+        )
+        .group_by(Batch.product_source_id)
+        .subquery()
+    )
+    # Aggregate batches before joining so the Products pack total is counted once
+    # per source product row, regardless of its number of batches.
+    catalogue = (
+        base_query(publication)
+        .with_only_columns(
+            Product.id.label("product_id"),
+            ProductSourceRecord.pack_count,
+            func.coalesce(batch_counts.c.batches, 0).label("batches"),
+            ProductReferenceMatch.match_status,
+            SAIHolder.id.label("holder_id"),
+            SAIHolder.company_name.label("holder"),
+            SAIHolder.gln,
+        )
+        .outerjoin(
+            batch_counts, batch_counts.c.product_source_id == ProductSourceRecord.id
+        )
+        .subquery()
+    )
+    product = catalogue.c
+    positive_packs = case((product.pack_count > 0, product.product_id))
+    totals = (
+        session.execute(
+            select(
+                func.count(func.distinct(product.product_id)).label("products"),
+                func.count(
+                    func.distinct(
+                        case(
+                            (product.match_status == "matched_sai", product.product_id)
+                        )
+                    )
+                ).label("matched"),
+                func.count(func.distinct(positive_packs)).label("products_with_packs"),
+                func.coalesce(func.sum(product.batches), 0).label("batches"),
+                func.sum(product.pack_count).label("packs"),
+            )
+        )
+        .mappings()
+        .one()
+    )
+    holders = (
+        session.execute(
+            select(
+                product.holder,
+                product.gln,
+                func.count(func.distinct(product.product_id)).label("products"),
+                func.count(func.distinct(positive_packs)).label("products_with_packs"),
+                func.sum(product.batches).label("batches"),
+                func.sum(product.pack_count).label("packs"),
+            )
+            .where(
+                product.match_status == "matched_sai", product.holder_id.is_not(None)
+            )
+            .group_by(product.holder_id, product.holder, product.gln)
+            .order_by(
+                func.sum(product.pack_count).is_(None),
+                func.sum(product.pack_count).desc(),
+                product.holder,
+                product.holder_id,
+            )
+        )
+        .mappings()
+        .all()
+    )
+    matches = defaultdict(list)
+    glns = {row["gln"] for row in holders if row["gln"]}
+    if glns:
+        for gln, mah_id, signed in session.execute(
+            select(CRMMah.gln, CRMMah.id, signed_agreement(CRMMah.id)).where(
+                CRMMah.gln.in_(glns), CRMMah.archived_at.is_(None)
+            )
+        ):
+            matches[gln].append((mah_id, signed))
+    rows = []
+    for holder in holders:
+        matched = matches[holder["gln"]]
+        mah_id, signed = matched[0] if len(matched) == 1 else (None, False)
+        rows.append(
+            {
+                **holder,
+                "crm_id": mah_id,
+                "agreement": ("Signed" if signed else "No signed agreement")
+                if mah_id
+                else "Unassigned",
+            }
+        )
+    return totals, rows
 
 
 def search_clause(q, *, batches=False):

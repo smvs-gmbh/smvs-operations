@@ -10,6 +10,7 @@ from app.domain.models import (
     CRMDeletionEvent,
     CRMEndUser,
     CRMMah,
+    CRMRecordNote,
     EndUserRegistration,
     RegistrationEvent,
     RegistrationReceipt,
@@ -26,6 +27,9 @@ def check_references(
     detach_contact=False,
 ):
     for table in Base.metadata.tables.values():
+        if table is CRMRecordNote.__table__:
+            # Notes are erased with their CRM record by the foreign key.
+            continue
         for column in table.columns:
             if any(fk.column.table is row.__table__ for fk in column.foreign_keys):
                 query = select(column).where(column == row.id)

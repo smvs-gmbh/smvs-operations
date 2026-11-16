@@ -7,7 +7,13 @@ from sqlalchemy import select
 
 from app.core.db.models import AcquiredArtifact
 from app.core.db.session import SessionFactory
-from app.domain.models import PackAuditReport, PackAuditRequest
+from app.domain.mapping import key
+from app.domain.models import (
+    LocalLocation,
+    PackAuditReport,
+    PackAuditRequest,
+    ParticipantPublication,
+)
 from app.domain.pack_audit.service import record_signature, request_report
 from app.domain.pack_audit.timeline import summarize
 from app.integration.sources.nmvs.pack_audit.parsing import details
@@ -40,6 +46,30 @@ def state(session, record):
             409, "The report is not unambiguously matched to this pack."
         )
     return task, report, True
+
+
+def swiss_locations(session, namespace, groups):
+    location_keys = {
+        key(namespace, "location", group["location"])
+        for group in groups
+        if group and group["market"] == "CH" and group["location"]
+    }
+    if not location_keys:
+        return {}
+    publication = session.get(ParticipantPublication, "participants")
+    if not publication or publication.source_namespace != namespace:
+        return {}
+    return {
+        location.source_location_id: location
+        for location in session.scalars(
+            select(LocalLocation).where(
+                LocalLocation.source_key.in_(location_keys),
+                LocalLocation.source_namespace == namespace,
+                LocalLocation.is_observed == 1,
+                LocalLocation.last_participant_run_id == publication.mapping_run_id,
+            )
+        )
+    }
 
 
 def render(
@@ -79,6 +109,16 @@ def render(
     rows = (result["groups"] if show == "all" else result["relevant"]) if result else []
     pages = max(1, ceil(len(rows) / 50))
     page = min(page, pages)
+    groups = rows[(page - 1) * 50 : page * 50]
+    locations = (
+        swiss_locations(
+            session,
+            report.source_namespace,
+            [*groups, *result["milestones"], result["last_change"]],
+        )
+        if record and result
+        else {}
+    )
     return templates.TemplateResponse(
         request=request,
         name="pack_audit.html",
@@ -95,7 +135,8 @@ def render(
             "report": report,
             "eligible": eligible,
             "timeline": result,
-            "groups": rows[(page - 1) * 50 : page * 50],
+            "groups": groups,
+            "locations": locations,
             "show": show,
             "page": page,
             "pages": pages,

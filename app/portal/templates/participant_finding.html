@@ -1,0 +1,13 @@
+{% macro title(role, answer, labels) -%}
+{{ 'Root cause on my side' if role == 'mah' and answer.finding == 'other' else labels.get(answer.finding, 'Finding recorded') }}
+{%- endmacro %}
+{% macro upload_detail(role, answer) -%}
+{% if role == 'mah' and answer.finding == 'other' -%}
+{% if answer.batch_uploaded == 'no' %}Batch was not uploaded
+{%- elif answer.serial_accepted == 'no' %}Serial number was not accepted in the upload
+{%- elif answer.other_issue %}Other issue on my side{% endif %}
+{%- endif %}
+{%- endmacro %}
+{% macro summary(role, answer, labels) -%}
+{{ upload_detail(role, answer) or title(role, answer, labels) }}
+{%- endmacro %}

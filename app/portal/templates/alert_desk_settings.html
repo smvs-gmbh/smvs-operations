@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block heading %}<div class="heading"><div><h1>Alert Desk settings</h1></div></div>{% endblock %}
+{% block content %}
+<section class="panel review-body">
+  <h2>Response deadline</h2>
+  {% if request.query_params.get('saved') == 'yes' %}<p class="notice" role="status">Response deadline saved.</p>{% endif %}
+  <p>Applies to new investigation requests to End Users and MAHs. Working days are Monday to Friday in Europe/Zurich.</p>
+  <form method="post" action="/admin/alert-desk" class="review-form">
+    <label>Working days<input type="number" name="response_days" min="1" max="30" required value="{{ response_days }}"></label>
+    <div><button class="portal-button" type="submit">Save changes</button></div>
+  </form>
+</section>
+{% endblock %}

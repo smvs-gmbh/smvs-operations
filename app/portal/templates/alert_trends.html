@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% import 'macros.html' as ui %}
+{% block table_views %}{% endblock %}
+{% block module_navigation %}{% include 'exception_list_tabs.html' %}{% endblock %}
+{% block heading %}
+{{ ui.list_heading('OPERATIONAL INFORMATION · NMVS', 'Alert Trends', 'Monthly alert counts and the organisations and products most affected.') }}
+{% endblock %}
+{% block content %}
+<section class="panel">
+  <form class="activity-filters" method="get">
+    <div class="activity-filter-row">
+      <label>From (UTC)<input type="date" name="start" value="{{ start }}" required></label>
+      <label>To (UTC)<input type="date" name="end" value="{{ end }}" required></label>
+      <label>Alert types<select name="alert_group"><option value="">All types</option><option value="a2-a3" {{ 'selected' if alert_group }}>A2 and A3</option></select></label>
+      <label>End User country<select name="country">
+        <option value="">All countries</option>
+        <option value="CH" {{ 'selected' if country == 'CH' }}>Switzerland</option>
+        <option value="LI" {{ 'selected' if country == 'LI' }}>Liechtenstein</option>
+      </select></label>
+      <button class="portal-button" type="submit">Apply</button>
+    </div>
+    <div class="activity-presets">
+      <a href="{{ request.url.include_query_params(start=start, end=end, alert_group='' if alert_group else 'a2-a3', country=country) }}">{{ 'All alert types' if alert_group else 'Show A2 and A3' }} →</a>
+      <a href="/exceptions/trends">Reset filters</a>
+    </div>
+    {% if country %}<p class="subtle">Country comes from linked End Users in CRM. Alerts without a confirmed local country match are excluded.</p>{% endif %}
+  </form>
+</section>
+{{ ui.list_metrics('Trend totals', [
+  ('Reported alerts', total|number if total or covered else '—', 'Retained alerts in this selection'),
+  ('Complete query days', covered ~ ' / ' ~ days, 'Selected period · UTC')
+]) }}
+{% if covered < days %}
+<p class="notice">Some dates have partial or missing query coverage. Counts reflect retained alerts. Months marked * include days without full query coverage.</p>
+{% endif %}
+<section class="panel">
+  <div class="panel-heading"><h2>Alerts by month and type</h2><a class="audit-link" href="{{ alerts_url }}">View matching exceptions →</a></div>
+  {% if total %}
+  <div class="review-body">
+    <div class="activity-presets">
+      {% for code, colour, label in series %}<span><i class="dot" style="background:{{ colour }}"></i>{{ code }} · {{ label }}</span>{% endfor %}
+    </div>
+    <div class="activity-chart-scroll">
+    <svg class="activity-chart" viewBox="0 0 920 232" role="group" aria-label="Monthly alerts. Each month links to its exceptions.">
+      {% set width = 860 / (monthly|length) %}
+      {% for ratio in (0, 0.5, 1) %}
+      <line class="chart-grid" x1="40" x2="915" y1="{{ 195 - 154 * ratio }}" y2="{{ 195 - 154 * ratio }}"/>
+      {% endfor %}
+      {% for item in monthly %}
+        {% set x = 50 + width * (loop.index0 + 0.5) %}
+        <a href="{{ item.url }}" aria-label="{{ item.month }}, {{ item.total }} alerts, {{ item.covered }} of {{ item.days }} days fully covered{% for code, colour, label in series if item.counts[code] %}; {{ code }} {{ item.counts[code] }}{% endfor %}">
+          <rect x="{{ x - width / 2 }}" y="15" width="{{ width }}" height="215" fill="transparent"/>
+          <text x="{{ x }}" y="{{ 184 - 154 * item.total / peak }}" text-anchor="middle">{{ item.total|number if item.total or item.covered == item.days else '—' }}</text>
+          {% set stack = namespace(y=195) %}
+          {% for code, colour, label in series if item.counts[code] %}
+            {% set height = 154 * item.counts[code] / peak %}
+            {% set stack.y = stack.y - height %}
+            <rect x="{{ x - width * 0.29 }}" y="{{ stack.y }}" width="{{ width * 0.58 }}" height="{{ height }}" fill="{{ colour }}">
+              <title>{{ item.month }} · {{ code }} · {{ item.counts[code]|number }}</title>
+            </rect>
+          {% endfor %}
+          <text x="{{ x }}" y="218" text-anchor="middle">{{ item.month }}{{ '*' if item.covered < item.days }}</text>
+        </a>
+      {% endfor %}
+    </svg>
+    </div>
+  </div>
+  {% else %}
+  <p class="review-body">{{ 'No alerts match this selection.' if covered else 'No alerts or complete query days are available for this selection.' }}</p>
+  {% endif %}
+</section>
+<div class="detail-grid">
+  {% for title, label, ranking in [('Top organisations', 'Organisation', organisations), ('Top products', 'Product · SAI', products)] %}
+  <section class="panel">
+    <div class="panel-heading"><h2>{{ title }}</h2></div>
+    <div class="table-scroll"><table>
+      <thead><tr><th scope="col">{{ label }}</th><th scope="col" class="numeric">Alerts</th></tr></thead>
+      <tbody>
+        {% for name, identifier, count, url in ranking %}
+        <tr><td><a class="audit-link" href="{{ url }}">{{ name }} →</a>{% if name != identifier and title == 'Top products' %}<small class="activity-row-meta">{{ identifier }}</small>{% endif %}</td><td class="numeric">{{ count|number }}</td></tr>
+        {% else %}<tr><td colspan="2">No matching alerts with a reported {{ 'organisation ID' if title == 'Top organisations' else 'GTIN14' }}.</td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+  {% endfor %}
+</div>
+{% endblock %}

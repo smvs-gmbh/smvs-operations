@@ -29,7 +29,7 @@ def snapshot(review):
     }
 
 
-def save(session, record, version, payload_hash, values, origin):
+def save(session, record, version, payload_hash, values, origin, *, actor=None):
     review = session.get(ExceptionReview, record.id)
     if (
         review.version if review else 0
@@ -55,7 +55,7 @@ def save(session, record, version, payload_hash, values, origin):
         ExceptionReviewEvent(
             exception_id=record.id,
             occurred_at=review.updated_at,
-            actor="Local operator (no authenticated identity)",
+            actor=actor or "Local operator (no authenticated identity)",
             before=before,
             after=after,
             originating_exception_id=origin,

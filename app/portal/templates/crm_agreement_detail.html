@@ -1,12 +1,19 @@
 {% extends 'base.html' %}
 {% import 'macros.html' as ui %}
+{% from "crm_record_actions.html" import record_actions, jump_action with context %}
 {% block heading %}
 {{ ui.record_bar(record_nav) }}
 {{ ui.list_heading('CRM · COOPERATION AGREEMENT', agreement.contract_id, agreement.contractor) }}
 {% endblock %}
 {% block content %}
+<div class="record-detail-workspace" data-record-workspace><div class="record-detail-content">
 {% set action = '/crm/agreements/' ~ agreement.id ~ filter_query(request, 'q', 'status', 'link', 'attachments') %}
-<section class="panel review-body review-form">
+{% call record_actions(agreement.contract_id) %}
+{{ jump_action('agreement-details', 'Edit agreement details') }}
+{{ jump_action('agreement-assignment', 'Manage MAH assignments') }}
+{{ jump_action('agreement-documents', 'Manage documents') }}
+{% endcall %}
+<section class="panel review-body review-form" id="agreement-details" tabindex="-1">
 <h2>Agreement details</h2>
 <form method="post" action="{{ action }}" class="review-form">
 <div class="review-controls">
@@ -23,7 +30,7 @@
 {% endfor %}
 </dl>
 </section>
-<section class="panel review-body review-form">
+<section class="panel review-body review-form" id="agreement-assignment" tabindex="-1">
 <h2>MAH assignment</h2>
 {% if candidates %}<p class="subtle">Airtable candidates</p><ul>{% for mah in candidates %}<li><a href="/crm/mahs/{{ mah.id }}">{{ mah.name }} →</a></li>{% endfor %}</ul>{% endif %}
 <form method="post" action="{{ action }}" class="review-form">
@@ -42,7 +49,7 @@
 </div>
 </form>
 </section>
-<section class="panel review-body review-form" id="agreement-documents">
+<section class="panel review-body review-form" id="agreement-documents" tabindex="-1">
 <h2>Agreement documents</h2>
 {% if request.state.portal_user %}
 <script src="{{ request.url_for('portal_static', path='crm-agreement-upload.js') }}" type="module"></script>
@@ -67,4 +74,5 @@
 </tbody></table></div>
 {% else %}<p>No archived PDFs.</p>{% endif %}
 </section>
+</div></div>
 {% endblock %}

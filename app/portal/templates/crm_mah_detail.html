@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% from 'macros.html' import record_bar %}
+{% from "crm_record_actions.html" import record_actions, archive_action, deletion_action with context %}
 {% block heading %}
 {{ record_bar(record_nav, mah and not edit_section) }}
 <div class="heading"><div><div class="eyebrow">CRM · MAH</div><h1 class="mah-title">{% if logo_url %}<img class="mah-logo" src="{{ logo_url }}" alt="" referrerpolicy="no-referrer">{% endif %}<span>{{ mah.name if mah else 'New MAH' }}</span></h1></div>
@@ -72,13 +73,12 @@
 {% endmacro %}
 {% if mah and mah.archived_at %}<p class="notice">Archived MAH · {{ mah.archived_at.strftime('%Y-%m-%d %H:%M') }} UTC</p>{% endif %}
 {% if mah and not edit_section %}
-<section class="panel review-body" data-record-actions>
-<details class="exception-actions">
-<summary><strong>Actions</strong></summary>
+{% call record_actions(mah.name) %}
 {% if transfer_targets %}
+<details class="crm-action-disclosure">
+<summary class="crm-action-row">Transfer to another MAH</summary>
 <form method="post" action="/crm/mahs/{{ mah.id }}/transfer" class="review-form">
 <input type="hidden" name="version" value="{{ mah.version }}">
-<p><a class="audit-link" href="/user-guide">Read the User Guide →</a></p>
 <label>Transfer to<select name="target_mah_id" required>
 <option value="">Select a MAH</option>
 {% for id, name in transfer_targets %}<option value="{{ id }}">{{ name }}</option>{% endfor %}
@@ -95,14 +95,11 @@
 <label>Transfer note (optional)<textarea name="note" rows="2" maxlength="2000"></textarea></label>
 <div><button class="portal-button" type="submit">Transfer</button></div>
 </form>
-{% endif %}
-<form method="post" action="/crm/mahs/{{ mah.id }}{{ filter_query(request, 'q', 'agreement') }}" class="review-form">
-<input type="hidden" name="version" value="{{ mah.version }}">
-<div><button class="portal-button portal-button-secondary" name="command" value="{{ 'restore' if mah.archived_at else 'archive' }}" type="submit">{{ 'Restore MAH' if mah.archived_at else 'Archive MAH' }}</button></div>
-</form>
-{% with delete_type="mahs", delete_record=mah %}{% include "crm_delete_action.html" %}{% endwith %}
 </details>
-</section>
+{% endif %}
+{{ archive_action('/crm/mahs/' ~ mah.id ~ filter_query(request, 'q', 'agreement'), mah, 'MAH') }}
+{{ deletion_action('mahs', mah.id) }}
+{% endcall %}
 {% endif %}
 {% set form_open = not mah or edit_section %}
 {% if form_open %}

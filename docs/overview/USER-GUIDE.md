@@ -6,8 +6,8 @@ are in English; imported names, messages and evidence retain their source langua
 
 ## Portal layout and text size
 
-Module tabs appear above the page title. Catalogue tabs switch between **Products**
-and **Batches**; participant tabs switch between **Organisations**, **Locations**
+Module tabs appear above the page title. Catalogue tabs switch between **Overview**,
+**Products** and **Batches**. Participant tabs switch between **Organisations**, **Locations**
 and **Activity**. Detail-view tabs, such as **Root cause analysis** or **Original
 data & evidence**, also appear above the title. Filters and data remain below it.
 
@@ -15,6 +15,31 @@ Lists and detail cards use the same text hierarchy across the portal: data value
 are more prominent than button labels, while section headings stay compact.
 Dashboard figures retain their larger size. Use **A−** and **A+** in the header
 to scale the interface, including data and controls, together.
+
+## Catalogue Overview
+
+Open **Catalogue → Overview** for counts from the published Daily Snapshot.
+Products with reported packs have a reported pack count above zero. Reported
+packs are summed from the Products dataset. The batch count includes all
+reported states, including expired batches.
+
+**Serialisation by Swiss MAH** groups SAI-matched products by the SAI holder.
+Agreement status comes from the linked CRM agreements and requires exactly one
+non-archived CRM match by GLN. **Unassigned** indicates that the link could not
+be established. **No signed agreement** indicates that the linked record has
+no agreement marked Signed.
+
+## Alert Trends
+
+Open **Exceptions → Alert Trends** for monthly alert counts, grouped by alert
+type, and the top five organisations and products in the selected period.
+Use **Show A2 and A3** to focus the chart. Open a month or ranking row to see
+its alerts in Exceptions, including resolved alerts.
+
+The report counts retained alerts using the source alert date in UTC. A month
+marked * contains days without full query coverage. The End User country
+filter uses the linked CRM country, including its imported value where applicable.
+The requesting market is a separate field. Product names come from SAI.
 
 ## Navigate and review CRM records
 

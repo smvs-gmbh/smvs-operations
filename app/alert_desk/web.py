@@ -44,6 +44,8 @@ def render_case(
     organisation_case=False,
     status_code=200,
     back_url="/alerts",
+    findings_url=None,
+    back_label="My cases",
 ):
     return templates.TemplateResponse(
         request=request,
@@ -61,6 +63,8 @@ def render_case(
             "assets": assets,
             "organisation_case": organisation_case,
             "back_url": back_url,
+            "back_label": back_label,
+            "findings_url": findings_url,
         },
     )
 

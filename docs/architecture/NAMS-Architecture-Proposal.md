@@ -46,8 +46,18 @@ Daily Snapshot supplies context, not an Alert feed or participant investigation 
 2. Authorise the relevant End-user to view the permitted Alert and submit their investigation result, supporting evidence and proposed root cause.
 3. Preserve the submitting actor, organisation/location, time and version. A submitted cause remains attributed evidence until the applicable review/workflow establishes its meaning.
 4. Publish only information approved for sharing using the supported AMS-Hub contract. Preserve local submission, delivery and acknowledgement as distinct states.
-5. Incorporate MAH-side contributions received through the Hub without overwriting independent local findings or treating an external status as an internal case decision.
-6. Apply agreed closure/reopening rules and retain evidence independently of the detailed-source window. Exact commands, codes and sequencing require contract validation.
+5. Incorporate MAH-side contributions received through the Hub and preserve independent local findings.
+6. Apply the agreed local closure rule below and retain evidence independently of the detailed-source window. Reopening remains to be specified.
+
+## Automatic local closure from AMS Hub
+
+Decision agreed on 2026-11-16. Use AMS Hub as an additional source for investigations and Alert status. Match Hub status to the local Alert by its unique Alert ID.
+
+- When AMS Hub reports `Closed` for the Alert linked to an open local Case, close the Case automatically. If the Case has several linked Alerts, require a confirmed Hub status of `Closed` for every linked Alert. A missing Hub status leaves that Case open.
+- An authorised OBP or MAH closure in AMS Hub qualifies. A participant investigation finding, including `Root cause on my side`, leaves the Case open under this rule.
+- Show the Hub close actor, reason and time in RCA when supplied. Record the automatic local closure in the Operations Audit Trail with the linked Alert IDs and the source status. The reconciliation updates the local Case only.
+
+EMVO-00470 v4.0, pp. 38 and 43–48, describes the separate investigation indicators, the shared Alert status and closure permissions. This section records the SMVS decision for the local Case.
 
 ## API design criteria for later specification
 
@@ -91,7 +101,7 @@ for decision ownership, access and CSV migration boundaries.
 2. Build the End-user shared workspace and internal NMVO assessment/closure workflow,
    using scoped passwordless access and an attributed Action Log.
 3. Validate shared findings, open questions, closure proposals and evidence visibility
-   with representative End-users. The NMVO owns the final closure decision.
+   with representative End-users. The NMVO owns the manual closure decision during the pilot.
 4. Verify the Hub contract and add supported MAH/OBP exchange, acknowledgement,
    retries and reconciliation through the adapter and application API.
 5. Plan migration from NMVS Alerts: inventory open cases, identity links, history/evidence

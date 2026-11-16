@@ -1,10 +1,16 @@
 {% extends 'base.html' %}
 {% import 'macros.html' as ui %}
+{% from "crm_record_actions.html" import record_actions with context %}
 {% block heading %}
 {{ ui.record_bar(record_nav) }}
 {{ ui.list_heading('CRM · ANNUAL DECLARATION', declaration.record_label, declaration.source_mah_name) }}
 {% endblock %}
 {% block content %}
+<div class="record-detail-workspace" data-record-workspace><div class="record-detail-content">
+{% if notes_url %}
+{% call record_actions(declaration.record_label) %}
+{% endcall %}
+{% endif %}
 <section class="panel review-body review-form">
 <h2>Declaration</h2>
 <dl class="mah-values">
@@ -40,4 +46,5 @@
 <p>A valid pack count, known RX sales group and valid base fee are required.</p>
 {% endif %}
 </section>
+</div></div>
 {% endblock %}

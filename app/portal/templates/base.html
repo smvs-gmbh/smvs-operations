@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ title }} · SMVS Operations</title>
-  <link rel="stylesheet" href="{{ request.url_for('portal_static', path='portal.css') }}?v=participant-preview-1">
+  <link rel="stylesheet" href="{{ request.url_for('portal_static', path='portal.css') }}?v=test-case-overview-1">
   <script src="{{ request.url_for('portal_static', path='text-size.js') }}"></script>
   {% if active == 'crm' %}<script src="{{ request.url_for('portal_static', path='crm-list-views.js') }}?v=checkbox-filters-2" type="module"></script>
-  <script src="{{ request.url_for('portal_static', path='record-actions.js') }}?v=registration-workflow-1" type="module"></script>
+  <script src="{{ request.url_for('portal_static', path='record-actions.js') }}?v=crm-record-actions-1" type="module"></script>
   <script src="{{ request.url_for('portal_static', path='crm-navigation.js') }}?v=registration-workflow-1" type="module"></script>{% endif %}
   {% if active == 'workflows' %}<script src="{{ request.url_for('portal_static', path='record-actions.js') }}?v=registration-workflow-1" type="module"></script>{% endif %}
-  <script src="{{ request.url_for('portal_static', path='portal-list-views.js') }}?v=checkbox-filters-2" type="module"></script>
+  {% block table_views %}<script src="{{ request.url_for('portal_static', path='portal-list-views.js') }}?v=numeric-sort-1" type="module"></script>{% endblock %}
 </head>
 <body>
 <aside class="sidebar">
@@ -21,7 +21,7 @@
   <nav aria-label="Main navigation">
     {% if not account or account.is_nmvo %}
     {% for label, icon, links in [
-      ('Catalogue', '▦', [('products', 'Products', '/products'), ('batches', 'Batches', '/batches')]),
+      ('Catalogue', '▦', [('catalogue', 'Overview', '/catalogue'), ('products', 'Products', '/products'), ('batches', 'Batches', '/batches')]),
       ('User', '⌖', [('organisations', 'Organisations', '/organisations'), ('locations', 'Locations', '/locations'), ('activity', 'Activity', '/activity/verification')])
     ] %}
     <details class="sidebar-group" {{ 'open' if active in links|map(attribute=0)|list }}>
@@ -36,13 +36,15 @@
     </details>
     <a class="{{ 'selected' if active == 'crm' else '' }}" href="/crm/mahs"><span class="nav-icon">▥</span>CRM <span class="nav-arrow">›</span></a>
     <a class="{{ 'selected' if active == 'workflows' else '' }}" href="/workflows"><span class="nav-icon" aria-hidden="true">✓</span>Workflows <span class="nav-arrow">›</span></a>
+    {% if request.app.state.alert_desk_test_url %}<a class="{{ 'selected' if active == 'test' else '' }}" href="{{ request.app.state.alert_desk_test_url }}">Test <span class="nav-arrow">›</span></a>{% endif %}
     {% endif %}
     {% if not account or account.is_admin %}
-    <details class="sidebar-group" {{ 'open' if active in ('intelligence', 'imports', 'users') }}>
+    <details class="sidebar-group" {{ 'open' if active in ('intelligence', 'imports', 'users', 'alert_desk_settings') }}>
       <summary><span class="nav-icon" aria-hidden="true">⚙</span>Settings</summary>
       {% for key, name, path in [('intelligence', 'Intelligence', '/intelligence/rules'), ('imports', 'Imports', '/imports'), ('users', 'Users', '/admin/users')] %}
       {% if key != 'users' or account %}<a class="{{ 'selected' if active == key else '' }}" href="{{ path }}">{{ name }}</a>{% endif %}
       {% endfor %}
+      {% if account %}<a class="{{ 'selected' if active == 'alert_desk_settings' else '' }}" href="/admin/alert-desk">Alert Desk</a>{% endif %}
     </details>
     {% endif %}
   </nav>
@@ -79,10 +81,10 @@
       <a href="{{ path }}"{% if current %} aria-current="{{ 'page' if request.url.path == path else 'location' }}"{% endif %}>{{ label }}</a>
       {% endfor %}
     </nav>
-    {% elif active in ('products', 'batches', 'organisations', 'locations', 'activity') %}
-    {% set catalogue = active in ('products', 'batches') %}
+    {% elif active in ('catalogue', 'products', 'batches', 'organisations', 'locations', 'activity') %}
+    {% set catalogue = active in ('catalogue', 'products', 'batches') %}
     <nav class="portal-module-nav" aria-label="{{ 'Catalogue navigation' if catalogue else 'Participants navigation' }}">
-    {% for key, label, path in ([('products', 'Products', '/products'), ('batches', 'Batches', '/batches')] if catalogue else [('organisations', 'Organisations', '/organisations'), ('locations', 'Locations', '/locations'), ('activity', 'Activity', '/activity/verification')]) %}
+    {% for key, label, path in ([('catalogue', 'Overview', '/catalogue'), ('products', 'Products', '/products'), ('batches', 'Batches', '/batches')] if catalogue else [('organisations', 'Organisations', '/organisations'), ('locations', 'Locations', '/locations'), ('activity', 'Activity', '/activity/verification')]) %}
       <a href="{{ path }}"{% if active == key %} aria-current="{{ 'page' if request.url.path == path else 'location' }}"{% endif %}>{{ label }}</a>
     {% endfor %}
     </nav>
@@ -96,17 +98,18 @@
     {% elif upload_section %}
     <div class="source-strip"><span><i class="dot"></i>Product Pack Upload Audit Trail Report</span><span>Times in UTC</span><span>Genuine Transactions</span></div>
     {% elif pack_audit_section %}
-    <div class="source-strip"><span><i class="dot"></i>{{ 'Supplied example report' if example else 'NMVS Reporting API' }}</span><span>Pack Audit Trail Report</span><span>Times in UTC</span></div>
+    <div class="source-strip"><span><i class="dot"></i>{{ 'Synthetic demo report' if request.app.state.alert_desk_test_workspace else 'Supplied example report' if example else 'NMVS Reporting API' }}</span><span>Pack Audit Trail Report</span><span>Times in UTC</span></div>
     {% elif exception_section %}
     <div class="source-strip"><span><i class="dot"></i>NMVS Exceptions API</span><span>Times in UTC</span>{% if latest_exception_publication %}<span>Last retrieved {{ latest_exception_publication.captured_at.strftime('%Y-%m-%d %H:%M') }} UTC</span>{% endif %}<span>{{ exception_total }} reported alerts</span></div>
     {% elif activity_section %}
     <div class="source-strip"><span><i class="dot"></i>User Activity Report</span><span>UTC calendar days</span><span>Excluding Synthetic Monitoring</span>{% if latest %}<span>History {{ first.strftime('%Y-%m-%d') }}–{{ latest.strftime('%Y-%m-%d') }}</span>{% endif %}</div>
     {% elif publication %}
     <div class="source-strip"><span><i class="dot"></i>Published dataset</span><span>NMVS retrieval date <strong>{{ publication.snapshot_date.strftime('%Y-%m-%d') }}</strong></span>{% if publication.sai_exported_at is defined %}<span>SAI export <strong>{{ publication.sai_exported_at.strftime('%Y-%m-%d') }}</strong></span>{% endif %}</div>
-    {% elif participant_section or active in ("products", "batches") %}
+    {% elif participant_section or active in ("catalogue", "products", "batches") %}
     <div class="notice">{% if participant_section %}No organisation/location dataset has been published yet.{% else %}No product/batch dataset has been published yet.{% endif %}</div>
     {% endif %}
-    {% if request.app.state.test_workspace %}<p class="notice"><strong>Test workspace</strong> · Synthetic records only. Restart this instance to reset.</p>{% endif %}
+    {% if request.app.state.alert_desk_test_workspace %}<p class="notice"><a class="audit-link" href="/">← Alert Desk test workspace</a> · Synthetic records only.</p>
+    {% elif request.app.state.test_workspace %}<p class="notice"><strong>Test workspace</strong> · Synthetic records only. Restart this instance to reset.</p>{% endif %}
     {% block content %}{% endblock %}
     <footer class="page-footer">SMVS Operations <span>{% if imports_section %}Import schedules, data coverage and retrieval history.{% elif upload_section %}Product and batch context · No evidence for an individual serial number.{% elif pack_audit_section %}Technical pack history · Source evidence remains separate from investigation decisions.{% elif exception_section %}NMVS source observations · Swiss product names from SAI.{% elif activity_section %}NMVS Reporting API · Exception counts are not alert counts.{% elif participant_section %}Organisations and Locations from the NMVS snapshot · Source statuses are unchanged.{% else %}Swiss names from Refdata SAI · NMVS states remain separate.{% endif %}</span></footer>
   </main>

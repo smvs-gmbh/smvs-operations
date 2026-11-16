@@ -49,6 +49,27 @@ def user_guide(request: Request):
     )
 
 
+@router.get("/catalogue", include_in_schema=False)
+def catalogue_overview(request: Request, session: DbSession):
+    ctx = queries.context(session)
+    totals, rows = (
+        queries.catalogue_summary(session, ctx["publication"])
+        if ctx["publication"]
+        else ({}, [])
+    )
+    return templates.TemplateResponse(
+        request=request,
+        name="catalogue_overview.html",
+        context={
+            **ctx,
+            "active": "catalogue",
+            "title": "Catalogue Overview",
+            "totals": totals,
+            "rows": rows,
+        },
+    )
+
+
 @router.get("/products", include_in_schema=False)
 def product_list(
     request: Request,

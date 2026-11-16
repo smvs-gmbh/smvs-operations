@@ -9,13 +9,14 @@ from fastapi import Depends, HTTPException, Request
 from sqlalchemy import func, or_, select
 
 from app.alert_desk.schema import Capability, Findings, MailboxCode
-from app.domain.investigations import access, case_updates, pilot, pilot_mail
+from app.domain.investigations import access, case_updates, pilot, pilot_mail, rca
 from app.domain.investigations.prechecks import collect
 from app.domain.investigations.preview import ERRORS, utc
 from app.domain.models import (
     AlertDeskAccess,
     AlertDeskEvent,
     AlertDeskGrant,
+    ExceptionReview,
     NMVSException,
 )
 from app.portal.exception_queries import enriched, namespace
@@ -187,6 +188,7 @@ def install(app, sessions, secret):
                         event.data.get("finding") if event else None
                     ),
                     "follow_up": bool(follow_up),
+                    "closed": bool(closed),
                     "pack_label": case_updates.PACK_LABELS[
                         "suspected"
                         if update and update.pack_instruction == "suspected"
@@ -195,7 +197,7 @@ def install(app, sessions, secret):
                     if on_hold
                     else "",
                 }
-                for record, event, update, on_hold, follow_up in records[
+                for record, event, update, on_hold, follow_up, closed in records[
                     : access.PAGE_SIZE
                 ]
             ]
@@ -226,7 +228,11 @@ def install(app, sessions, secret):
             progress = case_updates.public_progress(
                 session, record, grant.role, crm.id, latest
             )
-            batch = access.batch_targets(session, grant.role, crm, record)
+            batch = (
+                []
+                if progress["closed"]
+                else access.batch_targets(session, grant.role, crm, record)
+            )
             return {
                 **case,
                 "batch_count": len(batch) + 1 if batch else 0,
@@ -240,7 +246,9 @@ def install(app, sessions, secret):
                 "progress": progress,
                 "code": record.error_code,
                 "label": ERRORS.get(record.error_code, ("Reported alert",))[0],
-                "investigation": pilot.investigation_for(
+                "investigation": None
+                if progress["closed"]
+                else pilot.investigation_for(
                     record, view["organisation"], view["location"], grant.role
                 ),
             }
@@ -260,12 +268,13 @@ def install(app, sessions, secret):
             grant, crm = active(session, token, lock=True)
             if body.batch_revision:
                 anchor = current_case(session, grant, crm, identifier)
-                access.export_cohort(
-                    session,
-                    anchor,
-                    end_user_id=crm.id if grant.role == "end_user" else None,
-                    lock=True,
-                )
+                if anchor.error_code == "A7":
+                    access.export_cohort(
+                        session,
+                        anchor,
+                        end_user_id=crm.id if grant.role == "end_user" else None,
+                        lock=True,
+                    )
             record = current_case(session, grant, crm, identifier, lock=True)
             view = enriched(session, [record])[0]
             org, location = view["organisation"], view["location"]
@@ -301,6 +310,9 @@ def install(app, sessions, secret):
                     raise HTTPException(409, "Reload the case before submitting.")
                 return {"received": True, **({"batch_count": count} if count else {})}
 
+            review = session.get(ExceptionReview, identifier, with_for_update=True)
+            if rca.is_closed(review, record):
+                raise HTTPException(409, "SMVS has closed this case.")
             batch = []
             if body.batch_revision:
                 batch = access.batch_targets(
@@ -361,6 +373,8 @@ def install(app, sessions, secret):
                     for k, v in data.items()
                     if k not in {"batch_count", "batch_revision"}
                 }
+                if record.error_code == "A2" and grant.role == "end_user":
+                    copied["comparison"] = "not_checked"
                 for target in batch:
                     store_findings(
                         target,
@@ -368,3 +382,5 @@ def install(app, sessions, secret):
                         {**copied, "batch_source": record.id},
                     )
         return {"received": True, **({"batch_count": len(batch) + 1} if batch else {})}
+
+    return read_case, submit_case
