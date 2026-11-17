@@ -1,0 +1,68 @@
+{% if hub_environment %}
+<section class="panel" id="ams-hub" aria-labelledby="ams-hub-title">
+  <div class="panel-heading">
+    <h2 id="ams-hub-title">AMS Hub</h2>
+    <span class="source-tag">{{ hub_environment }}</span>
+  </div>
+  <div class="review-body">
+  {% if not hub_investigation %}
+    <a class="audit-link" href="{{ request.url.include_query_params(ams=1) }}#ams-hub">Load AMS Hub investigation →</a>
+  {% elif hub_investigation.state == 'missing' %}
+    <p>This alert was not found in AMS Hub for this connection.</p>
+  {% elif hub_investigation.state == 'unavailable' %}
+    <p>AMS Hub information is temporarily unavailable for this alert.</p>
+    {% set failures = {
+      'timeout': 'AMS Hub did not respond within the allowed time.',
+      'authentication': 'The AMS Hub connection could not be authenticated.',
+      'configuration': 'The selected AMS Hub connection needs configuration review.',
+      'identity': 'The AMS Hub response could not be matched to this alert.',
+      'alert': 'The AMS Hub alert request could not be completed.'
+    } %}
+    {% if hub_investigation.failure in failures %}<p class="subtle">{{ failures[hub_investigation.failure] }}</p>{% endif %}
+  {% else %}
+    <div class="detail-card">
+      <dl>
+        <div><dt>Hub alert status</dt><dd><strong>{{ hub_investigation.alert_status or 'Not supplied' }}</strong></dd></div>
+        {% if hub_full_history %}
+        {% for party, status in hub_investigation.parties %}
+        <div><dt>{{ party }}</dt><dd>{{ status or 'No status recorded' }}</dd></div>
+        {% endfor %}
+        {% else %}
+        {% set latest = namespace(item=none) %}
+        {% for item in hub_investigation.history or () %}{% if latest.item is none and item.action.startswith('Alert status') %}{% set latest.item = item %}{% endif %}{% endfor %}
+        {% if latest.item %}
+        <div><dt>Latest recorded status change</dt><dd>{% if latest.item.at %}<time datetime="{{ latest.item.at.isoformat() }}">{{ latest.item.at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</time>{% else %}Time not supplied{% endif %}<br>{{ latest.item.actor or 'Actor not supplied' }} · {{ latest.item.organisation or 'Organisation not supplied' }}</dd></div>
+        {% endif %}
+        {% endif %}
+      </dl>
+    </div>
+    {% if hub_investigation.history is none %}
+      <p>The AMS Hub investigation history is unavailable.</p>
+    {% elif not hub_investigation.history %}
+      <p>No investigation history has been recorded in AMS Hub.</p>
+    {% else %}
+      {% if hub_full_history %}
+      <h3>Investigation history · {{ hub_investigation.history|length }}</h3>
+      <ol class="hub-history" aria-label="AMS Hub investigation history, newest first">
+        {% for item in hub_investigation.history %}
+        <li><article>
+          <p class="subtle">{% if item.at %}<time datetime="{{ item.at.isoformat() }}">{{ item.at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</time>{% else %}Time not supplied{% endif %} · {{ item.actor or 'Actor not supplied' }} · {{ item.organisation or 'Organisation not supplied' }}</p>
+          <h3>{{ item.action }}</h3>
+          {% if item.reason_code %}<p class="subtle">{{ item.reason_code }}</p>{% endif %}
+          {% if item.reason %}<div class="rca-note">{{ item.reason }}</div>{% endif %}
+          {% if item.message %}<div class="rca-note">{{ item.message }}</div>{% endif %}
+        </article></li>
+        {% endfor %}
+      </ol>
+      {% endif %}
+    {% endif %}
+  {% endif %}
+  {% if not hub_full_history %}
+    <p><a class="audit-link" href="/exceptions/{{ record.id }}/ams-hub{{ record_nav.query if record_nav else '' }}">View investigation history →</a></p>
+  {% endif %}
+  {% if hub_investigation %}
+    <p><a class="audit-link" href="{{ request.url.include_query_params(ams=1) }}#ams-hub">{{ 'Refresh AMS Hub investigation' if hub_investigation.state == 'available' else 'Retry AMS Hub investigation' }} →</a></p>
+  {% endif %}
+  </div>
+</section>
+{% endif %}

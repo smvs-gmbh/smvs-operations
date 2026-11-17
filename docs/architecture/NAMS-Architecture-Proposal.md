@@ -54,8 +54,15 @@ Daily Snapshot supplies context, not an Alert feed or participant investigation 
 Decision agreed on 2026-11-16. Use AMS Hub as an additional source for investigations and Alert status. Match Hub status to the local Alert by its unique Alert ID.
 
 - When AMS Hub reports `Closed` for the Alert linked to an open local Case, close the Case automatically. If the Case has several linked Alerts, require a confirmed Hub status of `Closed` for every linked Alert. A missing Hub status leaves that Case open.
-- An authorised OBP or MAH closure in AMS Hub qualifies. A participant investigation finding, including `Root cause on my side`, leaves the Case open under this rule.
+- A confirmed Hub closure by an authorised actor qualifies, including the End User in a foreign-led Intermarket case. A participant investigation finding, including `Root cause on my side`, leaves the Case open under this rule.
 - Show the Hub close actor, reason and time in RCA when supplied. Record the automatic local closure in the Operations Audit Trail with the linked Alert IDs and the source status. The reconciliation updates the local Case only.
+
+Clarification agreed on 2026-11-17. An Administrator can enable or disable
+automatic closure through an audited, persistent setting. Authorised Hub
+actors may change a Closed Alert to another permitted state before archival
+(EMVO-00470 v4.0 pp. 43–44). The planned change synchronisation therefore
+includes locally closed Cases. The local response to a Hub reopening and
+the polling cadence remain for discussion in CHG-004.
 
 EMVO-00470 v4.0, pp. 38 and 43–48, describes the separate investigation indicators, the shared Alert status and closure permissions. This section records the SMVS decision for the local Case.
 

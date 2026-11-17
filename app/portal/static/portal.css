@@ -34,6 +34,7 @@
 
 /* Local operational intelligence cards */
 .review-body { padding: 24px 28px; }
+.exception-context-column { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
 .review-form { display: grid; gap: 16px; }
 .review-form label { display: grid; gap: 7px; color: var(--muted, #62778b); font-size: 0.875rem; }
 .review-form textarea { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #cbd8e5; border-radius: 7px; font: inherit; color: #19314b; resize: vertical; }
@@ -547,3 +548,10 @@ div.test-case-columns { color: var(--muted); background: #f7f9fb; font-weight: 6
 .test-case-group > summary small { display: block; color: var(--muted); }
 .test-case-alerts tbody th { text-align: left; font-size: var(--portal-data-size); }
 .test-case-alerts tbody th .test-review-flag, .test-review-flag { color: #8c5318; }
+
+/* Short source histories use readable event cards rather than report tables. */
+.hub-history { list-style: none; padding: 0; margin: 1rem 0; }
+.hub-history li { border-left: 3px solid var(--line); padding: 0 0 1.5rem 1rem; }
+.hub-history article { overflow-wrap: anywhere; }
+.hub-history h3 { font-size: var(--portal-section-size); margin: .5rem 0; }
+.hub-history .rca-note { max-width: 85ch; margin-top: .75rem; }

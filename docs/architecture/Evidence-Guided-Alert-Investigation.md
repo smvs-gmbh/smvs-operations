@@ -155,3 +155,13 @@ instead of demanding a full new quality form per pack. Monthly reports support
 organisational learning and prevention. See the detailed
 [design principle](Shared-Alerts-Management-End-User-Pilot.md#design-principle-effective-efficient-rca-and-organisational-learning)
 for the candidate short flow and evaluation criteria.
+
+
+## Cross-source AI proposal refinement — 2026-11-17
+
+The [ADR-006 investigation assistant refinement](ADR-006%20Operational%20Intelligence%20Model.md#evidence-based-investigation-assistant--refinement-2026-11-17)
+now defines the proposed evidence package spanning Exception context, Upload
+history, Pack audit trail, AMS Hub, snapshots and local RCA. It specifies a
+source-cited explanation, supporting and conflicting evidence, missing information,
+next step and human disposition. This extends the existing deterministic evidence
+checks; AI generation is a future increment, not part of the AMS history UI change.

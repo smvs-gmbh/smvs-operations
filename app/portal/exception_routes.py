@@ -17,6 +17,7 @@ from app.domain.exceptions import review as work
 from app.domain.exceptions.list_search import interpret_filters
 from app.domain.investigations import rca, responses
 from app.domain.models import ExceptionReview, ExceptionReviewEvent, NMVSException
+from app.integration.sources import ams
 from app.portal import alert_trends
 from app.portal import exception_queries as queries
 from app.portal.queries import paged
@@ -301,6 +302,23 @@ def exception_record_navigation(request, session, record):
     return navigation
 
 
+def hub_context(request, record, *, load=False):
+    if not rca_staff(request) or any(
+        getattr(request.app.state, flag, False)
+        for flag in ("test_workspace", "alert_desk_test_workspace")
+    ):
+        return {}
+    settings = get_settings()
+    if not settings.ams_hub_environment:
+        return {}
+    return {
+        "hub_environment": settings.ams_hub_environment.upper(),
+        "hub_investigation": ams.lookup(settings, record.unique_alert_id)
+        if load or request.query_params.get("ams") == "1"
+        else None,
+    }
+
+
 @router.get("/exceptions/{identifier}", include_in_schema=False)
 def exception_detail(request: Request, identifier: int, session: DbSession):
     record = current(session, identifier)
@@ -310,10 +328,31 @@ def exception_detail(request: Request, identifier: int, session: DbSession):
         context={
             **queries.context(session),
             **queries.detail(session, record),
+            **hub_context(request, record),
             "review": session.get(ExceptionReview, identifier),
             "record_nav": exception_record_navigation(request, session, record),
             "title": record.unique_alert_id,
             "active": "exceptions",
+        },
+    )
+
+
+@router.get("/exceptions/{identifier}/ams-hub", include_in_schema=False)
+def exception_ams_history(request: Request, identifier: int, session: DbSession):
+    if not rca_staff(request):
+        raise HTTPException(403, "NMVO access is required.")
+    record = current(session, identifier)
+    return templates.TemplateResponse(
+        request=request,
+        name="exception_ams_history.html",
+        context={
+            **queries.context(session),
+            **hub_context(request, record, load=True),
+            "record": record,
+            "record_nav": exception_record_navigation(request, session, record),
+            "title": record.unique_alert_id,
+            "active": "exceptions",
+            "hub_full_history": True,
         },
     )
 
@@ -338,7 +377,9 @@ def exception_analysis(request: Request, identifier: int, session: DbSession):
     test_review = None
     if can_decide and getattr(request.app.state, "alert_desk_test_workspace", False):
         from app.alert_desk.test_workspace import (
-            batch_finding_links_for, case_id_for_alert, individual_review_reasons,
+            batch_finding_links_for,
+            case_id_for_alert,
+            individual_review_reasons,
         )
 
         batch_finding_links = batch_finding_links_for(session, record, findings.get(record.id, {}))
@@ -365,6 +406,7 @@ def exception_analysis(request: Request, identifier: int, session: DbSession):
         name="exception_analysis.html",
         context={
             **view,
+            **hub_context(request, record),
             "record_nav": exception_record_navigation(request, session, record),
             "review": review,
             "resolved": resolved,
@@ -541,7 +583,10 @@ async def close_rca_batches(request: Request, identifier: int, session: DbSessio
     review_reasons = {}
     case_ids = {}
     if test_workspace:
-        from app.alert_desk.test_workspace import case_id_for_alert, individual_review_reasons
+        from app.alert_desk.test_workspace import (
+            case_id_for_alert,
+            individual_review_reasons,
+        )
 
         _, review_reasons = individual_review_reasons(session, findings)
         review_reasons = {

@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import AliasChoices, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -46,6 +47,17 @@ class Settings(BaseSettings):
     nmvs_exceptions_authority: str | None = None
     nmvs_scope: str | None = None
     nmvs_api_version: str | None = None
+    ams_hub_environment: Literal["uat", "prd"] | None = None
+    ams_uat_base_url: str | None = None
+    ams_uat_token_url: str | None = None
+    ams_uat_scope: str | None = None
+    ams_uat_client_id: str | None = None
+    ams_uat_client_secret: SecretStr | None = None
+    ams_prd_base_url: str | None = None
+    ams_prd_token_url: str | None = None
+    ams_prd_scope: str | None = None
+    ams_prd_client_id: str | None = None
+    ams_prd_client_secret: SecretStr | None = None
     logo_dev_publishable_key: str | None = None
     openai_api_key: SecretStr | None = None
     openai_search_model: str | None = None

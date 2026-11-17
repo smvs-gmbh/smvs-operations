@@ -5,7 +5,7 @@
 | **Document ID**    | FRS-IMPORT-001                    |
 | **Title**          | Information Integration Framework |
 | **Status**         | Draft                             |
-| **Version**        | 0.2                               |
+| **Version**        | 0.3                               |
 | **Classification** | Internal                          |
 | **Owner**          | SMVS GmbH                         |
 | **Author**         | Reinhold Sojer                    |
@@ -19,6 +19,7 @@
 | Version | Date       | Author         | Description                                |
 | ------- | ---------- | -------------- | ------------------------------------------ |
 | 0.2     | 2026-06-29 | Reinhold Sojer | Aligned with ARCH-001, ADR-005 and URS-001 |
+| 0.3     | 2026-11-17 | SMVS Operations project | Added requirements for Exception coverage, report scope and controlled scheduling |
 
 ---
 
@@ -359,6 +360,29 @@ Priority: High
 
 ---
 
+### FRS-IMP-027
+
+Exception acquisition shall record source identity, query bounds and paging
+coverage. Publish a query only when its expected coverage and contents are
+verified. Preserve source payload revisions and refuse replay that would
+replace a newer selected revision with an older one. Partial coverage shall
+remain distinguishable from a complete query with no Alerts.
+
+### FRS-IMP-028
+
+Pack Audit Trail and upload evidence shall retain the relevant request scope,
+report version and available provenance. Pack evidence shall be matched against
+the requested source, product code scheme and code, and serial number. Upload
+coverage shall distinguish a missing report interval from an accepted interval
+with no matching evidence.
+
+### FRS-IMP-029
+
+Import controls shall show schedule, execution status and worker availability.
+Repeated requests shall avoid duplicate work for the same scope where applicable.
+Run now, Backfill, Pause and Resume shall apply the source's scheduling rules,
+with a distinguishable execution record and bounded recovery from failures.
+
 # 7. Traceability
 
 | URS     | Description                                |
@@ -386,6 +410,9 @@ Priority: High
 | FRS-IMP-024 | URS-090–URS-093, URS-096 |
 | FRS-IMP-025 | URS-024–URS-026, URS-098 |
 | FRS-IMP-026 | URS-074, URS-076 |
+| FRS-IMP-027 | URS-012, URS-014, URS-016, URS-040, URS-041, URS-099 |
+| FRS-IMP-028 | URS-016, URS-028, URS-052, URS-094, URS-097 |
+| FRS-IMP-029 | URS-011, URS-014, URS-092 |
 
 ---
 

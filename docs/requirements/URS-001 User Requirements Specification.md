@@ -7,7 +7,7 @@
 | **Document ID**    | URS-001                         |
 | **Title**          | User Requirements Specification |
 | **Status**         | Draft                           |
-| **Version**        | 0.9                             |
+| **Version**        | 0.10                            |
 | **Classification** | Internal                        |
 | **Owner**          | SMVS GmbH                       |
 | **Author**         | Reinhold Sojer                  |
@@ -21,6 +21,7 @@
 | Version | Date       | Author         | Description   |
 | ------- | ---------- | -------------- | ------------- |
 | 0.9     | 2026-06-27 | Reinhold Sojer | Initial draft |
+| 0.10    | 2026-11-17 | SMVS Operations project | Reconciled the intended use and added requirements for current workflows and planned Hub integration |
 
 ---
 
@@ -41,6 +42,19 @@ SMVS Operations is an Operational Intelligence Platform supporting the operation
 The platform enables authorised users to derive purpose-driven Operational Information from source data, perform operational investigations, establish Operational Assessments and obtain evidence-based Decision Support. It is not a historical replica, data warehouse or shadow copy of NMVS. Source System and Source Authority remain distinct as defined in GLO-001.
 
 The platform is intended to support operational investigations, reporting, analytics and continuous organisational learning. It does not replace operational systems such as the Swiss NMVS or the EMVS Alert Management System (AMS) Hub and shall not modify production NMVS data.
+
+SMVS staff use Operations to review source evidence, manage local Cases, and
+maintain participant and contractual context. Connect supports End User
+registration with SMVS review. The Alert Desk pilot allows invited End Users and
+MAHs to contribute Findings within an explicitly granted Case scope. SMVS
+retains authority over manual local Case decisions. Access to each external
+workflow is limited to its approved release and audience.
+
+The first local validation candidate is Git commit `d446f5d`. Its deployment
+and business acceptance scope remains for SMVS to confirm. The
+[traceability matrix](../validation/RTM-001.md) records the assessed coverage,
+gaps and future scope. AI-assisted search is a prototype. AMS Hub integration,
+including automatic local closure based on confirmed Hub status, is planned.
 
 ---
 
@@ -73,6 +87,11 @@ The system shall provide role-based access control appropriate to user responsib
 ## URS-003
 
 The system shall maintain an audit trail of relevant user and system activities.
+
+Every user or system transaction shall have an attributable audit entry,
+including changes, reads, exports, interface requests and automated actions,
+with the outcome recorded. The functional specification shall define the
+transaction boundary for each workflow and protect sensitive contents.
 
 ## URS-004
 
@@ -384,6 +403,13 @@ Approximately three months rolling is the current design assumption for later va
 
 The system shall retain audit/accountability information for at least five years from the recorded activity, or longer where a documented stronger requirement applies. It shall record who performed or approved an action/decision, what changed, when, relevant evidence/context, and the automated process/rule and version where applicable. Audit retention shall not require copying every source dataset.
 
+The retention assessment shall distinguish the Operations audit minimum from
+pack-specific repository obligations under Article 35(1)(g) of Delegated
+Regulation (EU) 2016/161 and the AMS Hub archival rules. The approved policy
+shall state the applicable record category, time basis and longer-period rule.
+The audit archive and its recoverable backups shall preserve the records for
+the applicable period.
+
 ## URS-097
 
 For retained derived information, the system shall preserve sufficient provenance and selected evidence to explain the result after complete source data expires. Where relevant this shall identify Source System, Channel/report/API, acquisition/Observation Times, report/snapshot identity, Processing Run, processing/mapping/rule versions, source-qualified object identifiers, derived result and assessment/decision/action links. For multi-source results, provenance shall distinguish each contributing Source System, Source Authority and relevant assertion, including SMVS/NMVO-owned context, from internally generated observations, assessments and decisions. Unknown source fields and limits on reconstruction shall be explicit. A remote locator or checksum alone shall not satisfy explainability.
@@ -401,3 +427,79 @@ The system shall support required longitudinal Alert/Exception analysis beyond t
 ## URS-100
 
 The system shall preserve required SMVS-created assessments, investigation/review outcomes, decisions, actions, operational classifications, contextual relationships and evidence that a review occurred under their own operational, case and audit/accountability policies. Expiry or re-retrievability of external source data shall not determine retention of these records; the system shall not assume they can be reconstructed solely from NMVS or another external source.
+
+# Participant workflows and operational controls
+
+## URS-101
+
+Authorised staff shall be able to maintain and review CRM records and contact
+assignments used for operational follow-up, distinguish verified links from
+unresolved links, and record dated, actionable Notes against individual records.
+
+## URS-102
+
+End Users shall be able to submit and confirm a registration through Connect.
+SMVS shall review the registration and its CRM links before acceptance. Repeat
+submissions and confirmation attempts shall preserve a single review record
+per accepted submission and protect temporary private data.
+
+## URS-103
+
+SMVS shall be able to invite an eligible End User or MAH to investigate the
+Cases covered by their grant. Participants shall see only their authorised
+Cases and the information explicitly available to their role. Expired, revoked
+or inapplicable access shall be refused.
+
+## URS-104
+
+Participants shall be able to submit and amend Findings and, where appropriate,
+apply them to an explicitly selected set of related Alerts within their scope.
+The system shall retain the role, time and affected Alert IDs and present each
+party's Finding distinctly from the NMVO decision.
+
+## URS-105
+
+SMVS shall be able to record a reasoned decision to close or reopen an eligible
+local Case or an explicitly selected set of eligible Alerts. The system shall
+enforce the SMVS inter-market procedure, including support for foreign-led Alerts
+and End User investigation scope for EU packs scanned in Liechtenstein.
+
+## URS-106
+
+SMVS shall be able to see for each requested party when feedback is due,
+whether a response or progress update was received and whether follow-up is
+overdue. Authorised staff shall be able to review recipients before sending
+reminders. The applicable timing policy, start event, calendar and escalation
+rules shall be agreed before business acceptance.
+
+## URS-107
+
+SMVS shall be able to rehearse and reset synthetic investigation scenarios.
+Synthetic Cases, Pack Audit Trails and test resets shall remain isolated from
+operational records, external delivery and production access.
+
+## URS-108
+
+SMVS shall have access to current catalogue counts and Alert trends, with the
+underlying reporting scope and coverage visible and a route to the supporting
+records where available.
+
+## URS-109
+
+For the planned AMS Hub integration, SMVS shall be able to view matched Hub
+status and attributed investigation history in the local RCA. Authorised
+administrators shall be able to enable or disable automatic local Case closure.
+When enabled, a local Case shall close automatically when the Hub confirms
+`Closed` for every linked Alert. The local Audit Trail shall record the
+configuration changes, closure source and affected Alerts.
+
+The system shall detect later changes to matched Hub Alerts, including
+transitions out of `Closed`, and retain the last successful synchronisation
+time. The synchronisation interval and the response to a Hub reopening require
+a process decision.
+
+## URS-110
+
+SMVS shall be able to recover the application and the evidence required for
+operational decisions from a controlled backup and verify the integrity of
+operational data after deployment, migration or recovery.

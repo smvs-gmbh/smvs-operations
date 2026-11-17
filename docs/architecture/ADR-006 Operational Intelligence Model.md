@@ -5,7 +5,7 @@
 | **Document ID**    | ADR-006                                        |
 | **Title**          | Operational Intelligence and Correlation Model |
 | **Status**         | Draft                                          |
-| **Version**        | 0.9                                            |
+| **Version**        | 0.10                                            |
 | **Classification** | Internal                                       |
 | **Owner**          | SMVS GmbH                                      |
 | **Author**         | Reinhold Sojer                                 |
@@ -305,3 +305,86 @@ Operational Intelligence shall continuously improve through:
 - analytical improvements
 
 Continuous Learning strengthens future investigations while preserving traceability and explainability.
+
+## Evidence-based investigation assistant — refinement, 2026-11-17
+
+**Status: proposed; AI assessment and execution are not implemented by this change.**
+The existing evidence tabs provide complementary source views. Operational
+Intelligence should assemble these into an alert-specific assessment rather than
+ask investigators to reconcile each tab manually. The initial scope is a single
+Alert; Case-level recommendations must retain every constituent Alert and exception.
+
+### Evidence package
+
+Build an explicit package from authorised, already retrieved evidence. Opening a
+page must not trigger an unbounded fetch of all source reports. Identify every
+source record, retrieval time, event time, relevant period, coverage, completeness
+and immutable observation/version reference. Missing, failed, stale and not-yet-
+requested evidence are distinct states. Sources include:
+
+| Source | Contribution | Interpretation limit |
+| --- | --- | --- |
+| Exception & context | Reported identifiers, operation, error and participants | Supplied values can be incorrect; preserve supplied versus stored values |
+| Upload history | Product/batch upload events, distribution outcomes and markets | Batch upload does not prove inclusion of this serial number or successful delivery to every market |
+| Pack audit trail | Same-pack operations, location, market and sequence | Missing events or time windows do not establish that an operation never occurred |
+| AMS Hub | Overall status, party findings, actor, closure reason and messages | Hub closure is a source fact; it does not by itself establish the local root cause or closure authority |
+| Catalogue / SAI / snapshots | Product identity, MAH, batch references and matching | Today's snapshot is not necessarily the state at the Alert time |
+| RCA / participant findings / local audit | Existing assessment, provenance and later changes | Recorded opinions remain attributable opinions; a previous conclusion is not independent proof |
+
+Correlate exact Product Code/Scheme and serial, supplied/stored batch, operation,
+UTC time sequence, organisation/location and market. Represent uncertain matches
+explicitly. Similar batch or error code is insufficient to transfer a pack-level
+conclusion. Do not count multiple copies of one source event as corroboration.
+
+### User-facing proposal
+
+Add an **Operations Intelligence** summary to Root cause analysis, retaining all
+source tabs as evidence views. A compact summary can be visible in context.
+Show the following, with direct links to individual observations or history events:
+
+1. **Suggested explanation**: a short, provisional explanation, or “Insufficient
+   evidence to suggest a cause”. Distinguish deterministic checks from AI inference.
+2. **Supporting evidence**: the specific observations supporting each claim.
+3. **Conflicting or missing evidence**: alternative explanations, coverage gaps,
+   stale sources and material uncertainty. Avoid invented numerical confidence.
+4. **Recommended next step**: the smallest useful investigation action, its purpose
+   and the relevant evidence link. Draft participant questions where useful.
+5. **Proposal provenance**: generation time, evidence version, model and instruction
+   version. Mark the proposal stale when contributing evidence changes.
+
+For example, successful batch upload followed by A2 does not justify “upload was
+missing”. A distribution failure for the requesting market can instead support a
+hypothesis requiring a market-specific check. A Hub Closed event with an actor and
+reason can support a local closure recommendation while displaying the exact source
+reason and any contradictory local evidence. Clearly label both examples as
+hypotheses until supported by the actual package.
+
+### Decision and control boundary
+
+The investigator may accept, edit or reject a proposal. Retain the original proposal,
+its evidence references and the human disposition in the audit trail. Proposals do
+not overwrite participant findings, change Hub status, send communications or close
+Cases. Configured automatic closure remains a separate, deterministic policy with
+its own audit entry; AI must neither enable nor bypass that policy. A newly detected
+Hub reopening invalidates an older closure proposal and follows the agreed review
+or reopening policy.
+
+Source messages are untrusted evidence, never instructions to the assistant.
+Only authorised evidence may enter a proposal; minimise personal information and
+free text before sending anything to an approved external model. Decide provider,
+retention, processing location and access rules before a live AI integration.
+Use deterministic identity, chronology and coverage checks before AI interpretation.
+Store enough source provenance to reproduce the evidence package without relying
+on a live Hub response. Reuse proposals only for the same evidence and instruction
+versions; retain superseded proposals as historical assessments.
+
+### Delivery and validation
+
+First define and display evidence availability and provenance; then pilot a
+read-only, explicitly requested proposal using controlled examples. Validate same-
+pack matching, wrong batch/serial, missing and conflicting sources, partial audit
+trails, duplicate events, late uploads, successful upload with failed distribution,
+Hub closure/reopening, stale proposals and malicious source messages. Assess factual
+accuracy, useful next actions and correct uncertainty, rather than fluency alone.
+Trace this future change through URS/FRS, risk assessment and acceptance evidence
+before release. No validation claim follows from this concept refinement.

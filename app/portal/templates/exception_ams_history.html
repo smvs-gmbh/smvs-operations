@@ -1,0 +1,7 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import record_bar %}
+{% block module_navigation %}{% set exception_tab='hub' %}{% include 'exception_tabs.html' %}{% endblock %}
+{% block heading %}{{ record_bar(record_nav) }}<div class="heading"><div><div class="eyebrow">EXCEPTION · AMS HUB</div><h1 class="exception-id-heading">{{ record.unique_alert_id }}</h1><p>Hub source status and investigation history, newest first. Local case decisions remain separate.</p></div></div>{% endblock %}
+{% block content %}
+{% if hub_environment %}{% include 'exception_ams_hub.html' %}{% else %}<section class="panel"><div class="review-body"><p>No AMS Hub connection is enabled for this workspace.</p></div></section>{% endif %}
+{% endblock %}

@@ -8,14 +8,32 @@ release. Dated sections further down preserve earlier decisions and milestones.
 
 ## Next
 
-- [ ] Integrate AMS Hub as an additional source in RCA. Match by unique Alert ID,
-  show the Hub Alert status, attributed findings and investigation history, and
-  implement the [automatic local Case closure rule](../architecture/NAMS-Architecture-Proposal.md#automatic-local-closure-from-ams-hub).
-  Validate incoming OBP feedback and whether A71 can identify failed distribution
-  to the relevant market. Continue to use the Exceptions API for Alert context.
-- [ ] Review the Alert Desk pilot end to end with representative End Users and
-  MAHs. Validate the response deadline, overdue views and reviewed reminders,
-  and complete access and evidence checks before external rollout.
+- [ ] **Top priority — system validation.** Use [VP-001](../VP-001%20Validation%20Plan.md)
+  to baseline the existing release, confirm intended use and applicable
+  requirements, reconcile URS/FRS with the implemented workflows, and prepare
+  risk-based tests, traceability and a validation report for release review.
+  Draft [requirements traceability](../validation/RTM-001.md) and
+  [risk assessment](../validation/RA-001.md) are available. Confirm the release
+  scope and roles before preparing the formal acceptance cases.
+- [ ] [CHG-003](../validation/CHANGE-REGISTER.md#chg-003--transaction-audit-and-protected-retention).
+  Verify audit coverage for every user and system transaction and specify the
+  protected audit archive, retention and backup/restore controls.
+- [ ] Complete Alert Desk pilot acceptance for response deadlines, overdue views
+  and reminders. The owner reports the rest of the pilot tested. Review the
+  implemented three-weekday request interval against the documented
+  two-working-day alert-based feedback target before fixing acceptance criteria.
+- [ ] Complete business acceptance of [CHG-001](../validation/CHANGE-REGISTER.md#chg-001--ams-hub-in-exceptions)
+  for the current pre-release. The local Exception detail and RCA show AMS Hub
+  status, attributed Findings and history on request. An inbound OBP Finding in
+  UAT remains to be verified.
+
+## After the validation priority
+
+- [ ] Implement the [automatic local Case closure rule](../validation/CHANGE-REGISTER.md#chg-002--automatic-local-closure)
+  with an audited enable/disable setting once the incoming Hub status has
+  been verified. Discuss [background change synchronisation](../validation/CHANGE-REGISTER.md#chg-004--hub-synchronisation-proposal)
+  and the local response to a later Hub reopening. Check whether A71 can
+  identify failed distribution to the relevant market.
 - [ ] Link the standalone synthetic test workspace from the development menu.
 - [ ] Add live packshot intake and display submitted images in RCA details.
   Add report coverage and upload evidence to A2 groups and retain pack-level
@@ -552,3 +570,15 @@ No Jelastic deployment or production source request was performed.
 - [x] Apply the [IMT responsibility and investigation scope](../architecture/Shared-Alerts-Management-End-User-Pilot.md#intermarket-responsibility-and-investigation-scope)
   to participant routing and single or batch closure. Cover foreign-led Swiss-pack
   cases and End-user-only investigations for EU packs scanned in Liechtenstein.
+
+
+### AMS history and Operations Intelligence — 2026-11-17
+
+- [x] Compact AMS summary in context/RCA; dedicated AMS Hub tab with readable
+  event history, complete messages and no report-table configuration controls.
+- [x] Refine the evidence-based investigation assistant concept in ADR-006.
+- [ ] Define versioned, authorised evidence packages across source tabs.
+- [ ] Pilot an explicitly requested, evidence-cited AI proposal with supporting,
+  conflicting and missing evidence, next action and human disposition.
+- [ ] Specify and validate AI processing, provenance, permissions and audit controls;
+  keep configured automatic closure separate from AI advice.

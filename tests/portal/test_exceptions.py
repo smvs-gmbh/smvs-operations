@@ -1,9 +1,11 @@
+import httpx
 import pytest
 from sqlalchemy import select
 
 from app.core.db.models import ImportMutex
 from app.domain.exceptions.mapping import MUTEX, publish_exceptions
 from app.domain.models import CRMEndUser, LocalOrganisation
+from app.integration.sources import ams
 from app.portal.exception_routes import router
 from tests.integration.exceptions.test_exceptions import NS, acquire, alert, page
 
@@ -24,6 +26,141 @@ def test_empty_list_and_filter_validation(exceptions_portal):
     assert client.get("/exceptions?start=2026-10-10&end=2026-10-01").status_code == 422
     assert client.get("/exceptions/999").status_code == 404
     assert "No alerts or complete query days" in client.get("/exceptions/trends").text
+
+
+def test_ams_hub_is_read_only_scoped_and_separate_from_local_rca(
+    exceptions_portal, monkeypatch
+):
+    from types import SimpleNamespace
+    from urllib.parse import parse_qs
+
+    from app.core.config.settings import Settings
+    from app.domain.models import ExceptionReview
+    from app.portal import exception_routes
+
+    client, factory = exceptions_portal
+    publish_exceptions(factory, acquire(factory, [page([alert()])]), NS)
+    base, token_url, scope = ams.ENDPOINTS["uat"]
+    settings = Settings(
+        db_name="smvs_operations",
+        db_user="test",
+        db_password="test",
+        ams_hub_environment="uat",
+        ams_uat_base_url=base,
+        ams_uat_token_url=token_url,
+        ams_uat_scope=scope,
+        ams_uat_client_id="client",
+        ams_uat_client_secret="secret",
+    )
+    monkeypatch.setattr(exception_routes, "get_settings", lambda: settings)
+    requests = []
+    scenario = "history"
+    alert_id = "CH-test-001"
+
+    def upstream(request):
+        requests.append((request.method, str(request.url)))
+        if str(request.url) == token_url:
+            assert parse_qs(request.content.decode()) == {
+                "client_id": ["client"], "client_secret": ["secret"],
+                "scope": [scope], "grant_type": ["client_credentials"],
+            }
+            return httpx.Response(200, json={"access_token": "hidden-token"})
+        assert request.headers["authorization"] == "Bearer hidden-token"
+        if str(request.url) == f"{base}/api/v1.1/alerts/{alert_id}/details":
+            if scenario == "missing":
+                return httpx.Response(404)
+            if scenario == "down":
+                raise httpx.ConnectError("remote diagnostics")
+            if scenario == "timeout":
+                raise httpx.ReadTimeout("private transport diagnostics")
+            return httpx.Response(200, json={
+                "uniqueAlertId": alert_id if scenario != "wrong-id" else "OTHER",
+                "status": "Closed", "obpInvestigationStatus": "RootCauseOnMySide",
+            })
+        assert str(request.url) == f"{base}/api/v1/investigations/{alert_id}/details"
+        if scenario == "history-down":
+            return httpx.Response(503)
+        return httpx.Response(200, json={
+            "uniqueAlertId": alert_id if scenario != "wrong-history-id" else "OTHER",
+            "statuses": [],
+            "actions": [{
+                "timestamp": "2026-10-21T11:42:15+02:00",
+                "organisationBusinessId": "1234",
+                "alertStatusChange": {"newStatus": "Closed", "reasonText": "Issue fixed"},
+                "message": {"messageText": "<script>remote message</script>"},
+            }] if scenario == "history" else [],
+        })
+
+    def mock_client(**kwargs):
+        return httpx.Client(transport=httpx.MockTransport(upstream), **kwargs)
+
+    monkeypatch.setattr(
+        ams, "httpx", SimpleNamespace(
+            Client=mock_client,
+            HTTPError=httpx.HTTPError,
+            Timeout=httpx.Timeout,
+            TimeoutException=httpx.TimeoutException,
+        )
+    )
+    actor = None
+
+    def staff(request):
+        return actor
+
+    monkeypatch.setattr(exception_routes, "rca_staff", staff)
+    assert "AMS Hub" not in client.get("/exceptions/1?ams=1").text
+    assert requests == []
+    assert client.get("/exceptions/1/ams-hub").status_code == 403
+
+    actor = SimpleNamespace(is_nmvo=True)
+    assert "Load AMS Hub investigation" in client.get("/exceptions/1").text
+    assert "AMS Hub" not in client.get("/exceptions").text
+    assert requests == []
+
+    detail = client.get("/exceptions/1?ams=1").text
+    assert "Hub alert status</dt><dd><strong>Closed" in detail
+    assert "View investigation history" in detail
+    assert "hub-history" not in detail
+    history = client.get("/exceptions/1/ams-hub").text
+    assert "Root cause on my side" in history
+    assert 'class="hub-history"' in history
+    assert "<table" not in history
+    assert "exception_tab" not in history
+    assert "/ams-hub?nav_start=" in history
+    assert "2026-10-21 09:42:15" in detail
+    assert "Issue fixed" in history
+    assert "&lt;script&gt;remote message&lt;/script&gt;" in history
+    assert "hidden-token" not in detail
+    assert [method for method, _ in requests] == ["POST", "GET", "GET"] * 2
+    analysis = client.get("/exceptions/1/analysis?ams=1").text
+    assert "Participant findings" in analysis and "SMVS decision" in analysis
+    assert "Hub alert status" in analysis and '>Open</span>' in analysis
+    with factory() as session:
+        assert session.get(ExceptionReview, 1) is None
+
+    for scenario, message in [
+        ("empty", "No investigation history has been recorded"),
+        ("missing", "This alert was not found"),
+        ("down", "AMS Hub information is temporarily unavailable"),
+        ("timeout", "AMS Hub did not respond within the allowed time"),
+        ("wrong-id", "AMS Hub information is temporarily unavailable"),
+        ("history-down", "The AMS Hub investigation history is unavailable"),
+        ("wrong-history-id", "The AMS Hub investigation history is unavailable"),
+    ]:
+        response = client.get("/exceptions/1/ams-hub")
+        assert response.status_code == 200 and message in response.text
+        assert "Local case decisions remain separate" in response.text
+        assert "private transport diagnostics" not in response.text
+        if scenario in ("down", "timeout"):
+            assert "Retry AMS Hub investigation" in response.text
+
+    requests.clear()
+    client.app.state.alert_desk_test_workspace = True
+    assert "AMS Hub" not in client.get("/exceptions/1?ams=1").text
+    client.app.state.alert_desk_test_workspace = False
+    settings.ams_uat_token_url = "https://wrong.example"
+    assert "AMS Hub information is temporarily unavailable" in client.get("/exceptions/1?ams=1").text
+    assert requests == []
 
 
 def test_trends_and_drill_down_share_alert_and_country_filters(exceptions_portal):
