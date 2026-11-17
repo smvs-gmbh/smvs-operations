@@ -518,3 +518,18 @@ candidate differences and separate Connect/test assets are listed in the
 [deployment checkpoint](../deployment/STATUS-2026-11-10.md). All 15 public Connect
 manifest source files match local source and their deployed manifest. Full local
 suite: 466 passed. No production data was modified during this checkpoint review.
+
+
+### Operations consolidation — 2026-11-17
+
+Deployed runtime `eee48a6` to the private Operations node after a verified
+source/configuration backup and consistent 415 MiB compressed MySQL backup.
+Upgraded `0042` to `0051` with a temporary schema-scoped account, then removed
+that account. Restored the four existing services individually; public Connect
+source/configuration was unchanged. HTTPS health/login and protected redirects
+passed; 369 source hashes and retained CRM/Exception/user counts were verified.
+AMS PRD is available for explicit read-only lookup. Alert Desk Pilot remains
+local and disabled on the server, with no pilot data populated.
+See the [release record](../deployment/RELEASE-2026-11-17.md) for full evidence,
+backup identifiers, the corrected Upload History archive exclusion and remaining
+operator acceptance/validation work.

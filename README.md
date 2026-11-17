@@ -22,6 +22,8 @@ SMVS Operations is the central operational platform of SMVS for monitoring, anal
 
 ## Documentation
 
+The [2026-11-17 Operations release](docs/deployment/RELEASE-2026-11-17.md) records the deployed baseline, backup and verification evidence; Alert Desk Pilot remains local.
+
 The [local checkpoint and Jelastic deployment overview](docs/deployment/STATUS-2026-11-10.md)
 distinguishes deployed functionality from the next local release and defines the
 local-development → test → commit → push → deployment workflow.
