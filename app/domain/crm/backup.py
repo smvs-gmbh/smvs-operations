@@ -127,8 +127,11 @@ def _backup_database(destination, *, settings=None, executable=None):
                     "Database backup was empty; no completed backup was recorded."
                 )
             partial.replace(dump)
+            digest_state = hashlib.sha256()
             with dump.open("rb") as verified:
-                digest = hashlib.file_digest(verified, "sha256").hexdigest()
+                for block in iter(lambda: verified.read(1024 * 1024), b""):
+                    digest_state.update(block)
+            digest = digest_state.hexdigest()
             manifest = {
                 "status": "complete",
                 "created_at_utc": stamp,
