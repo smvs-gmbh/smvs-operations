@@ -694,7 +694,8 @@ No Jelastic deployment or production source request was performed.
   identity changes subject to review. Protect views using retired predicates.
 - [x] Implement consistent private database backup with checksum/manifest, run lock
   and no success marker on failure. Rehearse isolated restore and online migration.
-- [ ] Record completed production cutover, scheduled backup and production verification.
+- [x] Record completed production cutover, scheduled backup and production verification;
+  see docs/deployment/CRM-CUTOVER-2026-11-25.md (runtime 8e9748d, schema 0054).
 - [ ] Owner review of unresolved source affiliations; do not infer roles from membership.
 - [ ] Finalise timestamp/derived-field concepts, backup retention/off-site copies,
   recurring restore exercise and proactive backup failure/freshness monitoring.

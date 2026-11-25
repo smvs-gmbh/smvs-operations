@@ -4,7 +4,7 @@ Entries distinguish deployed pilot changes from development-only increments.
 Pilot checkpoints and requirements drafts do not constitute an approved QMS
 baseline. Detailed scope/evidence: [change register](docs/validation/CHANGE-REGISTER.md).
 
-## Unreleased — CRM cutover preparation
+## 2026-11-25 — deployed CRM pilot cutover
 
 - CHG-015: Clean CRM column labels/catalogues; unify durable general Contact
   affiliations with separate SPOC/Alert roles and protected manual changes. Add
@@ -13,9 +13,12 @@ baseline. Detailed scope/evidence: [change register](docs/validation/CHANGE-REGI
   block saved views using retired predicates until explicitly corrected.
 - Consistent private database backups with checksums, completion manifests and
   overlap protection; isolated restore/migration rehearsal. URS draft v0.15,
-  URS-115–117. Production close-out and validation reconciliation tracked separately.
+  URS-115–117. Runtime `8e9748d`, schema 0054; daily 01:30 UTC database backup.
+  Production restore, migration and CRM rendering verified; 15 source references
+  need integrity review. [Deployment record](docs/deployment/CRM-CUTOVER-2026-11-25.md).
+  Formal validation reconciliation remains open.
 
-## Previous local CRM relation/integrity experiment
+## CRM relation/integrity increments (included in the cutover above)
 
 - CHG-014: Add an independent Agreements lookup beside Self-declarations, with
   typed signing-date comparisons/Min/Max, selected agreement fields, source-MAH

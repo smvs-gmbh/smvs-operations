@@ -466,3 +466,13 @@ the relevant distribution market.
   six cleaned field catalogues and navigation. Changed-source lint, JavaScript
   syntax and Git whitespace checks passed. Production close-out is recorded
   separately after application of the committed candidate.
+- **Production close-out.** Runtime `8e9748d`, schema 0054; 393 committed files
+  verified. Existing CRM rows/counts unchanged (111 MAHs, 309 Contacts, 59 End
+  Users, 99 Agreements). Added 306 affiliations; repeat zero; 15 unresolved
+  references await owner review. Production full backup restored and online
+  migration rehearsed, including stored documents. Daily 01:30 UTC backup on the
+  database node uses a dedicated read account and preserves existing cron jobs.
+  Temporary DDL account removed, runtime privileges/authentication unchanged,
+  Alert Desk Pilot disabled. CRM/default-view/form rendering and HTTPS probes
+  passed. Full scope, recovery boundaries and evidence:
+  docs/deployment/CRM-CUTOVER-2026-11-25.md. No obsolete evidence deleted.
