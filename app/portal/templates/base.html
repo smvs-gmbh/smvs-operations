@@ -5,11 +5,12 @@
   <title>{{ title }} · SMVS Operations</title>
   <link rel="stylesheet" href="{{ request.url_for('portal_static', path='portal.css') }}?v=test-case-overview-1">
   <script src="{{ request.url_for('portal_static', path='text-size.js') }}"></script>
-  {% if active == 'crm' %}<script src="{{ request.url_for('portal_static', path='crm-list-views.js') }}?v=checkbox-filters-2" type="module"></script>
+  {% if active == 'crm' %}<script src="{{ request.url_for('portal_static', path='crm-list-views.js') }}?v=excel-1" type="module"></script>
   <script src="{{ request.url_for('portal_static', path='record-actions.js') }}?v=crm-record-actions-1" type="module"></script>
   <script src="{{ request.url_for('portal_static', path='crm-navigation.js') }}?v=registration-workflow-1" type="module"></script>{% endif %}
   {% if active == 'workflows' %}<script src="{{ request.url_for('portal_static', path='record-actions.js') }}?v=registration-workflow-1" type="module"></script>{% endif %}
-  {% block table_views %}<script src="{{ request.url_for('portal_static', path='portal-list-views.js') }}?v=numeric-sort-1" type="module"></script>{% endblock %}
+  {% block table_views %}<script src="{{ request.url_for('portal_static', path='portal-list-views.js') }}?v=excel-1" type="module"></script>{% endblock %}
+  <script src="{{ request.url_for('portal_static', path='table-csv.js') }}?v=excel-1" type="module"></script>
 </head>
 <body>
 <aside class="sidebar">

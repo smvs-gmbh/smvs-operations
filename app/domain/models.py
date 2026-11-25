@@ -1095,3 +1095,27 @@ class AlertDeskResponseRequest(Base):
     requested_at: Mapped[datetime] = mapped_column(DateTime)
     due_on: Mapped[date] = mapped_column(Date)
     reminded_on: Mapped[date | None] = mapped_column(Date)
+
+
+DOMAIN_TABLES.add("portal_csv_exports")
+
+
+class PortalCsvExport(Base):
+    """Receipt for CSV/Excel bytes generated from an authorised browser table view."""
+
+    __tablename__ = "portal_csv_exports"
+    __table_args__ = (
+        Index("ix_portal_csv_exports_actor_created", "actor_id", "created_at"),
+        CheckConstraint("row_count >= 0", name="ck_portal_csv_export_rows"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    actor_id: Mapped[int] = mapped_column(ForeignKey("portal_users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    source_path: Mapped[str] = mapped_column(String(500))
+    table_key: Mapped[str] = mapped_column(String(100))
+    columns: Mapped[list] = mapped_column(JSON)
+    view_hash: Mapped[str] = mapped_column(String(64))
+    row_count: Mapped[int] = mapped_column(Integer)
+    byte_count: Mapped[int] = mapped_column(BigInteger)
+    file_sha256: Mapped[str] = mapped_column(String(64))
+    file_format: Mapped[str] = mapped_column(String(8), default="csv", server_default="csv")

@@ -20,6 +20,7 @@ from app.integration.artifacts.storage import utcnow
 from app.portal.crm_field_catalogue import CRMField
 from app.portal.exception_routes import review_form
 from app.portal.routes import DbSession
+from app.portal.snapshot_fields import BATCH_FIELDS, OBP_FIELDS, PRODUCT_FIELDS
 
 router = APIRouter()
 SQL_KEYS = {
@@ -157,6 +158,8 @@ def sql_fields(key, *, response_party=""):
             (H.company_name, "text"),
             (P.reported_version, "number"),
             (M.match_status, "text"),
+            (None, "text"),  # c5 remains the existing Links / actions column.
+            *((field.expression(P), field.kind) for field in PRODUCT_FIELDS),
         ],
         "batches": [
             (Batch.batch_code, "text"),
@@ -166,6 +169,8 @@ def sql_fields(key, *, response_party=""):
             (Batch.batch_state, "text"),
             (Batch.pack_count, "number"),
             (Batch.active_pack_count, "number"),
+            *((field.expression(P), field.kind) for field in OBP_FIELDS),
+            *((field.expression(Batch), field.kind) for field in BATCH_FIELDS),
         ],
         "organisations": [
             (O.organisation_name, "text"),
@@ -246,7 +251,10 @@ def schema_for(request, key):
             for field in schema:
                 if field["key"].startswith("c"):
                     i = int(field["key"][1:])
-                    field["column_only"] = i >= len(expressions)
+                    field["column_only"] = i >= len(expressions) or expressions[i][0] is None
+                    default_count = {"products": 6, "batches": 7, "product-batches": 6}.get(key)
+                    if default_count is not None:
+                        field["default_visible"] = i < default_count
                     if i < len(expressions):
                         field["type"] = expressions[i][1]
         if key == "exceptions" and "selection" not in seen:
@@ -268,7 +276,7 @@ def normalise(config, schema):
         raise HTTPException(422, "Invalid view settings.")
     fields = {f["key"]: f for f in schema}
     keys = list(fields)
-    columns = config.get("columns") or keys
+    columns = config.get("columns") or [f["key"] for f in schema if f.get("default_visible", True) or f["key"] == "c0"]
     order = config.get("column_order") or keys
     conditions = config.get("conditions", [])
     quick = config.get("quick_filters", {})
@@ -547,8 +555,8 @@ def apply_sql(request, session, statement, key):
         key, response_party=request.query_params.get("response_party", "")
     )
     fields = {
-        f"c{i}": {"key": f"c{i}", "label": f"Column {i + 1}", "type": kind}
-        for i, (_, kind) in enumerate(expressions)
+        f"c{i}": {"key": f"c{i}", "label": f"Column {i + 1}", "type": kind, "column_only": column is None}
+        for i, (column, kind) in enumerate(expressions)
     }
     schema = list(fields.values())
     # The server validates against its own registry, never client SQL or field names.
@@ -564,7 +572,7 @@ def apply_sql(request, session, statement, key):
                         func.lower(cast(column, String)).contains(
                             search.lower(), autoescape=True
                         )
-                        for column, _ in expressions
+                        for column, _ in expressions if column is not None
                     )
                 )
             )

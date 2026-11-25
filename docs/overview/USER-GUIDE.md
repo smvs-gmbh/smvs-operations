@@ -238,7 +238,39 @@ matching records before pagination. Related batch/location tables work the same
 way. Other report tables filter the retrieved report scope, as indicated by their
 row counter; change the report period/scope to retrieve different data.
 
-Where available, **Actions** opens the corresponding toolbox, initially closed.
+**Actions → Download CSV** downloads the table's current view: displayed data
+columns in their current order, matching rows and the applied sorting. A saved
+view is not required. Column changes take effect immediately; apply pending
+filter/search changes first if you want them to change the displayed results.
+Paginated views export all matching pages. Report exports retain their current
+report period/scope and do not request additional external reports. Selection
+checkboxes and action links are excluded. The file contains UTF-8 text with
+quoted comma-separated fields; source identifiers retain their leading zeros
+in the file. Spreadsheet applications may still apply their own import formats.
+
+Choose **Actions → Download Excel** when opening a view in Excel. The `.xlsx`
+file stores GTINs, GLNs, serial numbers, batch identifiers and other text fields
+as literal text, preserving leading zeros and long identifiers. Reported numeric
+columns such as Packs remain numeric where Excel can represent them faithfully.
+Values beyond Excel's numeric precision remain text. The workbook retains the
+same selected columns, row scope and order as the CSV, with a frozen header and
+Excel filtering. Oversized cells are rejected rather than silently truncated.
+
+CSV itself carries no column types. Quoted CSV values can still be converted by
+Excel on opening. For external files, import through **Data → From Text/CSV** and
+set identifier columns to **Text**, or disable the applicable automatic conversions
+in supported Excel versions. Formatting an already rounded long number cannot
+recover discarded digits; reimport the original source. See
+[Microsoft: keeping leading zeros and large numbers](https://support.microsoft.com/en-us/excel/keeping-leading-zeros-and-large-numbers).
+
+The download shows progress and **Cancel download**. An incomplete or failed
+retrieval does not produce a partial CSV. If source/count changes are detected,
+reload the view and retry. A generation receipt records staff identity, UTC time,
+source table, selected columns, view hash, row count and file checksum; it does
+not claim that your browser saved the file. Formula-like text receives a leading
+apostrophe so spreadsheet applications treat it as text.
+
+**Actions** also opens existing table actions, initially closed.
 Select records in the table, then choose an existing action. Selection applies
 to the displayed page. Existing confirmation and audit requirements still apply.
 Close either toolbox with **Close**, Escape or the backdrop on smaller screens.
@@ -400,6 +432,15 @@ same-day corrections remain blocked. A historical Snapshot backfill only retriev
 and stages its selected date; it does not roll the current catalogue backwards.
 Acquisition success and publication success are distinct: a publication failure
 is recorded against the import execution with its acquired source job retained.
+
+In **Imports → Run history**, expand **Failure details** on a failed or interrupted
+execution. It shows the execution ID, recorded error code, elapsed time (or time
+until an interruption was detected), an explanation and suggested checks. Where
+available, acquisition/processing records show the last recorded source status
+and failure stage. An explicitly linked source job is distinguished from activity
+found only in the same time window; ambiguous activity is not assigned. A hard
+worker termination may leave no exact cause recorded. Source processing success
+alone does not establish that publication completed. Expanding details is read-only.
 
 For local review, start the portal and `.venv/bin/python -m app.integration.scheduler --serve-manual` as separate processes. This worker
 processes explicit manual import and evidence requests without triggering overdue

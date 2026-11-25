@@ -279,3 +279,67 @@ def test_exception_schema_survives_empty_selection_and_sai_lookup(tables):
         },
     )
     assert response.status_code == 200 and "CH-test-001" in response.text
+
+
+def test_snapshot_pack_counts_and_obp_are_available_to_saved_product_views(tables):
+    from app.portal.snapshot_fields import PRODUCT_FIELDS
+
+    client, factory = tables
+    data = datasets()
+    data["Products"][0].update({"OBP Name": "Uploader Alpha", "OBP Id": "00042", "Number Of Active Packs": "0"})
+    for i in range(55):
+        data["Products"].append({**data["Products"][0], "Product Code": f"zero-{i}", "Number Of Packs": "0"})
+    data["Products"].append({**data["Products"][0], "Product Code": "missing-count", "Number Of Packs": ""})
+    publish(factory, *seed(factory, data), "synthetic-nmvs")
+    assert 'data-pages="2"' in client.get("/products").text
+    assert 'data-pages="1"' in client.get("/products", headers={"x-portal-csv": "1"}).text
+    schema = SCHEMA + [{"key": f"c{i+6}", "label": field.label} for i, field in enumerate(PRODUCT_FIELDS)]
+    metadata = client.get("/table-views/products", params={"schema": json.dumps(schema)}).json()
+    fields = {f["key"]: f for f in metadata["fields"]}
+    assert fields["c6"]["type"] == fields["c7"]["type"] == "number"
+    assert fields["c5"]["column_only"]
+    assert metadata["config"]["columns"] == [f"c{i}" for i in range(6)]
+    view = save(client, schema=schema, command="create", name="MAH products with packs", config={
+        "columns": ["c0", "c2", "c6", "c7", "c9", "c10"],
+        "conditions": [
+            {"field": "c2", "operator": "contains", "value": "Schweizer Inhaberin"},
+            {"field": "c6", "operator": "greater_than", "value": "0"},
+            {"field": "c9", "operator": "contains", "value": "Uploader Alpha"},
+        ],
+        "sort": "c6", "direction": "desc",
+    })
+    assert view.status_code == 200
+    page = client.get("/products", params={"tv_products_view": view.json()["view"]["id"]})
+    assert page.status_code == 200 and "1 results" in page.text
+    assert "Uploader Alpha" in page.text and "00042" in page.text
+    assert "WRONG NMVS NAME" not in page.text and "WRONG NMVS MAH" not in page.text
+    assert 'class="numeric">0</td>' in page.text  # Packs exist even when none are active.
+    no_active = client.get("/products", params={"tv_products_rules": json.dumps([
+        {"field": "c7", "operator": "greater_than", "value": "0"},
+    ])})
+    assert no_active.status_code == 200 and "0 results" in no_active.text
+    assert "OBP name · NMVS" in no_active.text  # Catalogue survives an empty result.
+    assert "1 results" in client.get("/products?q=00042&status=matched_sai").text
+    assert save(client, schema=schema, command="create", name="Invalid links filter", config={
+        "conditions": [{"field": "c5", "operator": "contains", "value": "anything"}],
+    }).status_code == 422
+
+
+def test_snapshot_batch_fields_preserve_related_view_offsets_and_source_values(tables):
+    client, factory = tables
+    data = datasets()
+    data["Products"][0].update({"OBP Name": "Uploader Beta", "OBP Id": "00007"})
+    data["Batches"][0].update({"Manufacturer Name": "<script>source manufacturer</script>", "Markets": "CH, LI"})
+    publish(factory, *seed(factory, data), "synthetic-nmvs")
+    for path, key, obp_column in (("/batches", "batches", "c7"), ("/products/1", "product-batches", "c6")):
+        response = client.get(path, params={f"tv_{key}_rules": json.dumps([
+            {"field": obp_column, "operator": "equals", "value": "Uploader Beta"},
+        ])})
+        assert response.status_code == 200
+        assert "Lot-001" in response.text and "00007" in response.text
+        assert "&lt;script&gt;source manufacturer&lt;/script&gt;" in response.text
+        assert "<script>source manufacturer</script>" not in response.text
+        empty = client.get(path, params={f"tv_{key}_rules": json.dumps([
+            {"field": obp_column, "operator": "equals", "value": "Other uploader"},
+        ])})
+        assert empty.status_code == 200 and "No matching batches found" in empty.text

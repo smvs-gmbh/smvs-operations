@@ -11,6 +11,7 @@ from app.portal.auth_access import install_portal_access
 from app.portal.auth_routes import router as auth_router
 from app.portal.collaboration_routes import router as collaboration_router
 from app.portal.crm_routes import router as crm_router
+from app.portal.csv_routes import router as csv_router
 from app.portal.exception_routes import router as exception_router
 from app.portal.import_routes import router as import_router
 from app.portal.intelligence_routes import router as intelligence_router
@@ -51,6 +52,7 @@ app.include_router(mah_report_router)
 app.include_router(crm_router)
 app.include_router(workflow_router)
 app.include_router(table_views_router)
+app.include_router(csv_router)
 app.include_router(registration_router)
 
 

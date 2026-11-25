@@ -81,7 +81,7 @@ def install_portal_access(app, settings):
             )
             allowed = (
                 user.is_admin or user.is_nmvo
-                if in_section(path, "/table-views")
+                if any(in_section(path, section) for section in ("/table-views", "/table-exports"))
                 else user.is_admin
                 if admin_section
                 else user.is_nmvo

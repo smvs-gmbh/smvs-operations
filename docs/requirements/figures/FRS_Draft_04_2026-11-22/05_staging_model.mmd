@@ -1,0 +1,38 @@
+erDiagram
+  integration_jobs ||--o{ acquired_artifacts : acquisition
+  artifact_contents ||--o{ acquired_artifacts : retained_content
+  acquired_artifacts ||--o{ processing_runs : processing_attempt
+  processing_runs ||--o{ staging_datasets : extracted_dataset
+  acquired_artifacts ||--o{ staging_datasets : source_artifact
+  staging_datasets ||--o{ staging_rows : source_rows
+  integration_jobs {
+    int id PK
+  }
+  artifact_contents {
+    int id PK
+    string sha256 UK
+    binary artifact_bytes
+  }
+  acquired_artifacts {
+    int id PK
+    int integration_job_id FK
+    int content_id FK
+  }
+  processing_runs {
+    int id PK
+    int artifact_id FK
+    string parser_version
+    string status
+  }
+  staging_datasets {
+    int id PK
+    int processing_run_id FK
+    int artifact_id FK
+  }
+  staging_rows {
+    int id PK
+    int staging_dataset_id FK
+    int source_row_number
+    string source_record_hash
+    json raw_row_json
+  }

@@ -28,7 +28,7 @@ def test_integration_foundation_metadata_contains_only_approved_tables() -> None
         "end_user_registrations", "registration_events", "registration_receipts", "crm_deletion_events",
         "alert_desk_grants", "alert_desk_events", "alert_desk_access", "alert_desk_export_attributions", "alert_desk_case_updates",
         "manual_import_requests", "manual_import_attempts", "scheduler_heartbeats", "crm_record_notes",
-        "alert_desk_settings", "alert_desk_response_requests",
+        "alert_desk_settings", "alert_desk_response_requests", "portal_csv_exports",
     }
 
 

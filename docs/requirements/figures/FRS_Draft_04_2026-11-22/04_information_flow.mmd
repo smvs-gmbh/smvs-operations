@@ -1,0 +1,13 @@
+flowchart TB
+  NMVS["NMVS reports<br/>Daily Snapshot / Exceptions / activity<br/>Pack Audit Trail / upload"]
+  SAI["Refdata SAI<br/>Swiss product names and MAH"]
+  A["Acquire and retain raw bytes<br/>Job, hash, source and report metadata"]
+  B["Parse and validate source structure<br/>Record attempt and failure stage"]
+  C["Stage accepted datasets and rows<br/>Headers, order, raw JSON and row hashes"]
+  D["Validate mapping and publish<br/>Product/Batch plus SAI; separate report paths"]
+  E["Operational views and RCA<br/>Source scope, coverage and provenance"]
+  N["Other paths<br/>Connect and staff CRM use separate workflows.<br/>Hub and VerifyIt feed scope is release-dependent."]:::note
+  NMVS --> A
+  SAI --> A
+  A --> B --> C --> D --> E
+  classDef note fill:#fff,stroke:#555,stroke-dasharray:5 4;

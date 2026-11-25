@@ -582,3 +582,45 @@ No Jelastic deployment or production source request was performed.
   conflicting and missing evidence, next action and human disposition.
 - [ ] Specify and validate AI processing, provenance, permissions and audit controls;
   keep configured automatic closure separate from AI advice.
+
+
+### Catalogue Snapshot field availability — 2026-11-18
+
+- [x] Make reported Product Packs/Active packs, state, OBP and retained source
+  identifiers available as optional personal-view columns and SQL conditions.
+- [x] Add related Product OBP and retained operational Batch fields to Batch views.
+- [x] Preserve existing view keys/default layouts and SAI-owned Swiss names.
+- [ ] Review the expanded views locally and deploy the next accepted increment.
+
+
+### CSV of the current table view — 2026-11-18
+
+- [x] Shared Actions → Download CSV for read-only data tables, including CRM.
+- [x] Preserve applied selection/sorting and current visible column order across
+  all matching pages; progress, cancellation and no partial files on failure.
+- [x] Retain generation receipts and protect the export with staff/origin checks.
+- [ ] Review locally and deploy the next accepted increment, including migration 0052.
+
+
+### Excel view downloads — 2026-11-18
+
+- [x] Download Excel beside CSV; literal identifier/text cells preserve leading
+  zeros and long serials while reported Pack counts remain usable numeric values.
+- [x] Reuse current view scope/order and retain file-format audit provenance.
+- [ ] Review locally and deploy the next accepted increment, including migration 0053.
+
+### Import worker interruptions — 2026-11-25 (CHG-008)
+
+- [x] Reproduce excessive SAI extraction memory and inspect production SIGKILL history.
+- [x] Reduce XML tree retention; bound Snapshot staging and publication reads/writes.
+- [x] Verify extraction equivalence, multi-page integrity and atomic rollback (511 tests).
+- [x] Apply only the three import runtime files with a production rollback backup.
+- [x] Confirm a successful production SAI import through the normal persistent queue.
+- [x] Verify first-attempt production Snapshot publication for 2026-11-25, including participants.
+
+### Import Run history diagnostics — 2026-11-25 (CHG-009)
+
+- [x] Add expandable, read-only failure explanations and retained pipeline status.
+- [x] Distinguish confirmed linkage, time-window context and unknown kill causes.
+- [x] Verify diagnostic boundaries, source filters, browser widths and keyboard control.
+- [x] Deploy the targeted UI change with rollback backup; verify production rendering.

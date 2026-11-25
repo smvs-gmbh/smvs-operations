@@ -555,3 +555,6 @@ div.test-case-columns { color: var(--muted); background: #f7f9fb; font-weight: 6
 .hub-history article { overflow-wrap: anywhere; }
 .hub-history h3 { font-size: var(--portal-section-size); margin: .5rem 0; }
 .hub-history .rca-note { max-width: 85ch; margin-top: .75rem; }
+
+.table-csv-controls { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; }
+.table-csv-controls [role="status"] { flex-basis: 100%; margin: 0 0 .75rem; overflow-wrap: anywhere; }

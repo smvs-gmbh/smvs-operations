@@ -1,0 +1,22 @@
+flowchart TB
+  %% Solid arrows are process sequence. Dashed links associate notes only.
+  P1["Administrator creates named user<br/>Select Administrator and/or NMVO User"]
+  P2["Single-use enrolment invitation<br/>24-hour lifetime; trusted delivery channel"]
+  P3["Recipient registers a passkey<br/>Discoverable credential and user verification"]
+  P4["Server verifies WebAuthn response<br/>Browser challenge, RP ID, origin and verification"]
+  P5["Consume challenge and invitation<br/>Store public credential and issue session"]
+  P6["Server-side session and role checks<br/>8-hour lifetime; protect reads and changes"]
+  P1 --> P2
+  P2 --> P3
+  P3 --> P4
+  P4 --> P5
+  P5 --> P6
+  N1["Bootstrap first administrator through the trusted server console."]:::note
+  P1 -.- N1
+  N2["Later sign-in: new challenge and passkey assertion; no password login."]:::note
+  P4 -.- N2
+  N3["Invalid, expired or replayed response: refuse sign-in; no session."]:::note
+  P4 -.- N3
+  N4["Disable user or change roles: revoke tokens and sessions. A backup passkey requires recent sign-in."]:::note
+  P6 -.- N4
+  classDef note fill:#fff,stroke:#555,stroke-dasharray:5 4;

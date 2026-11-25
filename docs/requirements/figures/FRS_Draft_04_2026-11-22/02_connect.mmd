@@ -1,0 +1,22 @@
+flowchart TB
+  %% Solid arrows are process sequence. Dashed links associate notes only.
+  P1["Registrant submits Tally form<br/>Signed webhook reaches public Connect relay"]
+  P2["Relay checks signature and format<br/>Fixed TLS route to the private registration API"]
+  P3["Private API checks peer and bearer<br/>Validate signature and commit receipt plus CRM"]
+  P4["Awaiting email confirmation<br/>Internal mail process sends single-use link"]
+  P5["Recipient confirms by explicit POST<br/>Consume token; move registration to Needs review"]
+  P6["Staff reviews identity and duplicates<br/>Approve to Ready for NMVS; record external ID"]
+  P1 --> P2
+  P2 --> P3
+  P3 --> P4
+  P4 --> P5
+  P5 --> P6
+  N1["Public relay is stateless: no database or mail credentials."]:::note
+  P2 -.- N1
+  N2["Failed or uncertain internal commit: return unavailable, never received. Retry is deduplicated."]:::note
+  P3 -.- N2
+  N3["Reject with reason; expire private security data; resend only through controlled internal workflow."]:::note
+  P6 -.- N3
+  N4["NMVS creation is external. Recording its organisation ID does not call an NMVS create operation."]:::note
+  P6 -.- N4
+  classDef note fill:#fff,stroke:#555,stroke-dasharray:5 4;

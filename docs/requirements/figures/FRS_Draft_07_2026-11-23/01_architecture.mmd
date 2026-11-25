@@ -1,0 +1,12 @@
+flowchart TB
+  sources["NMVS report APIs / Refdata SAI"] --> worker
+  staff["Staff: Administrator / normal user"] --> portal
+  browsers["Tally form / participant browser"] --> gateways
+  subgraph ops["SMVS Operations logical components"]
+    worker["Integration worker / scheduler / parsers"] --> db
+    portal["Operations portal: CRM / registration / reports / RCA"] <--> db
+    gateways["Connect relay / Alert Desk local-pilot gateway"] --> apis
+    apis["Private registration and participant APIs"] <--> db
+    db[("MySQL smvs_operations")]
+    db <--> mail["Internal confirmation mail process / cleanup"]
+  end

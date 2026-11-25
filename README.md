@@ -22,6 +22,12 @@ SMVS Operations is the central operational platform of SMVS for monitoring, anal
 
 ## Documentation
 
+SMVS Operations is in **pilot evaluation**. The [pilot checkpoint and development
+workflow](docs/deployment/PILOT-2026-11-25.md) distinguish the deployed server from
+local development and the future approved QMS baseline. See the
+[changelog](Changelog.md) for delivery scope and the
+[change register](docs/validation/CHANGE-REGISTER.md) for detailed evidence.
+
 The [2026-11-17 Operations release](docs/deployment/RELEASE-2026-11-17.md) records the deployed baseline, backup and verification evidence; Alert Desk Pilot remains local.
 
 The [local checkpoint and Jelastic deployment overview](docs/deployment/STATUS-2026-11-10.md)
@@ -54,10 +60,12 @@ must not be committed.
 ## Local Product / Batch portal
 
 ```sh
-.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8010
+.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8012
 ```
 
-Open `http://127.0.0.1:8010/products`. The local portal has no login. Views read retained evidence; explicit controls
+The current local review configuration uses `http://localhost:8012/products`
+with passkey authentication; the address must match `PORTAL_AUTH_ORIGIN`.
+Views read retained evidence; explicit controls
 can queue Pack Audit and Upload report retrieval. Swiss SAI context and original
 NMVS Snapshot values are separate views. The interface is English; source values
 remain in their original language.

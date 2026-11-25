@@ -15,7 +15,7 @@ from app.integration.artifacts.storage import utcnow
 from app.portal.crm_field_catalogue import CATALOGUE, DEFAULT_COLUMNS, catalogue_context
 from app.portal.crm_list_preferences import FIELDS, validate_preferences
 from app.portal.exception_routes import review_form
-from app.portal.queries import PAGE_SIZE, paged
+from app.portal.queries import paged, pagination_size
 from app.portal.record_navigation import list_record_navigation, record_navigation
 from app.portal.routes import DbSession
 
@@ -467,22 +467,23 @@ def configured_rows(request, session, directory, records, *, pdf_counts=None):
 def crm_paged(session, statement, page, request, directory, *, pdf_counts=None):
     config = getattr(request.state, "crm_view_config", {})
     if not config.get("conditions") and not config.get("sort"):
-        return paged(session, statement, page)
+        return paged(session, statement, page, view_request=request)
     rows = session.execute(statement).all()
     selected = configured_rows(
         request, session, directory, [row[0] for row in rows], pdf_counts=pdf_counts
     )
     by_id = {row[0].id: row for row in rows}
+    page_size = pagination_size(request)
     total = len(selected)
-    pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
+    pages = max(1, (total + page_size - 1) // page_size)
     page = min(page, pages)
-    start = (page - 1) * PAGE_SIZE
-    return [by_id[record.id] for record in selected[start : start + PAGE_SIZE]], {
+    start = (page - 1) * page_size
+    return [by_id[record.id] for record in selected[start : start + page_size]], {
         "page": page,
         "pages": pages,
         "total": total,
         "first": start + 1 if total else 0,
-        "last": min(start + PAGE_SIZE, total),
+        "last": min(start + page_size, total),
     }
 
 

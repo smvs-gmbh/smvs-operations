@@ -1,0 +1,22 @@
+flowchart TB
+  %% Solid arrows are process sequence. Dashed links associate notes only.
+  P1["Select Alert and source revision<br/>Retain source identity, pack and market context"]
+  P2["Confirm responsibility and evidence<br/>CH / LI / foreign / unconfirmed; read-only checks"]
+  P3["Review evidence and applicable Findings<br/>End User and/or MAH, Pack Audit Trail, upload scope"]
+  P4["Authorised staff records assessment<br/>Origin, reason and follow-up; individual or batch"]
+  P5["Recheck source, Findings and review state<br/>Reject stale confirmation; lock affected records"]
+  P6["Save local decision and event history<br/>Source revision, actor, Findings and resolution basis"]
+  P1 --> P2
+  P2 --> P3
+  P3 --> P4
+  P4 --> P5
+  P5 --> P6
+  N1["Unconfirmed responsibility blocks closure. Foreign support completion is distinct from local closure."]:::note
+  P2 -.- N1
+  N2["Snapshot counts are supporting context, not proof of a historical upload or pack status."]:::note
+  P3 -.- N2
+  N3["Batch action: preview exact groups, select explicitly, then revalidate the confirmed scope."]:::note
+  P5 -.- N3
+  N4["No change to NMVS pack state. External Hub status remains separately attributed."]:::note
+  P6 -.- N4
+  classDef note fill:#fff,stroke:#555,stroke-dasharray:5 4;

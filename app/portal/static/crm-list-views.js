@@ -1,3 +1,4 @@
+import {installCsvDownload} from './table-csv.js?v=excel-1';
 import {rightToolbox} from './right-toolbox.js?v=record-actions-1';
 import {initialiseColumns} from './crm-list-columns.js?v=registration-workflow-1';
 
@@ -31,6 +32,8 @@ function labelled(text, control) {
 
 export async function initialiseViews(form) {
     const directory = form.dataset.crmFilters;
+    const csvTable=form.closest('section').querySelector('table[data-crm-columns]');
+    if(csvTable)installCsvDownload(csvTable,{workspace:form.closest('section'),form});
     const endpoint = form.dataset.viewEndpoint || `/crm/views/${directory}`;
     const catalogueEndpoint = form.dataset.catalogueEndpoint || `/crm/list-preferences/${directory}`;
     const viewPath = form.dataset.viewPath || `/crm/${directory}`;

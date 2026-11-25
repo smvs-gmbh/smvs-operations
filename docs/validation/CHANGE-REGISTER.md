@@ -4,12 +4,25 @@ Use one entry per change or independently reviewable increment. Record
 scope, requirement and risk references, and the evidence and decision for
 the release. The pre-release baseline for comparison is `d446f5d`.
 
+Current phase: **owner-operated pilot evaluation**, confirmed 2026-11-25.
+Development and installed scope are distinguished in the
+[pilot checkpoint](../deployment/PILOT-2026-11-25.md) and [changelog](../../Changelog.md).
+Neither the pilot source checkpoint nor the requirements drafts are an approved
+QMS baseline. Subsequent server changes follow development, verification and a
+committed, identified source candidate.
+
 | ID | Proposed on | Change | Release target | Status |
 | --- | --- | --- | --- | --- |
-| CHG-001 | 2026-11-17 | Display AMS Hub information in Exceptions | Current pre-release | Implemented locally. Automated checks and direct UAT retrieval verified. Business acceptance pending. |
+| CHG-001 | 2026-11-17 | Display AMS Hub information in Exceptions | Pilot server | Read-only view deployed; UAT/PRD retrieval and application checks recorded. Formal validation acceptance remains pending. |
 | CHG-002 | 2026-11-17 | Reconcile confirmed Hub closure into local Case closure | Confirm after CHG-001 | Recorded. Implementation and acceptance pending. |
 | CHG-003 | 2026-11-17 | Complete transaction audit and protected retention/recovery | Current pre-release assessment | Requirements recorded. Coverage review and backup design pending. |
 | CHG-004 | 2026-11-17 | Background Hub change synchronisation | To discuss | Proposed. Cadence and reopening response pending. |
+| CHG-005 | 2026-11-18 | Expose retained Catalogue Snapshot fields in personal views | Next increment | Implemented locally; server unchanged. |
+| CHG-006 | 2026-11-18 | Download current table views as audited CSV | Next increment | Implemented locally; acceptance and deployment pending. |
+| CHG-007 | 2026-11-18 | Typed Excel view downloads preserve identifiers | Next increment | Implemented locally; acceptance and deployment pending. |
+| CHG-008 | 2026-11-25 | Reduce import worker memory pressure | Pilot server repair | Implemented and verified on development and server; reconciled in `f951354`. |
+| CHG-009 | 2026-11-25 | Expandable import failure diagnostics | Pilot server repair | Implemented and verified on development and server; reconciled in `f951354`. |
+| CHG-010 | 2026-11-25 | Pilot consolidation and development-first workflow | Development checkpoint | Phase decision recorded; source, delivery scope and draft evidence consolidated. No additional feature deployment. |
 
 ## CHG-001 — AMS Hub in Exceptions
 
@@ -122,3 +135,142 @@ the release. The pre-release baseline for comparison is `d446f5d`.
 
 A71 correlation remains a follow-up to verify against Hub data and evidence of
 the relevant distribution market.
+
+
+## CHG-005 — Catalogue Snapshot fields in personal views
+
+- **Problem.** Products retained total/active Pack counts and OBP information,
+  but the view picker and SQL field registry exposed only five business columns.
+- **Scope.** Explicit shared rendering/SQL catalogue for retained operational
+  Snapshot fields. Products adds numeric total/active Packs, state, OBP name/ID,
+  EMVS MAH ID, source code/scheme, original creation/withdrawal values, withdrawal
+  reason and national/Article 57 codes. Batches and related Batches add the
+  Product's OBP and retained manufacturer/market/creation/multimarket/recall fields.
+  Additional columns are optional; existing layouts and field keys are preserved.
+  Direct product/batch search also matches OBP name/ID.
+- **Interpretation.** SAI remains authoritative for Swiss Product and MAH names.
+  Source dates stay labelled as supplied values, without inferred date/time-zone
+  conversion. Missing numeric values stay missing; zero is a real value.
+  Packs > 0 and Active packs > 0 are different conditions and neither establishes
+  an upload during a particular period. Use Upload History for dated events.
+- **Impact.** FRS-CORE-002; RA-02 and RA-03. No import, mapping, schema or data
+  migration. Reads use existing retained Snapshot evidence and typed count columns.
+- **Evidence.** Regression tests cover saved MAH + Packs + OBP conditions,
+  filtering before pagination, zero versus missing/active counts, leading-zero
+  OBP IDs, source-value escaping, unchanged SAI naming, optional defaults, empty
+  results and stable Batch/related-Batch field offsets. Reserved action columns
+  remain unavailable for SQL conditions or sorting. Formal release acceptance
+  remains separate from these local automated checks.
+
+
+## CHG-006 — CSV for table views
+
+- **Scope.** Shared Actions → Download CSV for CRM, directories, scoped reports
+  and other read-only tables. Preserve displayed column selection/order and
+  applied query/sort criteria. Paginated views include all matching pages;
+  unsaved column changes are honoured without exporting unapplied conditions.
+  Existing selected-row actions retain their own scope and confirmations.
+- **Implementation.** Retrieve authorised pages sequentially in bounded chunks
+  (500 for supported directory paginators). Reuse the report evaluator for both
+  displayed results and CSV selection/sort. Detect changed counts, schemas and
+  source strips; abort errors/cancellation without a partial download. This does
+  not provide a cross-request database snapshot for concurrent CRM modifications.
+- **Data.** Quote UTF-8 CSV fields, preserve source text/identifiers and displayed
+  numeric formatting, and omit selection/action controls. Prefix formula-like
+  values with an apostrophe for literal spreadsheet import. Limits: 50 MiB
+  request, 100 MiB generated text and 400,000 rows; reject instead of truncating.
+- **Audit and migration.** `0052_portal_csv_exports` adds generation receipts
+  containing actor/UTC/source/column metadata, view hash, counts and SHA-256, not
+  cell contents. Commit the receipt before releasing bytes. Independent safe
+  failure logs cover route validation/generation/storage failures. Receipts prove
+  generation, not browser delivery; end-to-end failed-read auditing and protected
+  retention/recovery remain CHG-003. Downgrade refuses to discard retained receipts.
+- **Traceability.** FRS-CORE-001, FRS-CORE-002, FRS-CORE-007; RA-01, RA-02,
+  RA-07, RA-09. Existing access rules govern every retrieved page and CSV POST.
+- **Evidence.** Backend CSV/receipt/permissions/origin/error/migration regression,
+  Node report-evaluator checks, and headless-browser tests of multi-page Products
+  and CRM, hidden/reordered unsaved columns, leading-zero identifiers, multiple
+  independent tables, missing-page failure and cancellation. Wide/narrow layouts
+  reviewed. Production remains unchanged; only local MySQL is upgraded to 0052.
+
+
+## CHG-007 — Excel downloads preserve identifiers
+
+- **Problem.** CSV retains the source GTIN digits, but Excel can infer a numeric
+  type and remove leading zeros or round longer identifiers. CSV quoting does
+  not specify a spreadsheet column type.
+- **Scope.** Add Download Excel beside Download CSV using the same current-view
+  collector, pagination, cancellation and access/origin controls. Export `.xlsx`
+  text cells for identifier/text columns and literal source messages; preserve
+  numeric Pack counts as numbers where faithful. Do not coerce date-like batches
+  or use spreadsheet formulas to disguise identifiers as text.
+- **Integrity.** Known identifier labels/keys override numeric metadata. Leading-
+  zero numerics and values exceeding Excel's 15-digit precision stay text.
+  Reject unsupported control characters or cells longer than 32,767 characters
+  before file generation rather than silently truncating. Spreadsheet work runs
+  outside the request event loop.
+- **Audit/migration.** `0053_table_export_format` records csv/xlsx in the existing
+  generation-receipt store. Old receipts are labelled csv without changing their
+  checksums/contents. Downgrade refuses to discard retained Excel provenance.
+- **Traceability.** FRS-CORE-002/007; RA-03 and RA-07. Regression covers GTIN/GLN-
+  style identifiers, 20-digit serials, date-like batches, numeric Pack counts,
+  literal formula text, text fallback for precision risks, failure without
+  truncation, format receipts and preservation of pre-existing CSV receipts.
+  Production is unchanged; local MySQL is upgraded to 0053.
+
+## CHG-008 — Reduce import worker memory pressure
+
+- **Trigger (2026-11-25).** Production SAI and Daily Snapshot executions repeatedly
+  ended with `worker_interrupted`. Supervisor recorded unexpected SIGKILL exits,
+  occasionally affecting the portal too. The node has 512 MiB RAM and nearly
+  exhausted swap. Local replay of the retained SAI archive peaked at 565.4 MiB.
+- **Scope.** Parse SAI XML incrementally and release processed XML elements;
+  share repeated field-name strings. Stage Snapshot rows using bounded bulk
+  inserts. Read publication source datasets in repeatable, ordered 500-row pages
+  and write packages/batches in bounded groups within the original transaction.
+- **Integrity.** Preserve source bytes, source values, row order, record hashes,
+  stable identities, completeness/duplicate checks, publication selection,
+  idempotency and atomic rollback. No database migration, automatic SAI reference
+  change, or Alert Desk Pilot activation.
+- **Verification.** Retained SAI replay: 94,457 extracted rows, identical complete
+  output digest before/after, peak process memory reduced to 182.6 MiB on the
+  local measurement host. Regression covers multiple read/write pages, repeated
+  iteration, idempotency, completeness rejection and rollback after late writes.
+- **Traceability.** Existing import/publication requirements and associated data
+  integrity risks apply; this corrects resource usage rather than adding a new
+  user capability. Detailed deployment and operational evidence is retained in
+  `docs/validation/evidence/2026-11-25-import-memory.md`.
+- **Production result.** SAI execution 352 and Snapshot execution 353 succeeded
+  on their first manual attempts. Product/batch and participant publications are
+  dated 2026-11-25. Worker PID remained stable; portal health remained successful.
+
+## CHG-009 — Expandable import failure diagnostics
+
+- **Scope.** Add a native, closed-by-default **Failure details** disclosure to
+  failed/interrupted Run history entries. Show execution ID, error code, elapsed
+  time (interruption detection time where applicable), safe explanations and
+  suggested checks, plus available source/processing identifiers, statuses and
+  failure stages. Source success is explicitly distinct from end-to-end success.
+- **Evidence boundaries.** Only read retained records. An explicit source-job
+  link takes precedence. A single same-report job within the execution window
+  is labelled contextual activity rather than confirmed ownership; multiple
+  candidates are not assigned. Hard terminations remain of unknown cause unless
+  evidence was recorded. Do not invent OOM diagnoses for old executions.
+- **Security and resources.** Existing Imports administrator access remains.
+  No new endpoint, mutation or migration. Bounded queries inspect at most two
+  candidate jobs and three processing runs per failed entry, without loading
+  artifact blobs, URLs, response bodies, exception traces or source metadata.
+  Explanations/stage labels are allowlisted; rendered values remain escaped.
+- **Verification.** 515 full-suite tests passed. New regressions cover explicit,
+  contextual, ambiguous and missing source evidence, source filtering, no Blob
+  fetches/secret disclosure, and absence of failure controls on successful runs.
+  Browser checks covered 1500/650 CSS-pixel widths and native keyboard expansion
+  behaviour. Narrow tables retain the existing horizontal scrolling pattern.
+- **Production.** Applied only the Imports query/helper, two templates and scoped
+  stylesheet. Backup/manifest:
+  `backups/import-failure-details-20261125T074135Z` under the private runtime root.
+  Restarted only the HTTPS portal; scheduler PID 117895 remained running.
+  Read-only production rendering found 29 SAI and 27 Snapshot detail disclosures
+  in their respective latest-30 histories (411/145 ms measured render times).
+  Portal health and stylesheet returned HTTP 200; unauthenticated Imports still
+  redirected to sign-in (303). Historical failure records were not modified.

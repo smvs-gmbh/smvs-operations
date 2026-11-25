@@ -1,5 +1,6 @@
-import {initialiseViews} from './crm-list-views.js?v=checkbox-filters-2';
-import {rightToolbox} from './right-toolbox.js?v=record-actions-1';
+import {initialiseViews} from './crm-list-views.js?v=excel-1';
+import {installActions} from './table-actions.js?v=csv-1';
+import {installCsvDownload,applyReportView,cellText} from './table-csv.js?v=excel-1';
 
 function hash(value) { let h=2166136261; for(const c of value) h=Math.imul(h^c.charCodeAt(0),16777619); return (h>>>0).toString(36); }
 function node(tag,cls,text) {const e=document.createElement(tag);e.className=cls||'';if(text)e.textContent=text;return e;}
@@ -70,31 +71,11 @@ for(const [index,table] of [...document.querySelectorAll('main .table-scroll > t
     form.addEventListener('portal-view-config',event=>{
         if(event.detail.server)return;
         const config=event.detail.config;
-        const cellValue=(entry,key)=>{
-            const i=schema.findIndex(f=>f.key===key);return entry.cells[i]?.textContent.trim()||'';
-        };
-        const matched=original.filter(entry=>config.conditions.every(c=>{
-            const value=cellValue(entry,c.field).toLocaleLowerCase();const expected=String(c.value).toLocaleLowerCase();
-            if(c.operator==='empty')return !value||value==='—';if(c.operator==='not_empty')return !!value&&value!=='—';
-            if(c.operator==='contains')return value.includes(expected);
-            const field=event.detail.schema.find(f=>f.key===c.field);
-            if(c.operator==='equals'&&field.type!=='number')return value===expected;
-            const numeric=Number(value.replace(/[’,\s']/g,'')),n=Number(expected);
-            return c.operator==='equals'?numeric===n:c.operator==='less_than'?numeric<n:numeric>n;
-        })).filter(entry=>!form.querySelector('[name="q"]')?.value||entry.row.textContent.toLowerCase().includes(form.querySelector('[name="q"]').value.toLowerCase()));
-        if(config.sort) {
-            const numeric = schema.find(field => field.key === config.sort)?.type === 'number';
-            const numberValue = value => value && value !== '—' ? Number(value.replace(/[’,\s']/g, '')) : NaN;
-            const direction = config.direction === 'desc' ? -1 : 1;
-            matched.sort((a,b) => {
-                const left = cellValue(a,config.sort), right = cellValue(b,config.sort);
-                if (!numeric) return left.localeCompare(right,undefined,{numeric:true}) * direction;
-                const first = numberValue(left), second = numberValue(right);
-                if (Number.isNaN(first)) return Number.isNaN(second) ? 0 : 1;
-                if (Number.isNaN(second)) return -1;
-                return (first - second) * direction;
-            });
-        }
+        const entries=new Map(original.map(entry=>[
+            Object.fromEntries(schema.map((field,index)=>[field.key,cellText(entry.cells[index])])),entry,
+        ]));
+        const matched=applyReportView([...entries.keys()],config,event.detail.schema,form.querySelector('[name="q"]')?.value||'')
+            .map(record=>entries.get(record));
         for(const entry of original)entry.row.hidden=!matched.includes(entry);
         for(const entry of matched) table.tBodies[0].append(entry.row);
         result.textContent=`${matched.length} of ${original.length} rows in this table’s current report scope`;
@@ -121,29 +102,6 @@ for(const [index,table] of [...document.querySelectorAll('main .table-scroll > t
         table.dataset.pinnedColumns+=','+headers[headers.length-1].dataset.column;
         installActions(wrapper,form,content);
     }
+    installCsvDownload(table,{workspace:wrapper,form});
     initialiseViews(form);
-}
-function installActions(workspace,form,source){
-    const opener=button('Actions');
-    const aside=node('aside','crm-view-toolbox portal-actions-toolbox');aside.hidden=true;
-    aside.id='actions-'+form.dataset.crmFilters;aside.setAttribute('aria-label','Table actions');opener.setAttribute('aria-controls',aside.id);opener.setAttribute('aria-expanded','false');
-    const close=button('Close');close.setAttribute('aria-label','Close actions toolbox');
-    const heading=node('div','crm-toolbox-heading');heading.append(node('h2','','Actions'),close);
-    const body=node('div','crm-toolbox-body review-form');
-    for(const child of [...source.childNodes])if(child.nodeName!=='SUMMARY')body.append(child);
-    source.remove();aside.append(heading,body);
-    const backdrop=button('');backdrop.className='crm-toolbox-backdrop';backdrop.tabIndex=-1;backdrop.hidden=true;backdrop.setAttribute('aria-label','Close actions toolbox');
-    workspace.append(backdrop,aside);
-    const controller=rightToolbox({toolbox:aside,opener,close,backdrop,workspace});
-    // View settings and actions share one workspace but cannot be open together.
-    opener.addEventListener('click',()=>{
-        const view=workspace.querySelector('.crm-view-toolbox:not(.portal-actions-toolbox)');
-        if(view&&!view.hidden)workspace.querySelector('[aria-controls="'+view.id+'"]')?.click();
-    }, {capture:true});
-    form.addEventListener('click', event=>{
-        if(event.target.closest('[aria-controls^="view-toolbox-"]')&&!aside.hidden) controller.hide(false);
-    }, {capture:true});
-    new MutationObserver(()=>{
-        const bar=form.querySelector('.crm-view-bar');if(bar&&!bar.contains(opener))bar.append(opener);
-    }).observe(form,{childList:true,subtree:true});
 }

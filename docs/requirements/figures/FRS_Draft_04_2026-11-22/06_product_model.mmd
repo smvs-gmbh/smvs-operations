@@ -1,0 +1,44 @@
+erDiagram
+  products ||--o{ product_source_records : source_identity
+  product_source_records ||--o{ product_versions : versions
+  product_source_records ||--o{ batches : source_batches
+  product_versions ||--o{ batches : version_batches
+  sai_holders |o--o{ sai_preparations : optional_holder
+  sai_preparations ||--o{ sai_packages : packages
+  products ||--o| product_reference_matches : match_record
+  sai_packages |o--o{ product_reference_matches : optional_package
+  products {
+    int id PK
+  }
+  product_source_records {
+    int id PK
+    int product_id FK
+    string source_namespace
+    string source_code
+  }
+  product_versions {
+    int id PK
+    int product_source_id FK
+  }
+  batches {
+    int id PK
+    int product_source_id FK
+    int product_version_id FK
+    string batch_code
+  }
+  sai_holders {
+    int id PK
+  }
+  sai_preparations {
+    int id PK
+    int holder_id FK
+  }
+  sai_packages {
+    int id PK
+    int preparation_id FK
+  }
+  product_reference_matches {
+    int product_id PK, FK
+    int sai_package_id FK
+    string match_status
+  }

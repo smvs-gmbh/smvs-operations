@@ -180,3 +180,26 @@ SMVS colours, soft action buttons and the evidence/assessment distinction. Its
 three case tabs, explicit sharing audience and minimal optional-text response are
 proposals for review, not yet a live participant workflow or an exception to the
 required case/access security boundary.
+
+
+## CSV download for read-only tables
+
+Every read-only data table exposes **Actions → Download CSV**, including CRM,
+SQL directories, scoped reports and simple source/reference tables. Reuse
+`table-actions.js` and `table-csv.js`; keep existing mutation forms and selection
+scope intact. Dialog/edit-form tables remain part of their editing interaction.
+Export current visible column keys/order; omit selection controls and contextual
+action links. Unsaved column changes are included; unapplied conditions are not.
+Freeze applied scope, criteria and ordering while retrieving pages through their
+original authorised routes. Directory exports use bounded batches of 500 where
+the shared paginator supports it; other tables retain their existing page size.
+Apply report criteria and sorting across the retrieved report scope. Do not
+request fresh external report evidence merely to export a table.
+
+Show progress and cancellation. Validate page, count and schema continuity; abort
+on detected changes or errors, without a partial file. This is not a database
+snapshot transaction across concurrent CRM writes. CSV generation is a protected,
+same-origin POST. Persist the generation receipt before releasing bytes; reject
+a file if the receipt cannot be retained. Receipts exclude exported cell contents.
+Generated receipts and independent failure logs do not replace the outstanding
+system-wide audit/retention/recovery controls in CHG-003.

@@ -1,6 +1,6 @@
 # FRS-CORE-001 — Core Operations
 
-Status **Draft v0.1**, 2026-11-17. Owner SMVS GmbH. Scope covers the local
+Status **Draft v0.2**, 2026-11-18. Owner SMVS GmbH. Scope covers the local
 validation candidate and identified release checks. The
 [traceability matrix](../validation/RTM-001.md) records implementation and test coverage.
 
@@ -18,6 +18,36 @@ The portal shall support searchable and filterable views of the published
 Products, Batches, Organisations and Locations and link related records by
 source-qualified identifiers. An unresolved link shall be distinguishable from
 a verified match. SAI-derived names and source attributes shall retain provenance.
+Product views shall make reported total/active Pack counts, Product state, OBP
+name/ID and source identifiers selectable without replacing Swiss SAI names.
+Batch views shall expose the related Product's OBP and retained manufacturer,
+market, creation and recall source values. Apply typed conditions and sorting
+before pagination and use the same rules for counts and record navigation.
+Preserve existing personal-view column keys. Identify values as Snapshot data;
+positive Packs is not evidence of an upload in a selected historical period.
+
+Table Actions shall provide Download CSV for read-only data tables. Export the
+current visible data columns in their current order, applied filters/search and
+sorting, including all matching pages within the authorised report scope.
+Do not export selection/action controls or require a saved view. Report retrieval
+limits and access boundaries remain applicable. Provide progress/cancellation;
+failed or detected-inconsistent retrieval shall not release a partial file.
+Retain a generation receipt (staff actor, UTC time, source table/path, column
+layout, view hash, row/byte counts and file checksum) before releasing the CSV.
+A generation receipt does not assert client-side file delivery. Preserve source
+text and leading zeros; encode UTF-8 CSV with correctly quoted delimiters/newlines
+and literalise spreadsheet formula-like text. Apply documented export size limits
+with an explicit error, never silent truncation.
+
+The same view shall also be downloadable as Excel (`.xlsx`). Encode text fields,
+including GTIN/GLN/serial/batch identifiers and formula-like source messages, as
+literal text cells. Numeric presentation metadata shall not override known
+identifier fields. Preserve leading zeros and more than 15 identifier digits.
+Convert explicit numeric columns only when precision and source meaning can be
+preserved; otherwise retain source text. CSV does not guarantee spreadsheet
+reader type interpretation. Retain export format in the generation receipt,
+including the format of pre-existing CSV receipts. Reject Excel-incompatible
+characters or oversized cells instead of silently altering/truncating values.
 
 ## FRS-CORE-003
 

@@ -17,6 +17,7 @@ from app.domain.models import (
     SAIPackage,
     SAIPreparation,
 )
+from app.portal.snapshot_fields import BATCH_FIELDS, PRODUCT_FIELDS, values
 
 STATUS_LABELS = {
     "matched_sai": "Matched to SAI",
@@ -170,6 +171,8 @@ def search_clause(q, *, batches=False):
         SAIPackage.description_de,
         SAIPackage.description_fr,
         SAIHolder.company_name,
+        ProductSourceRecord.evidence["OBP Name"].as_string(),
+        ProductSourceRecord.evidence["OBP Id"].as_string(),
     ]
     if batches:
         fields.append(Batch.batch_code)
@@ -181,6 +184,8 @@ def product_view(row):
     # Swiss-facing names never fall back to the source's incorrect NMVS labels.
     status = match.match_status if match else "not_gtin_matchable"
     return {
+        "snapshot_fields": PRODUCT_FIELDS,
+        "snapshot_values": values(source, PRODUCT_FIELDS),
         "id": source.id,
         "gtin14": product.gtin14,
         "source_code": source.source_code,
@@ -202,24 +207,30 @@ def product_view(row):
     }
 
 
+def pagination_size(request=None):
+    # Explicit CSV downloads reuse authorised list queries in bounded batches.
+    return 500 if request is not None and request.headers.get("x-portal-csv") == "1" else PAGE_SIZE
+
+
 def paged(session, statement, page, *, view_request=None, table_key=None):
     if view_request is not None and table_key:
         from app.portal.table_views import apply_sql
         statement = apply_sql(view_request, session, statement, table_key)
+    page_size = pagination_size(view_request)
     total = session.scalar(
         select(func.count()).select_from(statement.order_by(None).subquery())
     )
-    pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
+    pages = max(1, (total + page_size - 1) // page_size)
     page = min(page, pages)
     rows = session.execute(
-        statement.offset((page - 1) * PAGE_SIZE).limit(PAGE_SIZE)
+        statement.offset((page - 1) * page_size).limit(page_size)
     ).all()
     return rows, {
         "page": page,
         "pages": pages,
         "total": total,
-        "first": (page - 1) * PAGE_SIZE + 1 if total else 0,
-        "last": min(page * PAGE_SIZE, total),
+        "first": (page - 1) * page_size + 1 if total else 0,
+        "last": min(page * page_size, total),
     }
 
 
@@ -310,6 +321,8 @@ def batches(
         batch, version = row[6:8]
         output.append(
             {
+                "snapshot_fields": BATCH_FIELDS,
+                "snapshot_values": values(batch, BATCH_FIELDS),
                 "id": batch.id,
                 "product": product_view(row),
                 "code": batch.batch_code,
