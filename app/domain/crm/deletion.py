@@ -7,6 +7,7 @@ from app.domain.crm.contact_deletions import contact_source_hash
 from app.domain.models import (
     Base,
     CRMContact,
+    CRMContactOrganisationLink,
     CRMDeletionEvent,
     CRMEndUser,
     CRMMah,
@@ -27,7 +28,7 @@ def check_references(
     detach_contact=False,
 ):
     for table in Base.metadata.tables.values():
-        if table is CRMRecordNote.__table__:
+        if table is CRMRecordNote.__table__ or (table is CRMContactOrganisationLink.__table__ and isinstance(row, CRMContact) and detach_contact):
             # Notes are erased with their CRM record by the foreign key.
             continue
         for column in table.columns:

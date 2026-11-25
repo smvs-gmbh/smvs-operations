@@ -13,7 +13,7 @@ const definitions = [
     },
     {
         key: 'agreement_lookup', title: 'Agreements', prefix: 'ag_', defaultField: 'ag_status',
-        labels: {ag_contract_id: 'Contract ID', ag_contractor: 'Contractor', ag_status: 'Contract status', ag_signing_date: 'Signing date', ag_start_date: 'Start date · imported', ag_termination_date: 'Termination date · imported', ag_selection: 'Selection result'},
+        labels: {ag_contract_id: 'Contract ID', ag_contractor: 'Contractor', ag_status: 'Contract status', ag_signing_date: 'Signing date', ag_start_date: 'Start date', ag_termination_date: 'Termination date', ag_selection: 'Selection result'},
         types: {ag_contract_id: 'text', ag_contractor: 'text', ag_status: 'text', ag_signing_date: 'date', ag_start_date: 'text', ag_termination_date: 'text'},
         selectionFields: ['ag_signing_date'],
         hint: 'Several linked agreements are allowed. Signing date alone does not establish whether a contract is in force. Imported start/termination dates retain their source text.',

@@ -41,7 +41,7 @@ def test_catalogue_preserves_current_values_and_resolves_agreements(portal):
     page = client.get("/crm/mahs").text
     assert 'data-column="street" data-default-visible="false" hidden' in page
     assert "Maintained street" in page
-    assert "Email general · imported" in page
+    assert "Email general" in page and "Email general · imported" not in page
     assert 'data-column="source_signing_date_from_contract"' not in page
 
 

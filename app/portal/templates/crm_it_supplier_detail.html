@@ -3,7 +3,7 @@
 {% from "crm_record_actions.html" import record_actions with context %}
 {% block heading %}
 {{ record_bar(record_nav) }}
-<div class="heading"><div><div class="eyebrow">CRM · IT Supplier</div><h1>{{ supplier['IT Supplier Name'] }}</h1></div></div>
+<div class="heading"><div><div class="eyebrow">CRM · IT Supplier</div><h1 class="mah-title">{% if logo_url %}<img class="mah-logo" src="{{ logo_url }}" alt="" referrerpolicy="no-referrer">{% endif %}<span>{{ supplier['IT Supplier Name'] }}</span></h1></div></div>
 {% endblock %}
 {% block content %}
 <div class="record-detail-workspace" data-record-workspace><div class="record-detail-content">

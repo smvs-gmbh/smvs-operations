@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ title }} · SMVS Operations</title>
-  <link rel="stylesheet" href="{{ request.url_for('portal_static', path='portal.css') }}?v=agreement-lookups-1">
+  <link rel="stylesheet" href="{{ request.url_for('portal_static', path='portal.css') }}?v=crm-cutover-1">
   <script src="{{ request.url_for('portal_static', path='text-size.js') }}"></script>
-  {% if active == 'crm' %}<script src="{{ request.url_for('portal_static', path='crm-list-views.js') }}?v=agreement-lookups-1" type="module"></script>
+  {% if active == 'crm' %}<script src="{{ request.url_for('portal_static', path='crm-list-views.js') }}?v=crm-cutover-1" type="module"></script>
   <script src="{{ request.url_for('portal_static', path='record-actions.js') }}?v=crm-record-actions-1" type="module"></script>
   <script src="{{ request.url_for('portal_static', path='crm-navigation.js') }}?v=registration-workflow-1" type="module"></script>{% endif %}
   {% if active == 'workflows' %}<script src="{{ request.url_for('portal_static', path='record-actions.js') }}?v=registration-workflow-1" type="module"></script>{% endif %}
-  {% block table_views %}<script src="{{ request.url_for('portal_static', path='portal-list-views.js') }}?v=agreement-lookups-1" type="module"></script>{% endblock %}
-  <script src="{{ request.url_for('portal_static', path='table-csv.js') }}?v=agreement-lookups-1" type="module"></script>
+  {% block table_views %}<script src="{{ request.url_for('portal_static', path='portal-list-views.js') }}?v=crm-cutover-1" type="module"></script>{% endblock %}
+  <script src="{{ request.url_for('portal_static', path='table-csv.js') }}?v=crm-cutover-1" type="module"></script>
 </head>
 <body>
 <aside class="sidebar">
@@ -111,6 +111,7 @@
     {% endif %}
     {% if request.app.state.alert_desk_test_workspace %}<p class="notice"><a class="audit-link" href="/">← Alert Desk test workspace</a> · Synthetic records only.</p>
     {% elif request.app.state.test_workspace %}<p class="notice"><strong>Test workspace</strong> · Synthetic records only. Restart this instance to reset.</p>{% endif %}
+    {% if request.state.crm_view_config is defined and request.state.crm_view_config.retired_fields %}<p class="notice" role="alert" data-retired-view>This view uses removed fields. No records are shown. Open Configure view → Conditions and replace or remove the affected conditions or sorting.</p>{% endif %}
     {% block content %}{% endblock %}
     <footer class="page-footer">SMVS Operations <span>{% if imports_section %}Import schedules, data coverage and retrieval history.{% elif upload_section %}Product and batch context · No evidence for an individual serial number.{% elif pack_audit_section %}Technical pack history · Source evidence remains separate from investigation decisions.{% elif exception_section %}NMVS source observations · Swiss product names from SAI.{% elif activity_section %}NMVS Reporting API · Exception counts are not alert counts.{% elif participant_section %}Organisations and Locations from the NMVS snapshot · Source statuses are unchanged.{% else %}Swiss names from Refdata SAI · NMVS states remain separate.{% endif %}</span></footer>
   </main>

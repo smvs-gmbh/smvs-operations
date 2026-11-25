@@ -287,7 +287,11 @@ def test_upgrade_matches_models_and_preserves_all_ids_and_provenance(migration_d
     export_format_migration = load_migration("0053_table_export_format")
     export_format_migration.op = Operations(MigrationContext.configure(connection))
     export_format_migration.upgrade()
+    contact_links_migration = load_migration("0054_crm_contact_links")
+    contact_links_migration.op = Operations(MigrationContext.configure(connection))
+    contact_links_migration.upgrade()
     assert compare_metadata(MigrationContext.configure(connection), Base.metadata) == []
+    contact_links_migration.downgrade()
     export_format_migration.downgrade()
     csv_migration.downgrade()
     record_notes_migration.downgrade()

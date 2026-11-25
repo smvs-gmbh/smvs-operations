@@ -532,3 +532,34 @@ remove separately saved trial views/defaults (or restore their private pre-trial
 backup). A Git checkout does not restore database view configurations. New
 assigned duplicate declarations are rejected by the import service; do not use
 this trial to silently merge the existing conflicting historical records.
+
+
+### CRM cutover: affiliations and retired fields
+
+Contacts now has **Assigned organisations**, combining general MAH, End User and
+IT Supplier affiliations with explicit organisational roles. In a Contact detail,
+**Organisations → Edit** maintains general membership. A role-linked organisation
+stays assigned while the organisation lists this person as SPOC or Alert contact;
+change that role at the organisation. A person's general Function label does not
+grant a role for every organisation. Manual membership removal survives reimport.
+Missing/ambiguous source references are review findings under **Data integrity →
+Unresolved organisation affiliation**; no guessed links are made.
+
+Normal labels omit import suffixes. Retired Agreement fields, obsolete MAH source
+fields/timestamps and the three raw Contact assignment columns are not offered as
+normal columns. Original import evidence remains available. Logos are displayed
+at the organisation name using the shared domain/source policy; raw Logo/Logo URL
+columns are retired for MAHs, End Users and IT Suppliers. This displays existing
+logo sources and does not create a new image archive.
+
+If a saved view used a removed filter/sort field, the page shows a warning and no
+records. Open **Configure view → Conditions**, replace/remove the **Removed field**
+condition or choose a supported sort, and explicitly Apply/save. Display-only
+settings are cleaned automatically; old Contact assignment display fields map to
+the unified column. No original record is deleted by this cleanup.
+
+Once CRM work is maintained in Operations, Airtable is a historical import source.
+Reimport adds eligible new data without overwriting maintained CRM values. End User
+reimports use exact source identities; missing/changed/ambiguous identities stop
+for review. Operations backups, including new contracts and PDFs, are required
+for recovery of post-Airtable work.

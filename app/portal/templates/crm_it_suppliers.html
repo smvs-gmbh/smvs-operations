@@ -17,7 +17,7 @@
 <thead><tr><th data-column="name">IT Supplier</th><th data-column="status">Status</th><th data-column="qualified">Qualified</th><th data-column="software">End-user software</th>{{ ui.crm_extra_headers(crm_extra_columns) }}</tr></thead>
 <tbody>
 {% for row in rows %}{% set supplier = row.raw_row_json %}
-<tr><td><a href="/crm/it-suppliers/{{ row.id }}{{ filter_query(request, 'q') }}">{{ supplier['IT Supplier Name'] }}</a></td>
+<tr><td><a class="mah-name-link" href="/crm/it-suppliers/{{ row.id }}{{ filter_query(request, 'q') }}">{% if logos.get(row.id) %}<img class="mah-logo-icon" src="{{ logos[row.id] }}" alt="" loading="lazy" referrerpolicy="no-referrer">{% endif %}<span>{{ supplier['IT Supplier Name'] }}</span></a></td>
 <td>{{ supplier.get('Status') or '—' }}</td><td>{{ 'Checked' if supplier.get('Qualified') == 'checked' else '—' }}</td>
 <td>{{ supplier.get('End User Software') or '—' }}</td>{{ ui.crm_extra_cells(crm_extra_columns, crm_field_cells[row.id]) }}</tr>
 {% else %}<tr><td colspan="4">No matching IT suppliers.</td></tr>{% endfor %}

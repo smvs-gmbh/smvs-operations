@@ -68,15 +68,26 @@ def seed_end_users(session):
         for user in session.scalars(select(CRMEndUser).with_for_update())
         if user.source_row_id is not None
     }
-    source_ids = {row.id for row in rows}
-    if not existing.issubset(source_ids):
-        raise ValueError(
-            "Review new export identities before importing a different End Users export."
-        )
     occupied = set(session.scalars(select(CRMEndUser.organisation_id)))
+    # Reimporting a changed export must not create a new End User for every new
+    # staging-row ID, nor overwrite manually maintained CRM values.
+    previous = defaultdict(list)
+    for owner, raw_source in session.execute(select(CRMEndUser, StagingRow.raw_row_json).join(StagingRow, CRMEndUser.source_row_id == StagingRow.id)):
+        source = raw_source or {}
+        key = (source.get("RECORD_ID") or source.get("Record Id") or "").strip()
+        if key:
+            previous[key].append(owner.id)
+    incoming = Counter((raw.get("RECORD_ID") or raw.get("Record Id") or "").strip() for _, raw, _, _ in matches)
+    if not set(previous).issubset(incoming):
+        raise ValueError("Review changed or missing source identities before importing this End Users export; no CRM record was changed.")
+    for row_id, raw, _, _ in matches:
+        key = (raw.get("RECORD_ID") or raw.get("Record Id") or "").strip()
+        if row_id not in existing and key in previous and (len(previous[key]) != 1 or incoming[key] != 1):
+            raise ValueError("An End User source identity is ambiguous. Review before reimporting; no CRM record was changed.")
     created = linked = 0
     for row_id, raw, _, candidate in matches:
-        if row_id in existing:
+        source_key = (raw.get("RECORD_ID") or raw.get("Record Id") or "").strip()
+        if row_id in existing or source_key in previous:
             continue
         organisation_id = (
             candidate.id if candidate and candidate.id not in occupied else None
@@ -92,6 +103,8 @@ def seed_end_users(session):
         occupied.add(organisation_id)
         created += 1
         linked += organisation_id is not None
+    from app.domain.crm.organisation_links import migrate_affiliations
+    migrate_affiliations(session, apply=True)
     return created, linked
 
 

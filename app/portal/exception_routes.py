@@ -713,7 +713,7 @@ def exception_source(request: Request, identifier: int, session: DbSession):
     )
 
 
-async def review_form(request, *, expected_origin=None):
+async def review_form(request, *, expected_origin=None, max_fields=65):
     url = urlsplit(str(request.url))
     if request.headers.get("origin") != (
         expected_origin or f"{url.scheme}://{url.netloc}"
@@ -735,7 +735,7 @@ async def review_form(request, *, expected_origin=None):
         if len(body) > 48000:
             raise HTTPException(413, "Review form is too large.")
     try:
-        data = parse_qs(body.decode("utf-8"), keep_blank_values=True, max_num_fields=65)
+        data = parse_qs(body.decode("utf-8"), keep_blank_values=True, max_num_fields=max_fields)
         if any(len(v) != 1 for v in data.values()):
             raise ValueError()
         return {k: v[0] for k, v in data.items()}

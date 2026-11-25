@@ -10,11 +10,13 @@ from app.domain.crm.contact_assignments import spoc_ids
 from app.domain.crm.declaration_workflow import usable_email
 from app.domain.crm.imports import linked_values
 from app.domain.crm.mah_profile import profile_defaults
+from app.domain.crm.organisation_links import affiliations, migration_plan
 from app.domain.models import (
     CRMAgreement,
     CRMAgreementMAH,
     CRMContact,
     CRMEndUser,
+    CRMITSupplierIdentity,
     CRMMah,
     CRMSelfDeclaration,
 )
@@ -28,6 +30,7 @@ RULES = {
     "contact_email": "Assigned role contact without a usable email",
     "contact_reference": "Unavailable role contact assignment",
     "contact_orphan": "Contact without a relation",
+    "contact_relation": "Unresolved organisation affiliation",
     "contact_source_only": "Contact has imported relations only",
     "mah_identifier": "Repeated MAH GLN or UID",
 }
@@ -77,10 +80,12 @@ def check_integrity(session, year):
             "MAH": "mahs",
             "Contact": "contacts",
             "Self-declaration": "self-declarations",
+            "End User": "end-users",
+            "IT Supplier": "it-suppliers",
         }
         label = (
             record.name
-            if kind == "MAH"
+            if kind in {"MAH", "End User", "IT Supplier"}
             else record.display_name
             if kind == "Contact"
             else record.record_label
@@ -93,7 +98,7 @@ def check_integrity(session, year):
                 "id": record.id,
                 "label": label,
                 "detail": detail,
-                "url": f"/crm/{paths[kind]}/{record.id}",
+                "url": f"/crm/{paths[kind]}/{record.source_row_id if kind == 'IT Supplier' else record.id}",
                 "links": list(links),
             }
         )
@@ -195,7 +200,7 @@ def check_integrity(session, year):
                             f"Assigned as {role} to {mah.name}, but no usable email is recorded.",
                         )
 
-    assigned = set()
+    assigned = set(affiliations(session))
     imported_references = set()
     contact_refs = defaultdict(set)
     for contact in contacts:
@@ -276,6 +281,20 @@ def check_integrity(session, year):
                             if other.id != mah.id
                         ],
                     )
+    _, unresolved, _ = migration_plan(session)
+    user_index = {row.id: row for row in users}
+    supplier_index = {row.source_key: row for row in session.scalars(select(CRMITSupplierIdentity))}
+    for reference in unresolved:
+        cid, kind, target = reference.get("contact_id"), reference["kind"], reference.get("target")
+        detail = f"An imported {kind} affiliation is {reference['reason']}; no automatic assignment was made. Review the retained source reference."
+        if cid in contact_index:
+            add("contact_relation", "Review", "Contact", contact_index[cid], detail)
+        elif kind == "mah" and target in mah_index:
+            add("contact_relation", "Review", "MAH", mah_index[target], detail)
+        elif kind == "end_user" and target in user_index:
+            add("contact_relation", "Review", "End User", user_index[target], detail)
+        elif kind == "supplier" and target in supplier_index and supplier_index[target].source_row_id:
+            add("contact_relation", "Review", "IT Supplier", supplier_index[target], detail)
     return {
         "findings": findings,
         "current_mahs": len(current),

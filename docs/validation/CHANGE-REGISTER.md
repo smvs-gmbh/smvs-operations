@@ -420,3 +420,49 @@ the relevant distribution market.
   switching without configuration loss, typed date controls, latest Signed selection,
   optional outputs/fixed-only Columns, saved-view restoration, a 48-row two-page CSV,
   and agreement/source-MAH navigation. No operational records/views were edited.
+
+
+## CHG-015 — CRM cutover, unified affiliations and recovery
+
+- **Authority/scope.** Owner approved the analysed cleanup and relationship work,
+  including productive follow-through, to start maintaining CRM data in Operations.
+  Obsolete source deletion remains deferred. Preserve authentication, production
+  boundaries and the development-only Alert Desk Pilot gate.
+- **Relations.** Schema 0054 adds stable IT supplier identities, general Contact
+  affiliation rows with typed FK targets/one-target constraints/unique pairs and
+  minimal link audit events. Existing guarded organisational role profiles remain
+  the single authority for SPOC/Alert recipients; the unified read service projects
+  those roles together with general membership. Import membership grants no roles.
+  General editing cannot remove an active organisational role. Manual deactivations
+  are retained as reimport tombstones. Erasure detaches links consistently.
+- **Migration.** Read-only preview and explicit apply resolve only exact/unique
+  source references in both directions; unresolved references remain integrity
+  review items. Supplier target IDs survive new staging rows for the same key.
+  Repeated apply is idempotent. Local rehearsal: 306 general links, 15 unresolved
+  references, zero additions on repeat; original MAH/Contact/End User/Agreement
+  row counts and full-row fingerprints remained unchanged on local application.
+- **Fields/views.** Remove agreed obsolete source fields and normal import suffixes;
+  retain original evidence/internal timestamps. Shared logo display replaces raw
+  logo columns without claiming a new image archive. Display-only old view keys
+  are cleaned/mapped; retired predicates/sorts fail closed with repair guidance.
+- **Reimport.** Existing CRM values are retained. End Users are matched by exact,
+  unique source identity across successive staging rows; missing/changed/ambiguous
+  identities require review. Existing import/role/erasure protections remain.
+- **Recovery.** Private streamed consistent full-database backup includes document
+  blobs and audit, checksums/manifest, credential-safe invocation and run locking.
+  No automatic retention deletion. Standalone private-config mode supports a
+  database-node job without application dependencies. Initial local SQL backup
+  restored in a network-isolated MySQL instance, including 111 MAHs, 306 Contacts,
+  56 End Users, 99 Agreements and 192 artifact blobs (359,834,863 source bytes).
+  Online schema upgrade and affiliation migration were rehearsed on that restore;
+  offline migration safeguards were preserved. A second backup preceded local
+  schema/data migration. Private evidence: tmp/crm-cut-review and tmp/crm-cut-backups.
+- **Requirements.** URS draft v0.15, URS-115–117; FRS/RA/RTM and formal QMS release
+  approval remain outstanding. No five-year backup retention/off-site coverage or
+  ongoing backup monitoring is inferred from these initial controls.
+- **Verification.** Clean staged-source archive: 535 Python tests passed (one
+  existing dependency deprecation warning). Three Node export tests passed;
+  desktop/narrow browser review covers organisation editing, saved-view repair,
+  six cleaned field catalogues and navigation. Changed-source lint, JavaScript
+  syntax and Git whitespace checks passed. Production close-out is recorded
+  separately after application of the committed candidate.

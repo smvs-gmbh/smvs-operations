@@ -54,16 +54,21 @@ from app.domain.crm.imports import (
     staged_crm_export,
     staged_crm_metadata,
 )
+from app.domain.crm.logos import organisation_logo, record_logos
 from app.domain.crm.mah_profile import (
     ASSOCIATIONS,
     MAH_MAPPED_COLUMNS,
     MAH_REVIEW_COLUMNS,
     PROFILE_GROUPS,
     association_values,
-    logo_url,
     profile_defaults,
 )
 from app.domain.crm.mahs import CONTRACT_STATUSES
+from app.domain.crm.organisation_links import (
+    affiliations,
+    set_affiliations,
+    target_catalogue,
+)
 from app.domain.crm.self_declarations import TABLE as DECLARATION_TABLE
 from app.domain.models import (
     CRMAgreement,
@@ -371,6 +376,7 @@ def crm_end_users(
         name="crm_end_users.html",
         context={
             **list_catalogue_context(request, session, "end-users", [user for user, _ in rows]),
+            "logos": record_logos(session, [row[0] for row in rows], get_settings().logo_dev_publishable_key),
             "title": "CRM · End Users",
             "active": "crm",
             "crm_section": True,
@@ -511,6 +517,7 @@ def render_end_user(request, session, user, edit, q="", unlinked=False):
                 if user and not edit
                 else {}
             ),
+            "logo_url": organisation_logo(source, profile, get_settings().logo_dev_publishable_key, size=128) if user else None,
             "title": user.name if user else "New End User",
             "active": "crm",
             "crm_section": True,
@@ -685,6 +692,7 @@ def crm_it_suppliers(
         name="crm_it_suppliers.html",
         context={
             **list_catalogue_context(request, session, "it-suppliers", rows),
+            "logos": record_logos(session, rows, get_settings().logo_dev_publishable_key),
             "title": "CRM · IT Suppliers",
             "active": "crm",
             "crm_section": True,
@@ -702,39 +710,14 @@ def crm_it_suppliers(
 
 
 def supplier_contact_links(session, suppliers):
-    """Resolve both Airtable directions using unambiguous exact references."""
-    suppliers_by_label = defaultdict(list)
-    for row in suppliers:
-        suppliers_by_label[row.raw_row_json["Record Id"].strip()].append(row.id)
-
-    contacts_by_label = defaultdict(list)
     links = defaultdict(dict)
-    pending_suppliers = defaultdict(set)
-    pending_contacts = defaultdict(set)
-    for contact, raw in session.execute(
-        select(CRMContact, StagingRow.raw_row_json).outerjoin(
-            StagingRow, CRMContact.source_row_id == StagingRow.id
-        )
-    ):
-        raw = raw or {}
-        contacts_by_label[raw.get("Record Id", contact.label).strip()].append(contact)
-        for label in linked_values(raw.get("Link IT Supplier", "")):
-            matches = suppliers_by_label[label]
-            if len(matches) == 1:
-                links[matches[0]][contact.id] = (contact, False)
-            else:
-                pending_contacts[contact.id].add(label)
-
-    for row in suppliers:
-        for field in ("Contacts", "SPOC"):
-            for label in linked_values(row.raw_row_json.get(field, "")):
-                candidates = contacts_by_label[label]
-                if len(candidates) != 1:
-                    pending_suppliers[row.id].add(label)
-                    continue
-                contact = candidates[0]
-                links[row.id][contact.id] = (contact, field == "SPOC")
-    return links, pending_suppliers, pending_contacts
+    contacts = {c.id: c for c in session.scalars(select(CRMContact))}
+    current_rows = {row.id for row in suppliers}
+    for cid, organisations in affiliations(session).items():
+        for target in organisations:
+            if target["kind"] == "supplier" and target["record"].source_row_id in current_rows and cid in contacts:
+                links[target["record"].source_row_id][cid] = (contacts[cid], "SPOC" in target["roles"])
+    return links, defaultdict(set), defaultdict(set)
 
 
 @router.get("/crm/it-suppliers/{identifier}", include_in_schema=False)
@@ -780,6 +763,7 @@ def crm_it_supplier(request: Request, identifier: int, session: DbSession):
             "active": "crm",
             "crm_section": True,
             "supplier": supplier,
+            "logo_url": organisation_logo(supplier, None, get_settings().logo_dev_publishable_key, size=128),
             "record_nav": navigation | {"origin": crm_record_origin(request, session)},
             "supplier_contacts": sorted(
                 links[identifier].values(),
@@ -851,7 +835,7 @@ def crm_contacts(
 
 
 ADDRESS_TYPES = {"work": "Work", "personal": "Personal", "other": "Other"}
-CONTACT_SECTIONS = {"general", "communication"}
+CONTACT_SECTIONS = {"general", "communication", "organisations"}
 EMAIL = re.compile(r"[^\s@]+@[^\s@]+")
 
 
@@ -873,35 +857,8 @@ def contact_functions(session):
 
 
 def contact_organisations(session, contact):
-    source = (
-        session.get(StagingRow, contact.source_row_id)
-        if contact.source_row_id
-        else None
-    )
-    references = (
-        linked_values(source.raw_row_json.get("Link MAH", "")) if source else []
-    )
-    matches = {}
-    assigned = {}
-    for mah, raw in session.execute(
-        select(CRMMah, StagingRow.raw_row_json)
-        .outerjoin(StagingRow, CRMMah.source_row_id == StagingRow.id)
-        .order_by(CRMMah.name, CRMMah.id)
-    ):
-        label = (raw or {}).get("Record Id", "").strip()
-        if label in references:
-            matches.setdefault(label, []).append(mah)
-        profile = mah.profile or {}
-        if contact.id in spoc_ids(profile) or contact.id in profile.get(
-            "alert_contact_ids", []
-        ):
-            assigned[mah.id] = (mah, "Contact assignment")
-    for label, candidates in matches.items():
-        if len(candidates) == 1:
-            mah = candidates[0]
-            assigned.setdefault(mah.id, (mah, "Airtable organisation link"))
-    pending = [label for label in references if len(matches.get(label, [])) != 1]
-    return sorted(assigned.values(), key=lambda row: row[0].name.casefold()), pending
+    links = affiliations(session, {contact.id}).get(contact.id, [])
+    return [(link["record"], "Contact assignment" if link["roles"] != ["Contact"] else "Organisation affiliation") for link in links if link["kind"] == "mah"], []
 
 
 @router.get("/crm/contacts/new", include_in_schema=False)
@@ -1053,6 +1010,8 @@ def crm_contact_detail(
             "mailbox_types": MAILBOX_TYPES,
             "edit": edit if edit in CONTACT_SECTIONS else "",
             "organisations": organisations,
+            "organisation_links": affiliations(session, {contact.id}).get(contact.id, []),
+            "organisation_options": sorted(target_catalogue(session).values(), key=lambda item: (item["name"].casefold(), item["type"])) if edit == "organisations" else [],
             "end_users": end_users,
             "suppliers": [
                 (row, links[row.id][contact.id][1])
@@ -1067,7 +1026,7 @@ def crm_contact_detail(
 
 @router.post("/crm/contacts/{identifier}", include_in_schema=False)
 async def update_crm_contact(request: Request, identifier: int, session: DbSession):
-    data = await review_form(request)
+    data = await review_form(request, max_fields=320)
     contact = session.get(CRMContact, identifier, with_for_update=True)
     if contact is None:
         raise HTTPException(404, "Contact not found.")
@@ -1087,7 +1046,14 @@ async def update_crm_contact(request: Request, identifier: int, session: DbSessi
         suffix = "?archived=true" if contact.archived_at else ""
         return RedirectResponse(f"/crm/contacts/{identifier}{suffix}", status_code=303)
     section = data.get("section")
-    if section == "general":
+    if section == "organisations":
+        try:
+            set_affiliations(session, contact, [key[4:] for key, value in data.items() if key.startswith("org:") and value == "yes"], getattr(getattr(request.state, "portal_user", None), "id", None))
+        except ValueError as error:
+            raise HTTPException(422, str(error)) from None
+        contact.version += 1
+        fields = {}
+    elif section == "general":
         fields = {
             key: data.get(key, "").strip()
             for key in ("first_name", "last_name", "address_type")
@@ -1695,32 +1661,7 @@ def crm_mahs(
     statement = mah_directory_statement(q, archived, agreement)
     rows, pagination = crm_paged(session, statement.order_by(CRMMah.name, CRMMah.id), page, request, "mahs")
     mahs = [mah for (mah,) in rows]
-    logos = {}
-    key = get_settings().logo_dev_publishable_key
-    if key and mahs:
-        source_ids = {
-            mah.source_row_id
-            for mah in mahs
-            if mah.source_row_id and "domain" not in (mah.profile or {})
-        }
-        sources = (
-            {
-                row.id: row.raw_row_json.get("Domain", "")
-                for row in session.scalars(
-                    select(StagingRow).where(StagingRow.id.in_(source_ids))
-                )
-            }
-            if source_ids
-            else {}
-        )
-        logos = {
-            mah.id: logo_url(
-                (mah.profile or {}).get("domain", sources.get(mah.source_row_id, "")),
-                key,
-                size=48,
-            )
-            for mah in mahs
-        }
+    logos = record_logos(session, mahs, get_settings().logo_dev_publishable_key)
     agreement_statuses = defaultdict(list)
     if mahs:
         for mah_id, status in session.execute(
@@ -2170,7 +2111,7 @@ def render_mah(request, session, mah=None, source=None, *, edit="", summary_draf
         "association_options": sorted(
             set(ASSOCIATIONS) | set(profile["associations"]), key=str.casefold
         ),
-        "logo_url": logo_url(profile["domain"], settings.logo_dev_publishable_key),
+        "logo_url": organisation_logo(source, profile, settings.logo_dev_publishable_key, size=128),
         "billing_parent": parent if not profile["eligible_for_invoicing"] else None,
     }
     query = filter_query(request, "q", "agreement")

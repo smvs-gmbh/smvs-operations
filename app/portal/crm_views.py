@@ -14,7 +14,12 @@ from app.domain.crm.agreement_lookup import normalise_agreement_lookup
 from app.domain.crm.declaration_lookup import normalise_lookup
 from app.domain.models import CRMListView, PortalListPreference, PortalUser
 from app.integration.artifacts.storage import utcnow
-from app.portal.crm_field_catalogue import CATALOGUE, DEFAULT_COLUMNS, catalogue_context
+from app.portal.crm_field_catalogue import (
+    CATALOGUE,
+    DEFAULT_COLUMNS,
+    RETIRED_FIELDS,
+    catalogue_context,
+)
 from app.portal.crm_list_preferences import FIELDS, validate_preferences
 from app.portal.exception_routes import review_form
 from app.portal.queries import paged, pagination_size
@@ -28,6 +33,17 @@ CHECKBOX_FILTERS = {"unlinked", "duplicates"}
 def default_quick(directory):
     return {key: "false" if key == "archived" else "" for key in FIELDS[directory]}
 
+
+
+def display_aliases(directory, values):
+    if not isinstance(values, list) or not all(isinstance(key, str) for key in values):
+        return values
+    aliases = {
+        "contacts": {key: "assigned_organisations" for key in ("assigned_mahs", "assigned_end_users", "source_link_mah", "source_link_end_users", "source_link_it_supplier")},
+        "mahs": {"source_contacts": "contacts"},
+        "it-suppliers": {"source_contacts": "contacts", "source_spoc": "spocs"},
+    }.get(directory, {})
+    return list(dict.fromkeys(aliases.get(key, key) for key in values))
 
 def normalise_config(directory, config):
     if not isinstance(config, dict):
@@ -44,6 +60,7 @@ def normalise_config(directory, config):
             422, "Relation lookups are available for MAHs only."
         )
     fields = {field.key: field for field in CATALOGUE[directory]}
+    predicate_fields = fields | RETIRED_FIELDS[directory]
     quick = config.get("quick_filters", {})
     if not isinstance(quick, dict) or not set(quick).issubset(FIELDS[directory]):
         raise HTTPException(422, "Select valid quick filters.")
@@ -63,10 +80,10 @@ def normalise_config(directory, config):
         if (
             not isinstance(condition, dict)
             or not isinstance(condition.get("field"), str)
-            or condition["field"] not in fields
+            or condition["field"] not in predicate_fields
         ):
             raise HTTPException(422, "Select a field from this directory.")
-        field = fields[condition["field"]]
+        field = predicate_fields[condition["field"]]
         operator = condition.get("operator")
         if operator not in field.operators:
             raise HTTPException(422, "Select an operator supported by the field.")
@@ -98,7 +115,9 @@ def normalise_config(directory, config):
                 422, f"Enter a valid value for {field.label}."
             ) from None
         cleaned.append({"field": field.key, "operator": operator, "value": value})
-    columns = config.get("columns")
+    columns = display_aliases(directory, config.get("columns"))
+    if isinstance(columns, list):
+        columns = [key for key in columns if not isinstance(key, str) or key not in RETIRED_FIELDS[directory]]
     if columns is not None and (
         not isinstance(columns, list)
         or any(not isinstance(key, str) or key not in fields for key in columns)
@@ -115,7 +134,9 @@ def normalise_config(directory, config):
             if any(key.startswith(prefix) and key not in selection["outputs"] for key in dependencies):
                 raise HTTPException(422, "A condition or sort uses a lookup output. Keep that output configured or remove its condition and sort first.")
             columns = [key for key in (columns if columns is not None else DEFAULT_COLUMNS[directory]) if not key.startswith(prefix)] + selection["outputs"]
-    order = config.get("column_order")
+    order = display_aliases(directory, config.get("column_order"))
+    if isinstance(order, list):
+        order = [key for key in order if not isinstance(key, str) or key not in RETIRED_FIELDS[directory]]
     if order is not None:
         if (
             not isinstance(order, list)
@@ -129,13 +150,14 @@ def normalise_config(directory, config):
     direction = config.get("direction", "asc")
     if (
         not isinstance(sort, str)
-        or sort not in {"", *fields}
+        or sort not in {"", *predicate_fields}
         or not isinstance(direction, str)
         or direction not in {"asc", "desc"}
     ):
         raise HTTPException(422, "Select a valid sort field and direction.")
     return {
         **({"declaration_lookup": lookup, "agreement_lookup": agreement_lookup} if directory == "mahs" else {}),
+        "retired_fields": sorted(({condition["field"] for condition in cleaned} | {sort}) & set(RETIRED_FIELDS[directory])),
         "quick_filters": quick,
         "conditions": cleaned,
         "columns": list(dict.fromkeys(columns)) if columns is not None else None,
@@ -459,6 +481,8 @@ def matches(value, condition, field):
 
 def configured_rows(request, session, directory, records, *, pdf_counts=None):
     config = getattr(request.state, "crm_view_config", {})
+    if config.get("retired_fields"):
+        return []
     conditions, sort = config.get("conditions", []), config.get("sort", "")
     if not conditions and not sort:
         return records

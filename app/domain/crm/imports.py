@@ -102,6 +102,9 @@ def stage_export(session, dataset, content, filename):
         .with_for_update()
     )
     if existing:
+        if dataset.source_dataset_name == "IT Suppliers":
+            from app.domain.crm.organisation_links import migrate_affiliations
+            migrate_affiliations(session, apply=True)
         return existing, False
     job = IntegrationJob(
         source_name=SOURCE,
@@ -140,6 +143,9 @@ def stage_export(session, dataset, content, filename):
     session.add(run)
     session.flush()
     stage_daily_snapshot(session, artifact, ParsedDailySnapshot({}, (dataset,)), run)
+    if dataset.source_dataset_name == "IT Suppliers":
+        from app.domain.crm.organisation_links import migrate_affiliations
+        migrate_affiliations(session, apply=True)
     return run.datasets[0], True
 
 

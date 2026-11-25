@@ -7,7 +7,7 @@
 | **Document ID**    | URS-001                         |
 | **Title**          | User Requirements Specification |
 | **Status**         | Draft                           |
-| **Version**        | 0.14                            |
+| **Version**        | 0.15                            |
 | **Classification** | Internal                        |
 | **Owner**          | SMVS GmbH                       |
 | **Author**         | Reinhold Sojer                  |
@@ -22,6 +22,7 @@
 | ------- | ---------- | -------------- | ------------- |
 | 0.9     | 2026-06-27 | Reinhold Sojer | Initial draft |
 | 0.10    | 2026-11-17 | SMVS Operations project | Reconciled the intended use and added requirements for current workflows and planned Hub integration |
+| 0.15    | 2026-11-25 | SMVS Operations project | CRM cutover: durable general affiliations, explicit roles, field retirement, protected reimports and consistent database backup/recovery |
 | 0.14    | 2026-11-25 | SMVS Operations project | Independent Agreements lookup with typed date selection alongside Self-declarations (local pilot) |
 | 0.13    | 2026-11-25 | SMVS Operations project | Lookup selections directly control displayed relation columns; Columns contains fixed fields only; optional year/selection context (local pilot feedback) |
 | 0.12    | 2026-11-25 | SMVS Operations project | Structured lookup conditions/output configuration and explicit related-record return navigation (local pilot); FRS/RTM/risk reconciliation pending |
@@ -582,3 +583,47 @@ be scoped to the originating parent's assigned contacts. A contact linked to mul
 parents shall return to the actual originating parent. Missing or invalid source
 records shall not produce a misleading return link. User-supplied context shall not
 allow an external redirect or an editing command on the originating record.
+
+## URS-115
+
+Contacts shall have a unified Assigned organisations relation covering MAHs,
+End Users and IT Suppliers. General affiliation shall remain distinct from
+SPOC/Alert contact roles and shall not grant communication/access permissions.
+Existing role assignments shall remain authoritative; all relationship views
+shall project the same roles. General affiliations shall have explicit foreign
+keys, at most one target per link and unique contact/target pairs. Supplier
+identities shall survive successive staging rows for the same exact source key.
+Imports shall resolve only exact identifiers or unique export references;
+missing/ambiguous references shall remain review findings. Repeated migration
+shall be idempotent. Manual unassignment shall survive reimport, and membership
+changes shall record actor, target, action and UTC time. Organisational roles
+shall be maintained at the organisation and cannot be removed by general
+membership editing. Contact erasure shall detach general affiliations consistently
+with existing erasure controls and retain only the permitted minimal audit.
+
+## URS-116
+
+Retired import columns shall be removed from normal display/condition selectors
+without deleting original evidence. Source/provenance metadata shall remain
+available without import suffixes on normal labels. Existing display-only view
+settings shall be normalised safely; assignment display columns may map to one
+Assigned organisations column. A saved predicate/sort using a retired field shall
+block results and require explicit correction, rather than silently broadening
+its scope. CRM timestamps shall remain internally distinct from original source
+timestamps. Reimport shall not overwrite manually maintained CRM values or create
+duplicate End Users solely because a new export has different staging-row IDs;
+changed/missing/ambiguous source identities shall require review.
+
+## URS-117
+
+Consistent database backups shall cover CRM data, relational links, audit records
+and archived document blobs. Backup credentials shall not appear in command-line
+arguments or normal output. Backup files/configuration shall be private and
+completed backups shall have a checksum/manifest; failed/incomplete runs shall
+not be recorded as complete. Concurrent runs to the same destination shall be
+prevented. A controlled cutover shall retain a pre-migration backup and verify
+recovery in an isolated database, as well as schema/data migration and source
+record preservation. Scheduled backup operation, location, verification and
+recovery instructions shall be recorded. Retention, off-site coverage and ongoing
+failure monitoring require explicit operational controls and shall not be
+inferred from a successful initial backup or from the Airtable source export.

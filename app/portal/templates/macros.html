@@ -49,7 +49,7 @@
 
 
 {% macro crm_extra_headers(fields) %}
-{% for field in fields %}<th scope="col" data-column="{{ field.key }}" data-default-visible="false" hidden>{{ field.label }}{% if field.origin == 'Airtable import' %} · imported{% endif %}</th>{% endfor %}
+{% for field in fields %}<th scope="col" data-column="{{ field.key }}" data-default-visible="{{ 'true' if field.key == 'assigned_organisations' else 'false' }}" hidden>{{ field.label }}</th>{% endfor %}
 {% endmacro %}
 
 {% macro crm_extra_cells(fields, values, request=none) %}

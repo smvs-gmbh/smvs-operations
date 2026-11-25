@@ -6,7 +6,12 @@ import re
 from fastapi import APIRouter, HTTPException, Request
 
 from app.domain.models import PortalListPreference, PortalUser
-from app.portal.crm_field_catalogue import CATALOGUE, DEFAULT_COLUMNS, field_keys
+from app.portal.crm_field_catalogue import (
+    CATALOGUE,
+    DEFAULT_COLUMNS,
+    RETIRED_FIELDS,
+    field_keys,
+)
 from app.portal.exception_routes import review_form
 from app.portal.routes import DbSession
 
@@ -73,13 +78,15 @@ def get_preferences(request: Request, view: str, session: DbSession):
         {"key": field.key, "label": field.label, "type": field.kind, "origin": field.origin, "operators": field.operators}
         for field in CATALOGUE[view]
     ]
+    retired = [{"key": field.key, "label": field.label, "type": field.kind, "operators": field.operators} for field in RETIRED_FIELDS[view].values()]
     user = getattr(request.state, "portal_user", None)
     if user is None:
-        return {"available": False, "fields": catalogue}
+        return {"available": False, "fields": catalogue, "retired_fields": retired}
     preference = session.get(PortalListPreference, (user.id, view))
     return {
         "available": True,
         "fields": catalogue,
+        "retired_fields": retired,
         "visible": preference.visible if preference else None,
         "defaults": preference.defaults if preference else None,
         "columns": preference.columns if preference else None,

@@ -19,7 +19,7 @@ def integrity(
     year: int = Query(datetime.now(UTC).year - 1, ge=1900, le=9999),
     rule: str = "",
     severity: Literal["", "Error", "Review"] = "",
-    kind: Literal["", "MAH", "Contact", "Self-declaration"] = "",
+    kind: Literal["", "MAH", "Contact", "Self-declaration", "End User", "IT Supplier"] = "",
 ):
     if rule and rule not in RULES:
         raise HTTPException(422, "Select a known integrity check.")

@@ -13,6 +13,7 @@ from app.domain.crm.contact_assignments import spoc_ids
 from app.domain.crm.declaration_lookup import declaration_values
 from app.domain.crm.imports import linked_values
 from app.domain.crm.mah_profile import PROFILE_GROUPS, profile_defaults
+from app.domain.crm.organisation_links import affiliations
 from app.domain.models import (
     CRMAgreement,
     CRMAgreementMAH,
@@ -80,13 +81,13 @@ CATALOGUE = {
         CRMField("ag_contractor", "Agreement · contractor", origin="Agreements lookup"),
         CRMField("ag_status", "Agreement · status", origin="Agreements lookup"),
         CRMField("ag_signing_date", "Agreement · signing date", "date", origin="Agreements lookup"),
-        CRMField("ag_start_date", "Agreement · start date (imported)", origin="Agreements lookup"),
-        CRMField("ag_termination_date", "Agreement · termination date (imported)", origin="Agreements lookup"),
+        CRMField("ag_start_date", "Agreement · start date", origin="Agreements lookup"),
+        CRMField("ag_termination_date", "Agreement · termination date", origin="Agreements lookup"),
         CRMField("ag_selection", "Agreement · selection result", origin="Agreements lookup"),
         CRMField("sd_year", "Self-declaration · data year", "number", origin="Self-declarations lookup"),
         CRMField("sd_packs", "Self-declaration · RX packs sold", "number", origin="Self-declarations lookup"),
         CRMField("sd_sales_group", "Self-declaration · RX sales group", origin="Self-declarations lookup"),
-        CRMField("sd_status", "Self-declaration · imported status", origin="Self-declarations lookup"),
+        CRMField("sd_status", "Self-declaration · status", origin="Self-declarations lookup"),
         CRMField("sd_declaration", "Self-declaration · record", origin="Self-declarations lookup"),
         CRMField("sd_selection", "Self-declaration · selection result", origin="Self-declarations lookup"),
         CRMField("parent_company", "Parent company"),
@@ -244,7 +245,7 @@ CATALOGUE = {
         CRMField("year", "Data year", "number"),
         CRMField("mah", "MAH"),
         CRMField("packs", "RX packs sold", "number"),
-        CRMField("status", "Imported status", origin="Airtable import"),
+        CRMField("status", "Status", origin="Airtable import"),
         CRMField("invoice_year", "Invoice year", "number", origin="Derived"),
         *imported_fields(
             (
@@ -259,6 +260,24 @@ CATALOGUE = {
         ),
     ),
 }
+
+
+# Removed display fields remain recognisable in saved view predicates, which are
+# blocked for review rather than silently broadened. Original evidence is retained.
+REMOVED_COLUMNS = {
+    "agreements": {"source_" + re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_") for name in (
+        "Type", "Auto-Renewal", "Created By", "Created Time", "Last Modified", "Next Possible Termination Date", "Notes", "Tasks", "End Users", "Affiliates")},
+    "mahs": {"created_at", "updated_at", "archived_at", "source_tasks", "source_contacts", "source_logo", "source_created_time", "source_last_modified_time", "source_modified_time"},
+    "end-users": {"source_logo"},
+    "it-suppliers": {"source_logo", "source_logo_url", "source_contacts", "source_spoc"},
+    "contacts": {"assigned_mahs", "assigned_end_users", "source_link_mah", "source_link_end_users", "source_link_it_supplier"},
+}
+RETIRED_FIELDS = {directory: {field.key: field for field in fields if field.key in REMOVED_COLUMNS.get(directory, set())} for directory, fields in CATALOGUE.items()}
+CATALOGUE = {directory: tuple(field for field in fields if field.key not in RETIRED_FIELDS[directory]) for directory, fields in CATALOGUE.items()}
+CATALOGUE["contacts"] += (CRMField("assigned_organisations", "Assigned organisations", "list"),)
+for directory in ("mahs", "end-users", "it-suppliers"):
+    CATALOGUE[directory] += (CRMField("contacts", "Contacts", "list", origin="Contacts"),)
+CATALOGUE["it-suppliers"] += (CRMField("spocs", "SPOCs", "list", origin="Contacts"),)
 
 
 def field_keys(view):
@@ -306,16 +325,25 @@ def catalogue_context(session, view, records, *, pdf_counts=None, declaration_lo
         if source_ids
         else {}
     )
+    all_affiliations = affiliations(session) if view in {"mahs", "contacts", "end-users", "it-suppliers"} else {}
+    members = defaultdict(list)
+    expected_kind = {"mahs": "mah", "end-users": "end_user", "it-suppliers": "supplier"}.get(view)
+    for cid, targets in all_affiliations.items():
+        for target in targets:
+            if target["kind"] == expected_kind:
+                owner_id = target["record"].source_row_id if expected_kind == "supplier" else target["id"]
+                members[owner_id].append((cid, target["roles"]))
     contacts = {}
     parents = {}
     agreements = defaultdict(list)
     agreement_mahs = defaultdict(list)
     assigned_mahs, assigned_end_users = defaultdict(list), defaultdict(list)
+    contact_affiliations = all_affiliations if view == "contacts" else {}
     organisations = {}
-    if view in {"mahs", "end-users"}:
-        contact_ids = set()
+    if view in {"mahs", "end-users", "it-suppliers"}:
+        contact_ids = {cid for row in records for cid, _ in members[row.id]}
         for record in records:
-            profile = record.profile or {}
+            profile = getattr(record, "profile", None) or {}
             contact_ids.update(spoc_ids(profile))
             contact_ids.update(profile.get("alert_contact_ids", []))
         if contact_ids:
@@ -418,6 +446,10 @@ def catalogue_context(session, view, records, *, pdf_counts=None, declaration_lo
                     if id in contacts
                 ],
             )
+        if view in {"mahs", "end-users", "it-suppliers"}:
+            values["contacts"] = [contacts[cid] for cid, _ in members[record.id] if cid in contacts]
+        if view == "it-suppliers":
+            values["spocs"] = [contacts[cid] for cid, roles in members[record.id] if cid in contacts and "SPOC" in roles]
         if view == "mahs":
             linked = agreements[record.id]
             values.update(
@@ -446,6 +478,7 @@ def catalogue_context(session, view, records, *, pdf_counts=None, declaration_lo
             values.update(
                 name=record.display_name,
                 function=linked_values(record.function or ""),
+                assigned_organisations=[f"{link['name']} · {link['type']} · {', '.join(link['roles'])}" for link in contact_affiliations.get(record.id, [])],
                 assigned_mahs=assigned_mahs[record.id],
                 assigned_end_users=assigned_end_users[record.id],
                 archived_at=record.archived_at,

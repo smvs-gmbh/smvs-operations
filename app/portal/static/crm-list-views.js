@@ -1,7 +1,7 @@
-import {installCsvDownload} from './table-csv.js?v=agreement-lookups-1';
+import {installCsvDownload} from './table-csv.js?v=crm-cutover-1';
 import {rightToolbox} from './right-toolbox.js?v=record-actions-1';
-import {initialiseLookup} from './crm-lookup-editor.js?v=agreement-lookups-1';
-import {initialiseColumns} from './crm-list-columns.js?v=agreement-lookups-1';
+import {initialiseLookup} from './crm-lookup-editor.js?v=crm-cutover-1';
+import {initialiseColumns} from './crm-list-columns.js?v=crm-cutover-1';
 
 const form = document.querySelector('form[data-crm-filters]');
 if (form) initialiseViews(form);
@@ -103,7 +103,11 @@ export async function initialiseViews(form) {
     chooser.value = selected ? String(selected.id) : currentPreset ? `preset:${currentPreset.id}` : 'all';
     chooser.disabled = false;
     const fields = catalogue.fields.filter(field => !field.column_only);
-    const fieldMap = new Map(fields.map(field => [field.key, field]));
+    const fieldMap = new Map([...fields, ...(catalogue.retired_fields || [])].map(field => [field.key, field]));
+    if (config.retired_fields?.length && !document.querySelector('[data-retired-view]')) {
+        const warning = element('p', 'notice', 'This view uses removed fields. No records are shown until you remove or replace its affected conditions or sorting: ' + config.retired_fields.map(key => fieldMap.get(key)?.label || key).join(', '));
+        form.prepend(warning);
+    }
     const headers = Array.from(form.closest('section').querySelectorAll('table[data-crm-columns] thead th'));
     const standardOrder = headers.map(header => header.dataset.column);
     const standardColumns = headers.filter(header => header.dataset.defaultVisible !== 'false').map(header => header.dataset.column);
@@ -128,7 +132,12 @@ export async function initialiseViews(form) {
         const row = element('div', 'crm-condition-row');
         const fieldSelect = element('select');
         fieldSelect.setAttribute('aria-label', 'Condition field');
-        for (const field of fields) fieldSelect.append(new Option(field.label + (field.origin === 'Airtable import' ? ' · imported' : ''), field.key));
+        for (const field of fields) fieldSelect.append(new Option(field.label, field.key));
+        if (initial.field && !fields.some(field => field.key === initial.field)) {
+            const retired = fieldMap.get(initial.field);
+            const option = new Option('Removed field: ' + (retired?.label || initial.field), initial.field);
+            option.disabled = true; fieldSelect.append(option);
+        }
         fieldSelect.value = initial.field || fields[0].key;
         const operator = element('select');
         operator.setAttribute('aria-label', 'Condition operator');
@@ -180,7 +189,11 @@ export async function initialiseViews(form) {
     const sorting = element('div', 'crm-view-sorting');
     const sort = element('select');
     sort.append(new Option('Directory order', ''));
-    for (const field of fields) sort.append(new Option(field.label + (field.origin === 'Airtable import' ? ' · imported' : ''), field.key));
+    for (const field of fields) sort.append(new Option(field.label, field.key));
+    if (config.sort && !fields.some(field => field.key === config.sort)) {
+        const option = new Option('Removed field: ' + (fieldMap.get(config.sort)?.label || config.sort), config.sort);
+        option.disabled = true;sort.append(option);
+    }
     sort.value = config.sort;
     const direction = element('select');
     direction.append(new Option('Ascending', 'asc'), new Option('Descending', 'desc'));

@@ -79,22 +79,23 @@
 {% endif %}
 </section>
 <section class="panel review-body review-form">
-<h2>Organisation</h2>
-{% if organisations or suppliers or end_users %}
-<dl class="mah-values">
-{% for mah, origin in organisations %}
-<div><dt>MAH · {{ origin }}</dt><dd><a href="/crm/mahs/{{ mah.id }}">{{ mah.name }} →</a>{{ ' (archived)' if mah.archived_at }}</dd></div>
+{{ section_heading('Organisations', 'organisations') }}
+{% if edit == 'organisations' %}
+{{ form_start('organisations') }}
+<p class="subtle">Choose general organisation affiliations. MAH and End User SPOC/Alert roles are managed at the organisation and remain assigned here.</p>
+{% set selected = organisation_links|map(attribute='token')|list %}
+<fieldset class="analysis-edit-fields contact-options"><legend>Assigned organisations</legend>
+{% for target in organisation_options %}
+{% set locked = contact.id in target.role_contacts %}
+<label class="resolve-confirm"><input type="checkbox" name="org:{{ target.token }}" value="yes" {{ 'checked' if target.token in selected }} {{ 'disabled' if locked or (not target.available and target.token not in selected) }}><span>{{ target.name }} · {{ target.type }}{{ ' · role assignment' if locked }}{{ ' · archived/unavailable' if not target.available }}</span></label>
 {% endfor %}
-{% for supplier, spoc in suppliers %}
-<div><dt>IT Supplier{{ ' · SPOC' if spoc }}</dt><dd><a href="/crm/it-suppliers/{{ supplier.id }}">{{ supplier.raw_row_json['IT Supplier Name'] }} →</a></dd></div>
-{% endfor %}
-{% for user in end_users %}
-<div><dt>End User</dt><dd><a href="/crm/end-users/{{ user.id }}">{{ user.name }} →</a></dd></div>
-{% endfor %}
-</dl>
-{% elif not pending and not pending_suppliers %}<p>No organisation linked.</p>{% endif %}
-{% if pending_suppliers %}<p>IT supplier references awaiting review · {{ pending_suppliers|join(', ') }}</p>{% endif %}
-{% if pending %}<p>Airtable organisation references awaiting review · {{ pending|join(', ') }}</p>{% endif %}
+</fieldset>
+{{ form_end('organisations') }}
+{% else %}
+{% if organisation_links %}<div class="table-scroll"><table><thead><tr><th>Organisation</th><th>Type</th><th>Roles</th></tr></thead><tbody>
+{% for target in organisation_links %}<tr><td>{% if target.url %}<a href="{{ related_record_url(request, target.url) }}">{{ target.name }} →</a>{% else %}{{ target.name }}{% endif %}{{ ' (archived/unavailable)' if not target.available }}</td><td>{{ target.type }}</td><td>{{ target.roles|join(', ') }}</td></tr>{% endfor %}
+</tbody></table></div>{% else %}<p>No organisation assigned.</p>{% endif %}
+{% endif %}
 </section>
 </div>
 </div></div>

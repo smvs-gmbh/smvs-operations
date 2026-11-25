@@ -1119,3 +1119,72 @@ class PortalCsvExport(Base):
     byte_count: Mapped[int] = mapped_column(BigInteger)
     file_sha256: Mapped[str] = mapped_column(String(64))
     file_format: Mapped[str] = mapped_column(String(8), default="csv", server_default="csv")
+
+
+DOMAIN_TABLES.update(
+    {
+        "crm_it_supplier_identities",
+        "crm_contact_organisation_links",
+        "crm_contact_link_events",
+    }
+)
+
+
+class CRMITSupplierIdentity(Base):
+    """Stable Operations identity for a supplier represented by successive source rows."""
+
+    __tablename__ = "crm_it_supplier_identities"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    source_key: Mapped[str] = mapped_column(String(255), unique=True)
+    name: Mapped[str] = mapped_column(Text)
+    source_row_id: Mapped[int | None] = evidence_row()
+    is_current: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
+
+
+class CRMContactOrganisationLink(Base):
+    """General affiliation; organisational SPOC/Alert assignments remain separate roles."""
+
+    __tablename__ = "crm_contact_organisation_links"
+    __table_args__ = (
+        CheckConstraint(
+            "(mah_id IS NOT NULL AND end_user_id IS NULL AND supplier_id IS NULL) OR (mah_id IS NULL AND end_user_id IS NOT NULL AND supplier_id IS NULL) OR (mah_id IS NULL AND end_user_id IS NULL AND supplier_id IS NOT NULL)",
+            name="ck_contact_link_one_target",
+        ),
+        UniqueConstraint("contact_id", "mah_id", name="uq_contact_link_mah"),
+        UniqueConstraint("contact_id", "end_user_id", name="uq_contact_link_end_user"),
+        UniqueConstraint("contact_id", "supplier_id", name="uq_contact_link_supplier"),
+    )
+    id: Mapped[int] = mapped_column(primary_key=True)
+    contact_id: Mapped[int] = mapped_column(
+        ForeignKey("crm_contacts.id", ondelete="CASCADE"), index=True
+    )
+    mah_id: Mapped[int | None] = mapped_column(
+        ForeignKey("crm_mahs.id", ondelete="CASCADE")
+    )
+    end_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("crm_end_users.id", ondelete="CASCADE")
+    )
+    supplier_id: Mapped[int | None] = mapped_column(
+        ForeignKey("crm_it_supplier_identities.id", ondelete="CASCADE")
+    )
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="1")
+    supplier_spoc: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="0"
+    )
+    origin: Mapped[str] = mapped_column(String(20))
+    source_row_id: Mapped[int | None] = evidence_row()
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    updated_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+class CRMContactLinkEvent(Base):
+    __tablename__ = "crm_contact_link_events"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    contact_id: Mapped[int] = mapped_column(Integer, index=True)
+    target_type: Mapped[str] = mapped_column(String(20))
+    target_id: Mapped[int] = mapped_column(Integer)
+    action: Mapped[str] = mapped_column(String(40))
+    actor_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("portal_users.id", ondelete="SET NULL")
+    )
+    occurred_at: Mapped[datetime] = mapped_column(DateTime)

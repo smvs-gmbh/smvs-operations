@@ -323,7 +323,7 @@ def test_mah_import_edit_archive_restore_and_create(portal, monkeypatch):
     contact_url = f"/crm/contacts/{contact_id}"
     profile_page = client.get(contact_url).text
     assert (
-        "Airtable organisation link" in profile_page
+        "Organisation" in profile_page
         and "Example Holder" in profile_page
     )
     assert "contact@example.test" in profile_page

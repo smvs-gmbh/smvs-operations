@@ -681,3 +681,22 @@ No Jelastic deployment or production source request was performed.
   original start/termination text, private view persistence, source-record return,
   filtering/sorting before pagination and full-view CSV export.
 - [ ] Owner acceptance and deferred FRS/RA/RTM reconciliation of URS-111 v0.14.
+
+
+### CRM cutover — 2026-11-25 (CHG-015)
+
+- [x] Retire agreed obsolete columns, remove import suffixes and preserve original evidence.
+- [x] Unify Contact affiliations across MAHs/End Users/IT Suppliers; keep general
+  membership distinct from recipient roles and persist manual unassignment.
+- [x] Add stable supplier identities, typed affiliation FKs, migration preview/apply,
+  idempotence, audit and integrity findings for unresolved references.
+- [x] Preserve CRM values/identities on End User reimport; keep missing/ambiguous
+  identity changes subject to review. Protect views using retired predicates.
+- [x] Implement consistent private database backup with checksum/manifest, run lock
+  and no success marker on failure. Rehearse isolated restore and online migration.
+- [ ] Record completed production cutover, scheduled backup and production verification.
+- [ ] Owner review of unresolved source affiliations; do not infer roles from membership.
+- [ ] Finalise timestamp/derived-field concepts, backup retention/off-site copies,
+  recurring restore exercise and proactive backup failure/freshness monitoring.
+- [ ] Controlled deletion of obsolete source data after dependency/retention review.
+- [ ] Reconcile FRS/RA/RTM with URS-115–117 before a formal validation baseline.

@@ -1,6 +1,6 @@
-import {initialiseViews} from './crm-list-views.js?v=agreement-lookups-1';
+import {initialiseViews} from './crm-list-views.js?v=crm-cutover-1';
 import {installActions} from './table-actions.js?v=csv-1';
-import {installCsvDownload,applyReportView,cellText} from './table-csv.js?v=agreement-lookups-1';
+import {installCsvDownload,applyReportView,cellText} from './table-csv.js?v=crm-cutover-1';
 
 function hash(value) { let h=2166136261; for(const c of value) h=Math.imul(h^c.charCodeAt(0),16777619); return (h>>>0).toString(36); }
 function node(tag,cls,text) {const e=document.createElement(tag);e.className=cls||'';if(text)e.textContent=text;return e;}

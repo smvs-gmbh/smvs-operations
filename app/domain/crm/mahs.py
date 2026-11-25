@@ -82,6 +82,8 @@ def seed_staged_mahs(session):
     from app.domain.crm.mah_contacts import seed_mah_contacts
 
     seed_mah_contacts(session)
+    from app.domain.crm.organisation_links import migrate_affiliations
+    migrate_affiliations(session, apply=True)
     return created
 
 

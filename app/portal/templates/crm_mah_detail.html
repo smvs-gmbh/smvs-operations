@@ -320,8 +320,8 @@
 <div><dt>Contractor</dt><dd>{{ agreement_lookup.ag_contractor or '—' }}</dd></div>
 <div><dt>Contract status</dt><dd>{{ agreement_lookup.ag_status or '—' }}</dd></div>
 <div><dt>Signing date</dt><dd>{{ agreement_lookup.ag_signing_date or '—' }}</dd></div>
-<div><dt>Start date · imported</dt><dd>{{ agreement_lookup.ag_start_date or '—' }}</dd></div>
-<div><dt>Termination date · imported</dt><dd>{{ agreement_lookup.ag_termination_date or '—' }}</dd></div>
+<div><dt>Start date</dt><dd>{{ agreement_lookup.ag_start_date or '—' }}</dd></div>
+<div><dt>Termination date</dt><dd>{{ agreement_lookup.ag_termination_date or '—' }}</dd></div>
 </dl>
 {% endif %}
 {% if mah %}<p><a href="{{ related_record_url(request, '/crm/self-declarations?mah_id=' ~ mah.id, 'related-records') }}">Self-declarations ({{ self_declaration_count }}) →</a></p>{% endif %}
