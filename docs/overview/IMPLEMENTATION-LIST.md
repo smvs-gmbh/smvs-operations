@@ -701,3 +701,18 @@ No Jelastic deployment or production source request was performed.
   recurring restore exercise and proactive backup failure/freshness monitoring.
 - [ ] Controlled deletion of obsolete source data after dependency/retention review.
 - [ ] Reconcile FRS/RA/RTM with URS-115–117 before a formal validation baseline.
+
+
+### API Access — snapshot monitoring (CHG-016)
+
+- [x] Combine the five retained API sections into User → API Access without a
+  source reimport/schema change or rewriting original values.
+- [x] Add combined User-Agent/IP search, API service and source-date scope, saved
+  conditions/columns/sorting before pagination and standard CSV/Excel actions.
+- [x] Pin the selected successful delivery for investigation/export; show missing
+  versus empty sections, filtered observation/client/organisation metrics and
+  original-row evidence with contextual return. Exact-snapshot record links only.
+- [x] Record URS-118 and source evidence limits; keep WAF events/volumes/URLs,
+  destination markets and IP geolocation distinct from snapshot observations.
+- [ ] Owner acceptance with an actual Barracuda report/IP; production deployment.
+- [ ] Reconcile FRS/RA/RTM before the formal validation baseline.

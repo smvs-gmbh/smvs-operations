@@ -567,3 +567,5 @@ div.test-case-columns { color: var(--muted); background: #f7f9fb; font-weight: 6
 
 .crm-relation-editor > :is(label, h3, p, fieldset) { margin-bottom: 1rem; }
 .crm-relation-editor > label { display: grid; gap: .4rem; }
+
+.api-access-agent{min-width:16rem;max-width:28rem;white-space:normal;overflow-wrap:anywhere}

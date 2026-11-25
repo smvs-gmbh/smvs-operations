@@ -1,0 +1,25 @@
+{% extends 'base.html' %}{% import 'macros.html' as ui %}
+{% block heading %}{{ ui.list_heading('USER & API MONITORING', 'API Access', 'Identify client integrations from the access observations supplied in the NMVS Daily Snapshot.', icon='⌖') }}{% endblock %}
+{% block content %}
+<div class="source-strip"><span><i class="dot"></i>NMVS Daily Snapshot</span>{% if delivery %}<span>Snapshot <strong>{{ delivery.requested_snapshot_date or 'Date not supplied' }}</strong></span><span>Imported <strong>{{ delivery.completed_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</strong></span><span>{{ datasets|length }} of 5 API sections supplied</span>{% else %}<span>No successfully imported snapshot available</span>{% endif %}</div>
+{{ ui.list_metrics('Filtered access observations', [('Matching observations', metrics[0]|number, 'Snapshot entries, not request or timeout counts'), ('Organisations', metrics[1]|number, 'Distinct supplied organisation IDs in these results'), ('Clients', metrics[2]|number, 'Distinct supplied client IDs in these results')]) }}
+{% if missing_services and delivery %}<div class="information-note"><span>i</span><p>Not supplied in this delivery: {{ missing_services|join(', ') }}. Missing sections are distinct from supplied sections containing zero rows.</p></div>{% endif %}
+<section class="panel"><div class="panel-heading"><h2>API access observations</h2><span class="subtle">{{ pagination.total|number }} results</span></div>
+<form class="filters" method="get" action="/api-access" role="search">
+<label class="search-box"><span aria-hidden="true">⌕</span><input type="search" name="q" value="{{ q }}" maxlength="500" placeholder="User-Agent, IP, client, organisation or location …" aria-label="Search API access"></label>
+<label>Snapshot delivery<select name="snapshot"><option value="">Latest imported snapshot</option>{% for option in deliveries %}<option value="{{ option.id }}" {{ 'selected' if snapshot == option.id }}>{{ option.requested_snapshot_date or 'Date not supplied' }} · import {{ option.id }}</option>{% endfor %}</select></label>
+<label>User-Agent contains<input name="agent" value="{{ agent }}" maxlength="500"></label>
+<label>IP address contains<input name="ip" value="{{ ip }}" maxlength="150"></label>
+<label>API service<select name="service"><option value="">All API services</option>{% for name, label in services.items() %}<option value="{{ name }}" {{ 'selected' if service == name }}>{{ label }}</option>{% endfor %}</select></label>
+<label>Last request from<input type="date" name="from_date" value="{{ from_date or '' }}"></label><label>Last request to<input type="date" name="to_date" value="{{ to_date or '' }}"></label>
+<button class="primary" type="submit">Search</button></form>
+<div class="table-scroll"><table><thead><tr>{% for label in ['Organisation', 'Organisation ID', 'Organisation type', 'Location ID', 'Client ID', 'User-Agent', 'IP address', 'Last API request · source', 'API service', 'API version', 'Requested API version', 'Last request date · source', 'Evidence'] %}<th scope="col">{{ label }}</th>{% endfor %}</tr></thead><tbody>
+{% for record, dataset_name, organisation_id, location_id in rows %}{% set raw = record.raw_row_json %}<tr>
+<td class="name-cell">{% if organisation_id %}<a href="/organisations/{{ organisation_id }}">{{ raw.get('Organisation Name') or raw.get('Organisation Id') or 'Not supplied' }}</a>{% else %}{{ raw.get('Organisation Name') or raw.get('Organisation Id') or 'Not supplied' }}{% endif %}</td>
+<td class="mono">{{ raw.get('Organisation Id') or '—' }}</td><td>{{ raw.get('Organisation Type') or '—' }}</td>
+<td class="mono">{% if location_id %}<a href="/locations/{{ location_id }}">{{ raw.get('Location Id') }}</a>{% else %}{{ raw.get('Location Id') or '—' }}{% endif %}</td>
+<td class="mono">{{ raw.get('Client Id') or '—' }}</td><td class="api-access-agent">{{ raw.get('User-Agent') or '—' }}</td><td class="mono">{{ raw.get('IP Address') or '—' }}</td><td>{{ raw.get('Last API Request') or '—' }}</td><td>{{ services[dataset_name] }}</td><td>{{ raw.get('API Version') or '—' }}</td><td>{{ raw.get('Requested API Version') or '—' }}</td><td>{{ (raw.get('Last API Request') or '')[:10] or '—' }}</td><td><a href="/api-access/{{ record.id }}/source?{{ request.url.query }}">NMVS original →</a></td>
+</tr>{% else %}<tr><td colspan="13" class="empty-state">No API access observations match this snapshot and view.</td></tr>{% endfor %}
+</tbody></table></div>{{ ui.pagination(pagination,request) }}</section>
+<div class="information-note"><span>i</span><p>Each row is a supplied client access observation with its last reported request. Repeated snapshots are not added together. The snapshot does not contain WAF timeout events, request volumes, request URLs or IP geolocation; an API service does not establish the business operation or destination market. A User-Agent can be shared by several integrations: correlate it with IP, client, organisation and date.</p></div>
+{% endblock %}

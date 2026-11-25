@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ title }} · SMVS Operations</title>
-  <link rel="stylesheet" href="{{ request.url_for('portal_static', path='portal.css') }}?v=crm-cutover-1">
+  <link rel="stylesheet" href="{{ request.url_for('portal_static', path='portal.css') }}?v=api-access-1">
   <script src="{{ request.url_for('portal_static', path='text-size.js') }}"></script>
   {% if active == 'crm' %}<script src="{{ request.url_for('portal_static', path='crm-list-views.js') }}?v=crm-cutover-1" type="module"></script>
   <script src="{{ request.url_for('portal_static', path='record-actions.js') }}?v=crm-record-actions-1" type="module"></script>
   <script src="{{ request.url_for('portal_static', path='crm-navigation.js') }}?v=registration-workflow-1" type="module"></script>{% endif %}
   {% if active == 'workflows' %}<script src="{{ request.url_for('portal_static', path='record-actions.js') }}?v=registration-workflow-1" type="module"></script>{% endif %}
-  {% block table_views %}<script src="{{ request.url_for('portal_static', path='portal-list-views.js') }}?v=crm-cutover-1" type="module"></script>{% endblock %}
+  {% block table_views %}<script src="{{ request.url_for('portal_static', path='portal-list-views.js') }}?v=api-access-1" type="module"></script>{% endblock %}
   <script src="{{ request.url_for('portal_static', path='table-csv.js') }}?v=crm-cutover-1" type="module"></script>
 </head>
 <body>
@@ -23,7 +23,7 @@
     {% if not account or account.is_nmvo %}
     {% for label, icon, links in [
       ('Catalogue', '▦', [('catalogue', 'Overview', '/catalogue'), ('products', 'Products', '/products'), ('batches', 'Batches', '/batches')]),
-      ('User', '⌖', [('organisations', 'Organisations', '/organisations'), ('locations', 'Locations', '/locations'), ('activity', 'Activity', '/activity/verification')])
+      ('User', '⌖', [('organisations', 'Organisations', '/organisations'), ('locations', 'Locations', '/locations'), ('api_access', 'API Access', '/api-access'), ('activity', 'Activity', '/activity/verification')])
     ] %}
     <details class="sidebar-group" {{ 'open' if active in links|map(attribute=0)|list }}>
       <summary><span class="nav-icon" aria-hidden="true">{{ icon }}</span>{{ label }}</summary>
@@ -85,7 +85,7 @@
     {% elif active in ('catalogue', 'products', 'batches', 'organisations', 'locations', 'activity') %}
     {% set catalogue = active in ('catalogue', 'products', 'batches') %}
     <nav class="portal-module-nav" aria-label="{{ 'Catalogue navigation' if catalogue else 'Participants navigation' }}">
-    {% for key, label, path in ([('catalogue', 'Overview', '/catalogue'), ('products', 'Products', '/products'), ('batches', 'Batches', '/batches')] if catalogue else [('organisations', 'Organisations', '/organisations'), ('locations', 'Locations', '/locations'), ('activity', 'Activity', '/activity/verification')]) %}
+    {% for key, label, path in ([('catalogue', 'Overview', '/catalogue'), ('products', 'Products', '/products'), ('batches', 'Batches', '/batches')] if catalogue else [('organisations', 'Organisations', '/organisations'), ('locations', 'Locations', '/locations'), ('api_access', 'API Access', '/api-access'), ('activity', 'Activity', '/activity/verification')]) %}
       <a href="{{ path }}"{% if active == key %} aria-current="{{ 'page' if request.url.path == path else 'location' }}"{% endif %}>{{ label }}</a>
     {% endfor %}
     </nav>

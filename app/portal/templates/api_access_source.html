@@ -1,0 +1,4 @@
+{% extends 'base.html' %}{% import 'macros.html' as ui %}
+{% block heading %}<a href="/api-access?{{ back_query }}">← API Access</a>{{ ui.list_heading('NMVS SOURCE EVIDENCE', 'Original API access observation', 'Original supplied values from one snapshot section.') }}{% endblock %}
+{% block content %}<div class="source-strip"><span>Snapshot <strong>{{ delivery.requested_snapshot_date or 'Date not supplied' }}</strong></span><span>{{ dataset.source_dataset_name }}</span><span>Source row {{ record.source_row_number }}</span><span>Import {{ delivery.id }}</span></div>
+<section class="panel"><div class="panel-heading"><h2>Original NMVS values</h2></div><div class="review-body"><dl class="detail-grid">{% for key in dataset.source_headers %}<div><dt>{{ key }}</dt><dd>{{ record.raw_row_json.get(key) if record.raw_row_json.get(key) not in (none, '') else 'Not supplied' }}</dd></div>{% endfor %}</dl></div></section>{% endblock %}

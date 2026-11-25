@@ -563,3 +563,44 @@ Reimport adds eligible new data without overwriting maintained CRM values. End U
 reimports use exact source identities; missing/changed/ambiguous identities stop
 for review. Operations backups, including new contracts and PDFs, are required
 for recovery of post-Airtable work.
+
+
+## API Access
+
+Open **User → API Access** to investigate client integrations from retained NMVS
+Daily Snapshot sections. Opening the page selects the latest successfully staged
+delivery and fixes its import ID in the URL. This is an imported snapshot, not
+a live access log or a claim that the product catalogue was published from it.
+The delivery selector can inspect older retained snapshots without publishing or
+combining them. Failed imports and result-reuse attempts do not contribute rows.
+
+For a Barracuda WAF observation, search the User-Agent (for example
+`Apache-HttpClient/4.5.5 (Java/17.0.12)`). Under **Configure view → Conditions**,
+combine **User-Agent contains** with **IP address contains**, the API service and
+last-request source-date boundaries. General search covers organisation, location,
+client, User-Agent, IP and supplied API context. Column conditions also support
+exact IP/client comparisons. All conditions and sorting apply before pagination.
+Optional columns include API/requested versions and the last-request source date.
+Save a private view to repeat the investigation. **Actions → Download CSV** or
+**Download Excel** exports the displayed columns and matching rows across pages.
+Client and other identifiers retain their source text; Excel provides typed text
+cells for identifiers.
+
+The three metrics count matching source observations and distinct supplied
+organisation/client IDs. They do **not** count requests, timeouts or traffic
+volume. The same integration can appear in several API sections. A User-Agent
+can identify a shared library used by different integrations; combine it with IP,
+client, organisation and date. No automatic known-client classification is made.
+
+**NMVS original →** shows the exact row, section, import and snapshot provenance,
+with a return to the filtered view. Organisation/Location links appear only when
+the participant directory was published from that exact delivery. Original IDs
+and organisation names remain visible for historical/unmatched observations.
+Missing sections are shown separately from supplied sections containing no rows.
+
+A supplied last-request timestamp is source evidence, not a complete request
+history. Date scope uses its supplied ISO date; timestamps remain unchanged.
+These sections do not supply WAF timeout events, traffic volumes, URL paths,
+business operations, destination market or IP geolocation. A Verification API
+observation alone cannot confirm an intermarket request to Sweden. Correlate the
+matching identities with the WAF report and the relevant service/transaction logs.

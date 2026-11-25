@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 from app.portal.activity_routes import router as activity_router
+from app.portal.api_access import router as api_access_router
 from app.portal.auth_access import install_portal_access
 from app.portal.auth_routes import router as auth_router
 from app.portal.collaboration_routes import router as collaboration_router
@@ -42,6 +43,7 @@ app.mount(
 app.include_router(portal_router)
 app.include_router(participant_router)
 app.include_router(activity_router)
+app.include_router(api_access_router)
 app.include_router(exception_router)
 app.include_router(collaboration_router)
 app.include_router(pack_audit_router)

@@ -24,6 +24,7 @@ from app.portal.snapshot_fields import BATCH_FIELDS, OBP_FIELDS, PRODUCT_FIELDS
 
 router = APIRouter()
 SQL_KEYS = {
+    "api-access",
     "registrations",
     "products",
     "batches",
@@ -36,6 +37,9 @@ SQL_KEYS = {
 
 
 def sql_fields(key, *, response_party=""):
+    if key == "api-access":
+        from app.portal.api_access import sql_fields as access_fields
+        return access_fields()
     if key == "product-batches":
         fields = sql_fields("batches")
         return [fields[0], *fields[2:]]
@@ -255,6 +259,8 @@ def schema_for(request, key):
                     default_count = {"products": 6, "batches": 7, "product-batches": 6}.get(key)
                     if default_count is not None:
                         field["default_visible"] = i < default_count
+                    if key == "api-access":
+                        field["default_visible"] = i < 9 or i == 12
                     if i < len(expressions):
                         field["type"] = expressions[i][1]
         if key == "exceptions" and "selection" not in seen:

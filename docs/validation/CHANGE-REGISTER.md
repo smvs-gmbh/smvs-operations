@@ -476,3 +476,34 @@ the relevant distribution market.
   Alert Desk Pilot disabled. CRM/default-view/form rendering and HTTPS probes
   passed. Full scope, recovery boundaries and evidence:
   docs/deployment/CRM-CUTOVER-2026-11-25.md. No obsolete evidence deleted.
+
+
+## CHG-016 — API Access snapshot investigation (local pilot)
+
+- **Request.** Investigate WAF User-Agent/IP observations against NMVS client
+  access context. Historical SDS already identified five snapshot API Usage /
+  Security Monitoring datasets; staging retained them but no combined UI existed.
+- **Scope.** User → API Access reads successful, retained Daily Snapshot staging
+  directly: Verification, Authentication, Identity, Reporting, NMVO Exception.
+  No schema migration, new source call, raw-data rewrite or import replay. A
+  successful latest delivery is pinned explicitly in the URL and all subsequent
+  pages/exports. Historical selection is read-only; source-qualified provenance
+  and absent-versus-empty section coverage remain visible.
+- **Investigation.** Combined User-Agent/IP search, service and supplied last
+  request dates, server-side saved view conditions/sorting before counts/paging,
+  optional version columns, original-row evidence, same-view CSV/Excel. Metrics
+  use the same filters and count observations/distinct source IDs only. Participant
+  record links require the exact published snapshot, namespace and source IDs.
+- **Boundary.** Existing authenticated NMVO staff access; no public endpoint or
+  inferred role. No WAF timeout/volume, URL path/operation, destination-market or
+  IP-geolocation claims; generic library User-Agents are not unique client IDs.
+  URS draft v0.16 / URS-118; FRS/RA/RTM reconciliation and owner acceptance remain
+  open. This increment is local until a separate recorded production deployment.
+- **Verification.** 541 Python tests passed (one existing dependency warning),
+  including API correlation/date scope, failed/missing/empty deliveries,
+  source preservation/escaping, exact-snapshot links, authenticated NMVO access
+  and saved server conditions/sorting. Browser review at 1500/650 CSS pixels
+  confirmed toolbar/optional columns (including enlarged portal text), agent/IP scope, a 46-row CSV across two
+  pages and original-evidence return context. Actual local MySQL rendering
+  returned 48 observations across all five sections for 2026-11-10. No
+  operational records were modified by these checks.

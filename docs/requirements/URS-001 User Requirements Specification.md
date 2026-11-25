@@ -7,7 +7,7 @@
 | **Document ID**    | URS-001                         |
 | **Title**          | User Requirements Specification |
 | **Status**         | Draft                           |
-| **Version**        | 0.15                            |
+| **Version**        | 0.16                            |
 | **Classification** | Internal                        |
 | **Owner**          | SMVS GmbH                       |
 | **Author**         | Reinhold Sojer                  |
@@ -22,6 +22,7 @@
 | ------- | ---------- | -------------- | ------------- |
 | 0.9     | 2026-06-27 | Reinhold Sojer | Initial draft |
 | 0.10    | 2026-11-17 | SMVS Operations project | Reconciled the intended use and added requirements for current workflows and planned Hub integration |
+| 0.16    | 2026-11-25 | SMVS Operations project | Snapshot API Access investigation: service/client/IP/User-Agent observations, fixed delivery scope and evidence limits (local pilot) |
 | 0.15    | 2026-11-25 | SMVS Operations project | CRM cutover: durable general affiliations, explicit roles, field retirement, protected reimports and consistent database backup/recovery |
 | 0.14    | 2026-11-25 | SMVS Operations project | Independent Agreements lookup with typed date selection alongside Self-declarations (local pilot) |
 | 0.13    | 2026-11-25 | SMVS Operations project | Lookup selections directly control displayed relation columns; Columns contains fixed fields only; optional year/selection context (local pilot feedback) |
@@ -627,3 +628,24 @@ record preservation. Scheduled backup operation, location, verification and
 recovery instructions shall be recorded. Retention, off-site coverage and ongoing
 failure monitoring require explicit operational controls and shall not be
 inferred from a successful initial backup or from the Airtable source export.
+
+
+## URS-118
+
+Authorised NMVO staff shall inspect API access observations retained from the NMVS
+Daily Snapshot across Verification, Authentication, Identity, Reporting and NMVO
+Exception API sections. The view shall expose supplied organisation, location,
+client, IP, User-Agent, last request and API version values, keeping absent values
+explicit and original evidence unchanged. Staff shall combine agent/IP searches,
+service and last-request source-date ranges and personal column/condition/sort
+views before pagination, and export that same filtered view. One explicit
+successful snapshot delivery shall bound an investigation/export, with provenance
+and optional historical delivery selection; repeated snapshots shall not inflate
+counts. Missing API sections shall be distinguishable from empty sections. Links
+to organisation/location records shall require the exact corresponding published
+delivery; matching names or identifiers in another snapshot shall not establish
+a historical relationship. Snapshot observation counts/last-request times shall
+not be represented as WAF events, request volumes, URL/business-operation or
+destination-market evidence or IP geolocation. A shared User-Agent alone shall
+not establish a unique integration. Raw observations and contextual return links
+shall remain available within the existing authenticated NMVO boundary.

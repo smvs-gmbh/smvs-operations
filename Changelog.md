@@ -4,6 +4,14 @@ Entries distinguish deployed pilot changes from development-only increments.
 Pilot checkpoints and requirements drafts do not constitute an approved QMS
 baseline. Detailed scope/evidence: [change register](docs/validation/CHANGE-REGISTER.md).
 
+## Unreleased — API Access (local pilot)
+
+- CHG-016: User → API Access combines the five already imported snapshot API
+  sections. Correlate User-Agent/IP with organisations, locations, clients, last
+  requests and API services; use saved views and exact-scope exports. Retain
+  source-row evidence, fixed snapshot scope and explicit WAF evidence limits.
+  URS draft v0.16 / URS-118; no database migration or production deployment.
+
 ## 2026-11-25 — deployed CRM pilot cutover
 
 - CHG-015: Clean CRM column labels/catalogues; unify durable general Contact
