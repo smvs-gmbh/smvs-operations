@@ -1,0 +1,19 @@
+<details class="import-config import-run-details">
+  <summary>Failure details</summary>
+  <p>{{ detail.reason }}</p>
+  <dl class="import-facts">
+    {% for label, value in detail.facts %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}
+  </dl>
+  {% if detail.sections %}
+    <p class="subtle">{{ detail.note }}</p>
+    {% for title, facts in detail.sections %}
+      <p><strong>{{ title }}</strong></p>
+      <dl class="import-facts">
+        {% for label, value in facts %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}
+      </dl>
+    {% endfor %}
+    <p class="subtle">Source processing status does not establish the outcome of the complete import or publication.</p>
+  {% else %}<p class="subtle">{{ detail.note }}</p>{% endif %}
+  <p><strong>Next step</strong></p>
+  <p>{{ detail.action }}</p>
+</details>

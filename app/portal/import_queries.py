@@ -18,6 +18,7 @@ from app.domain.models import (
 from app.integration.artifacts.storage import utcnow
 from app.integration.scheduler.control import SOURCES
 from app.portal.exception_queries import namespace
+from app.portal.import_diagnostics import execution_details
 
 REPORT_TYPES = {
     "sai": "SAIFullExport",
@@ -220,6 +221,11 @@ def overview(session, *, source=""):
         "automatic_workers": [h for h in live if h.status == "running"],
         "last_heartbeat": heartbeats[0] if heartbeats else None,
         "history": history,
+        "history_details": {
+            execution.id: execution_details(session, execution, REPORT_TYPES.get(key))
+            for execution, key, _ in history
+            if execution.status in {"failed", "interrupted"}
+        },
         "requests": requests,
         "source_filter": source,
         "sources": SOURCES,

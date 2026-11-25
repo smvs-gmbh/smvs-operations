@@ -16,7 +16,7 @@ from app.core.db.models import (
     StagingRow,
 )
 from app.core.db.session import GuardedSession
-from app.domain.mapping import MUTEX, MappingError, publish
+from app.domain.mapping import MUTEX, MappingError, publish, source_rows
 from app.domain.models import (
     Batch,
     CurrentPublication,
@@ -399,3 +399,60 @@ def test_unresolved_source_versions_are_preserved_without_fabricating_pmd(
         assert version.version_number is None and version.source_version_value == raw
         assert version.detail_status == "unresolved_source_value"
         assert s.scalar(select(func.count()).select_from(Batch)) == 1
+
+
+def test_paged_publication_crosses_page_boundaries_and_rolls_back_late_failure(
+    sessions,
+):
+    data = datasets()
+    batch = data["Batches"][0]
+    package = data["SAI_PACKUNGEN"][0]
+    data["Batches"] = [{**batch, "Batch Id": f"Lot-{i:04d}"} for i in range(1001)]
+    data["SAI_PACKUNGEN"] = [
+        {**package, "PACKUNGSCODE": f"{i:04d}", "GTIN_INDUSTRY": GTIN if i == 0 else ""}
+        for i in range(1001)
+    ]
+    snapshot_id, sai_id = seed(sessions, data)
+    with sessions() as s:
+        paged = source_rows(s, snapshot_id, "Batches", paged=True)
+        expected = source_rows(s, snapshot_id, "Batches")
+        assert list(paged) == expected
+        assert list(paged) == expected  # Validation and mapping reread the same source.
+    first = publish(sessions, snapshot_id, sai_id, "synthetic-nmvs")
+    assert first.statistics["batches"] == first.statistics["sai_packages"] == 1001
+    assert publish(sessions, snapshot_id, sai_id, "synthetic-nmvs").id == first.id
+    with sessions() as s:
+        assert s.scalar(select(func.count()).select_from(Batch)) == 1001
+        assert s.scalar(select(func.count()).select_from(SAIPackage)) == 1001
+        assert s.scalar(select(ProductReferenceMatch)).match_status == "matched_sai"
+        assert (
+            s.scalar(select(Batch).order_by(Batch.id.desc())).evidence
+            == data["Batches"][-1]
+        )
+    # A failure after two write batches must roll back every update and insertion.
+    data["Batches"] = [
+        {**b, "Batch Id": "new-" + b["Batch Id"]} for b in data["Batches"]
+    ]
+    data["Batches"][-1]["Number Of Packs"] = "invalid"
+    other = seed(sessions, data, snapshot_day=date(2026, 9, 27))
+    with pytest.raises(MappingError):
+        publish(sessions, *other, "synthetic-nmvs")
+    with sessions() as s:
+        assert s.get(CurrentPublication, "product-batch").mapping_run_id == first.id
+        assert s.scalar(select(func.count()).select_from(Batch)) == 1001
+        assert (
+            s.scalar(
+                select(func.count()).select_from(Batch).where(Batch.is_observed == 1)
+            )
+            == 1001
+        )
+        dataset = s.scalar(
+            select(StagingDataset).where(
+                StagingDataset.processing_run_id == snapshot_id,
+                StagingDataset.source_dataset_name == "Batches",
+            )
+        )
+        dataset.row_count += 1
+        s.flush()
+        with pytest.raises(MappingError, match="completeness"):
+            source_rows(s, snapshot_id, "Batches", paged=True)

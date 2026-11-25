@@ -488,3 +488,54 @@ def test_same_bytes_with_new_parser_are_a_distinct_interpretation(session, datab
     assert repeated.reused_from_run_id == next_run.id
     with Session(database) as observer:
         assert counts(observer)['staging_rows'] == 4
+
+
+@pytest.mark.parametrize("fail_last_batch", [False, True])
+def test_large_staging_uses_bounded_inserts_and_remains_atomic(
+    session, database, monkeypatch, fail_last_batch
+):
+    content = (
+        b'"Report Type","Report Name","Date Requested (UTC)"\r\n'
+        b'"Daily Snapshot","Synthetic","2024-02-29T00:00:00Z"\r\n\r\n'
+        b'"Products"\r\n"Code"\r\n'
+        + b"".join(f'"{i:05d}"\r\n'.encode() for i in range(1001))
+    )
+    execute = session.execute
+    sizes = []
+
+    def bounded_execute(statement, params=None, *args, **kwargs):
+        if (
+            getattr(statement, "is_insert", False)
+            and statement.table.name == "staging_rows"
+        ):
+            sizes.append(len(params))
+            assert len(params) <= 500
+            result = execute(statement, params, *args, **kwargs)
+            if fail_last_batch and len(sizes) == 3:
+                raise RuntimeError("Synthetic failure after the final insert")
+            return result
+        return execute(statement, params, *args, **kwargs)
+
+    monkeypatch.setattr(session, "execute", bounded_execute)
+    if fail_last_batch:
+        with pytest.raises(IntegrationExecutionError):
+            DailySnapshotAcquisition(client(content)).run(session)
+    else:
+        assert (
+            DailySnapshotAcquisition(client(content)).run(session).status == "succeeded"
+        )
+    assert sizes == [500, 500, 1]
+    with Session(database) as observer:
+        rows = observer.scalars(
+            select(StagingRow).order_by(StagingRow.source_row_number)
+        ).all()
+        if fail_last_batch:
+            assert not rows
+            assert (
+                observer.scalar(select(func.count()).select_from(StagingDataset)) == 0
+            )
+        else:
+            assert [r.source_row_number for r in rows] == list(range(1, 1002))
+            assert [r.raw_row_json for r in rows] == [
+                {"Code": f"{i:05d}"} for i in range(1001)
+            ]

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from sqlalchemy import insert
 from sqlalchemy.orm import Session
 
 from app.core.db.models import (
@@ -19,7 +20,9 @@ def stage_daily_snapshot(
     processing_run: ProcessingRun,
 ) -> ProcessingRun:
     if processing_run.id is None or processing_run.artifact_id != artifact.id:
-        raise ValueError("Staging requires an existing processing run for this acquisition.")
+        raise ValueError(
+            "Staging requires an existing processing run for this acquisition."
+        )
 
     for dataset in parsed.datasets:
         staging_dataset = StagingDataset(
@@ -34,15 +37,23 @@ def stage_daily_snapshot(
         )
         session.add(staging_dataset)
         session.flush()
-        for row_number, row in enumerate(dataset.rows, start=1):
-            session.add(
-                StagingRow(
-                    staging_dataset_id=staging_dataset.id,
-                    source_row_number=row_number,
-                    source_record_hash=record_hash(row),
-                    raw_row_json=row,
-                    created_at=utcnow(),
-                )
+        # Insert bounded batches without retaining an ORM object for every
+        # source row. All batches still belong to the same atomic transaction.
+        for offset in range(0, len(dataset.rows), 500):
+            session.execute(
+                insert(StagingRow),
+                [
+                    {
+                        "staging_dataset_id": staging_dataset.id,
+                        "source_row_number": offset + number,
+                        "source_record_hash": record_hash(row),
+                        "raw_row_json": row,
+                        "created_at": utcnow(),
+                    }
+                    for number, row in enumerate(
+                        dataset.rows[offset : offset + 500], start=1
+                    )
+                ],
             )
 
     session.flush()

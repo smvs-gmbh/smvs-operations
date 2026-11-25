@@ -7,7 +7,7 @@ import json
 from collections import defaultdict
 from datetime import datetime
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.dialects.mysql import insert as mysql_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
@@ -128,7 +128,34 @@ def canonical(session, identifier, source, report):
     return resolved, artifact
 
 
-def source_rows(session, run_id, name):
+class _PagedSourceRows:
+    """Repeatable source reads without retaining entire JSON datasets in memory."""
+
+    def __init__(self, session, dataset_id, row_count):
+        self.session, self.dataset_id, self.row_count = session, dataset_id, row_count
+
+    def __iter__(self):
+        after, count = None, 0
+        while True:
+            statement = select(
+                StagingRow.id, StagingRow.raw_row_json, StagingRow.source_row_number
+            ).where(StagingRow.staging_dataset_id == self.dataset_id)
+            if after is not None:
+                statement = statement.where(StagingRow.source_row_number > after)
+            page = self.session.execute(
+                statement.order_by(StagingRow.source_row_number).limit(500)
+            ).all()
+            if not page:
+                break
+            for identifier, raw, number in page:
+                count += 1
+                yield identifier, raw
+            after = page[-1].source_row_number
+        if count != self.row_count:
+            raise MappingError("Source dataset completeness check failed.")
+
+
+def source_rows(session, run_id, name, *, paged=False):
     dataset = session.scalar(
         select(StagingDataset).where(
             StagingDataset.processing_run_id == run_id,
@@ -137,6 +164,15 @@ def source_rows(session, run_id, name):
     )
     if dataset is None or dataset.extraction_status != "extracted":
         raise MappingError("Required source dataset is unavailable.")
+    if paged:
+        count = session.scalar(
+            select(func.count())
+            .select_from(StagingRow)
+            .where(StagingRow.staging_dataset_id == dataset.id)
+        )
+        if count != dataset.row_count:
+            raise MappingError("Source dataset completeness check failed.")
+        return _PagedSourceRows(session, dataset.id, dataset.row_count)
     rows = session.execute(
         select(StagingRow.id, StagingRow.raw_row_json)
         .where(StagingRow.staging_dataset_id == dataset.id)
@@ -273,11 +309,17 @@ def publish(
                 run_id = run.id
                 session.commit()  # Failed mapping attempts survive publication rollback.
                 data = {
-                    "products": source_rows(session, snapshot.id, "Products"),
-                    "batches": source_rows(session, snapshot.id, "Batches"),
-                    "holders": source_rows(session, sai.id, "SAI_ADRESSEN"),
-                    "preparations": source_rows(session, sai.id, "SAI_PRAEPARATE"),
-                    "packages": source_rows(session, sai.id, "SAI_PACKUNGEN"),
+                    "products": source_rows(
+                        session, snapshot.id, "Products", paged=True
+                    ),
+                    "batches": source_rows(session, snapshot.id, "Batches", paged=True),
+                    "holders": source_rows(session, sai.id, "SAI_ADRESSEN", paged=True),
+                    "preparations": source_rows(
+                        session, sai.id, "SAI_PRAEPARATE", paged=True
+                    ),
+                    "packages": source_rows(
+                        session, sai.id, "SAI_PACKUNGEN", paged=True
+                    ),
                 }
                 stats = _map(session, run, data)
                 publication = session.get(
@@ -366,6 +408,8 @@ def _map(session, run, data):
         for rid, r in data["holders"]
     ]
     upsert(session, SAIHolder, holders, ["holder_key"])
+    holder_count = len(holders)
+    del holders
     holder_ids = ids(session, SAIHolder, "holder_key")
     preparations = []
     current_holders = {r["PARTNER_NR"] for _, r in data["holders"]}
@@ -397,9 +441,12 @@ def _map(session, run, data):
             }
         )
     upsert(session, SAIPreparation, preparations, ["preparation_key"])
+    preparation_count = len(preparations)
+    del preparations
     prep_ids = ids(session, SAIPreparation, "preparation_key")
     current_preps = {r["ZULASSUNGSNUMMER"] for _, r in data["preparations"]}
     packages, gtin_packages = [], defaultdict(list)
+    package_count = 0
     for rid, r in data["packages"]:
         approval, seq, code = (
             required(r, n)
@@ -440,7 +487,12 @@ def _map(session, run, data):
                 ),
             }
         )
+        package_count += 1
+        if len(packages) == 500:
+            upsert(session, SAIPackage, packages, ["package_key"])
+            packages.clear()
     upsert(session, SAIPackage, packages, ["package_key"])
+    packages.clear()
     package_ids = ids(session, SAIPackage, "package_key")
     products, identity_by_source = {}, {}
     for _, r in data["products"]:
@@ -545,6 +597,7 @@ def _map(session, run, data):
     )
     version_ids = ids(session, ProductVersion, "version_key")
     batches = []
+    batch_count = 0
     for rid, r in data["batches"]:
         sk = source_key(namespace, r)
         raw_version, version = source_version(r.get("Product Version Number"))
@@ -563,7 +616,12 @@ def _map(session, run, data):
                 "evidence": dict(r),
             }
         )
+        batch_count += 1
+        if len(batches) == 500:
+            upsert(session, Batch, batches, ["batch_key"])
+            batches.clear()
     upsert(session, Batch, batches, ["batch_key"])
+    batches.clear()
     matches, statuses = [], defaultdict(int)
     for identity, product in products.items():
         candidates = gtin_packages.get(product["gtin14"], [])
@@ -597,11 +655,11 @@ def _map(session, run, data):
     return {
         "products": len(products),
         "product_source_records": len(source_records),
-        "batches": len(batches),
+        "batches": batch_count,
         "observed_product_versions": len(versions),
-        "sai_packages": len(packages),
-        "sai_preparations": len(preparations),
-        "sai_holders": len(holders),
+        "sai_packages": package_count,
+        "sai_preparations": preparation_count,
+        "sai_holders": holder_count,
         "matches": dict(statuses),
         "unresolved_product_version_rows": sum(
             source_version(r.get("Product Version Number"))[1] is None

@@ -52,40 +52,61 @@ def parse_sai(content: bytes) -> ParsedSAI:
                 member = matches[0]
                 if member.file_size > 64 * 1024 * 1024 or member.flag_bits & 1:
                     raise SAIError("Unsupported SAI XML member.")
-                root = ET.fromstring(
-                    archive.read(member),
-                    forbid_dtd=True,
-                    forbid_entities=True,
-                    forbid_external=True,
-                )
-                if (
-                    root.tag != f"{{{NAMESPACE}}}{root_name}"
-                    or root.attrib.get("schemaVersion") != "3.2"
-                ):
-                    raise SAIError(
-                        "Unsupported SAI XML root, namespace or schema version."
-                    )
-                headers, rows = [], []
-                for element in root:
-                    if element.tag != f"{{{NAMESPACE}}}{row_name}" or element.attrib:
-                        raise SAIError("Unexpected SAI row structure.")
-                    row = {}
-                    for child in element:
-                        if (
-                            not child.tag.startswith(f"{{{NAMESPACE}}}")
-                            or len(child)
-                            or child.attrib
-                        ):
-                            raise SAIError("Unsupported SAI XML field structure.")
-                        name = child.tag.split("}", 1)[1]
-                        if name in row:
-                            raise SAIError("Duplicate SAI XML field.")
-                        row[name] = child.text if child.text is not None else ""
-                        if name not in headers:
-                            headers.append(name)
-                    if not row:
-                        raise SAIError("Empty SAI row.")
-                    rows.append(row)
+                headers, rows, field_names = [], [], {}
+                # Keep only one XML record in memory alongside the extracted
+                # values. A full tree of the package export exceeds small
+                # workers' memory limits before staging even starts.
+                with archive.open(member) as source:
+                    depth, root = 0, None
+                    for event, element in ET.iterparse(
+                        source,
+                        events=("start", "end"),
+                        forbid_dtd=True,
+                        forbid_entities=True,
+                        forbid_external=True,
+                    ):
+                        if event == "start":
+                            depth += 1
+                            if depth == 1:
+                                root = element
+                                if (
+                                    root.tag != f"{{{NAMESPACE}}}{root_name}"
+                                    or root.attrib.get("schemaVersion") != "3.2"
+                                ):
+                                    raise SAIError(
+                                        "Unsupported SAI XML root, namespace or schema version."
+                                    )
+                            continue
+                        if depth == 2:
+                            if (
+                                element.tag != f"{{{NAMESPACE}}}{row_name}"
+                                or element.attrib
+                            ):
+                                raise SAIError("Unexpected SAI row structure.")
+                            row = {}
+                            for child in element:
+                                if (
+                                    not child.tag.startswith(f"{{{NAMESPACE}}}")
+                                    or len(child)
+                                    or child.attrib
+                                ):
+                                    raise SAIError(
+                                        "Unsupported SAI XML field structure."
+                                    )
+                                name = field_names.setdefault(
+                                    child.tag, child.tag.split("}", 1)[1]
+                                )
+                                if name in row:
+                                    raise SAIError("Duplicate SAI XML field.")
+                                row[name] = child.text if child.text is not None else ""
+                                if name not in headers:
+                                    headers.append(name)
+                            if not row:
+                                raise SAIError("Empty SAI row.")
+                            rows.append(row)
+                            root.remove(element)
+                            element.clear()
+                        depth -= 1
                 if not rows:
                     raise SAIError("Required SAI dataset is empty.")
                 metadata[filename] = member.filename

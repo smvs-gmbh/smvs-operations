@@ -1,0 +1,7 @@
+#run-history td { vertical-align: top; }
+#run-history td:last-child { white-space: normal; min-width: 22rem; }
+.import-run-details { white-space: normal; overflow-wrap: anywhere; max-width: 42rem; }
+.import-run-details .import-facts { margin: 1rem 0; }
+@media (max-width: 760px) {
+  .import-run-details .import-facts { grid-template-columns: minmax(0, 1fr); }
+}
