@@ -1,4 +1,4 @@
-import {initialiseViews} from './crm-list-views.js?v=structured-lookups-1';
+import {initialiseViews} from './crm-list-views.js?v=lookup-visibility-2';
 import {installActions} from './table-actions.js?v=csv-1';
 import {installCsvDownload,applyReportView,cellText} from './table-csv.js?v=crm-lookups-1';
 

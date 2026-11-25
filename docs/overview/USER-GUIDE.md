@@ -475,9 +475,15 @@ for a fixed year add **SD year is 2025** and use **Unique match**. Numeric empty
 are excluded from Min/Max; reported zero remains zero. Ties and duplicate MAH/year
 records never supply arbitrary values. A filter cannot hide the duplicate source
 of a selected year. The separate Data integrity check still reports all duplicates.
-Select the required **Output fields**, then choose their visibility/order under
-**Columns** and **Apply**. Only configured lookup outputs appear under Columns.
-SD year and Selection result supply mandatory context when lookup values are shown.
+Select **Columns to display** directly under **Lookups**. Each checked field
+appears immediately as a lookup column; there is no second visibility choice.
+**Columns** contains only fixed MAH fields and controls their visibility/order.
+Lookup columns follow the fixed fields. Resetting fixed columns does not change
+lookup choices. **SD year** and **Selection result** are optional and can be
+unchecked. For example, choosing only RX packs sold adds only that lookup column.
+Ambiguous selection and duplicate source errors are shown directly in affected
+lookup cells, even when Selection result is hidden. Apply or save the view to
+retain the complete selection for reload and exports.
 If an output is used by MAH conditions or sorting, remove that dependency before
 removing the output. All outputs refer to one declaration; Min/Max do not aggregate
 individual columns. The highest year is not a receipt/approval status. Conditions,

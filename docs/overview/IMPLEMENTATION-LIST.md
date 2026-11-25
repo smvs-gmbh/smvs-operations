@@ -10,7 +10,7 @@ release. Dated sections further down preserve earlier decisions and milestones.
 
 - [ ] **Local CRM relation/integrity trial (CHG-011).** Review MAH → Self-declarations
   lookups (structured AND/OR conditions, Unique match/Min/Max and configured outputs), private views, export/filter/sort and the
-  new Data integrity page. Requirements: URS-111–114, URS-001 draft v0.12.
+  new Data integrity page. Requirements: URS-111–114, URS-001 draft v0.13.
 - [ ] **After trial feedback: update the FRS, RA and RTM** for URS-111–113,
   discriminator behaviour, applicability scope, uniqueness enforcement and
   integrity findings. No FRS approval or formal validation is implied by the trial.
@@ -663,3 +663,12 @@ No Jelastic deployment or production source request was performed.
 - [ ] Reconcile FRS, RA and RTM with URS-111/114 after local trial acceptance.
 - [ ] Consider independent named lookup definitions and Contracts as an additional
   relation after the initial Self-declarations trial. No First/Last without explicit sort.
+
+### Lookup visibility ownership — 2026-11-25 (CHG-013)
+
+- [x] Make Lookups the sole selector for displayed related fields; Columns contains
+  fixed MAH fields only. Remove mandatory SD year/Selection result columns.
+- [x] Preserve lookup choices during fixed-column reset, apply/save/reload and
+  complete-view CSV exports. Show unresolved selection errors in affected cells.
+- [ ] Owner acceptance; include revised URS-111 (draft v0.13) in the deferred
+  FRS/RA/RTM reconciliation.

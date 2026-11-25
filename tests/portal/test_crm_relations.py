@@ -132,7 +132,7 @@ def test_lookup_views_filter_sort_before_pagination_and_preserve_selection(
     assert response.status_code == 200
     view = response.json()["view"]
     assert view["config"]["declaration_lookup"] == config["declaration_lookup"]
-    assert "sd_selection" in view["config"]["columns"]
+    assert "sd_selection" not in view["config"]["columns"]
     page = client.get(
         "/crm/mahs", params={"view": view["id"]}, headers={"x-test-user": "1"}
     )
@@ -437,11 +437,8 @@ def test_structured_lookup_and_or_unique_min_max_ties_and_hidden_duplicates(
     saved = post_view(client, command="create", name="Structured lookup", config=config)
     assert saved.status_code == 200, saved.text
     result = saved.json()["view"]
-    assert set(result["config"]["declaration_lookup"]["outputs"]) == {
-        "sd_year",
-        "sd_selection",
-        "sd_packs",
-    }
+    assert result["config"]["declaration_lookup"]["outputs"] == ["sd_packs"]
+    assert result["config"]["columns"] == ["name", "sd_packs"]
     assert "sd_sales_group" not in result["config"]["columns"]
     page = client.get(
         "/crm/mahs", params={"view": result["id"]}, headers={"x-test-user": "1"}
@@ -575,3 +572,48 @@ def test_related_contact_return_link_preserves_source_context_and_editing(views_
         + "redirect%3Dhttps%253A%252F%252Fexample.test%26edit%3Dgeneral"
     )
     assert hostile.status_code == 200 and "https://example.test" not in hostile.text
+
+
+def test_lookup_outputs_alone_control_visibility_without_automatic_context_columns(
+    views_portal,
+):
+    client, _ = views_portal
+    lookup = {
+        "match": "and",
+        "conditions": [],
+        "selection": {"rule": "max", "field": "sd_year"},
+        "outputs": ["sd_packs"],
+    }
+    # A stale layout cannot hide selected outputs or add unselected lookup columns.
+    result = post_view(
+        client,
+        command="create",
+        name="Packs only",
+        config={
+            "declaration_lookup": lookup,
+            "columns": ["name", "sd_year", "sd_sales_group", "sd_selection"],
+        },
+    )
+    assert result.status_code == 200
+    view = result.json()["view"]
+    assert view["config"]["columns"] == ["name", "sd_packs"]
+    restored = client.get(
+        "/crm/views/mahs", params={"view": view["id"]}, headers={"x-test-user": "1"}
+    ).json()["config"]
+    assert restored["columns"] == ["name", "sd_packs"]
+    for outputs in (
+        [],
+        ["sd_year"],
+        ["sd_selection"],
+        ["sd_year", "sd_packs", "sd_selection"],
+    ):
+        response = post_view(
+            client,
+            command="preview",
+            config={
+                "declaration_lookup": {**lookup, "outputs": outputs},
+                "columns": ["name", "sd_packs"],
+            },
+        )
+        assert response.status_code == 200
+        assert response.json()["config"]["columns"] == ["name", *outputs]

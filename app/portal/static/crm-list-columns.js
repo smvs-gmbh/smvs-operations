@@ -9,21 +9,25 @@ export function initialiseColumns(form, preference) {
     toolbar.append(summary);
     const explanation = document.createElement("p");
     explanation.className = "subtle";
-    explanation.textContent = "Choose and arrange the columns for this directory. Use the arrows to change their order. The record name stays visible.";
+    explanation.textContent = table.dataset.crmColumns === 'mahs'
+        ? 'Choose and arrange fixed MAH columns. Lookup columns are selected under Lookups and appear after these columns.'
+        : 'Choose and arrange the columns for this directory. Use the arrows to change their order. The record name stays visible.';
     toolbar.append(explanation);
     const options = document.createElement("div");
     options.className = "crm-column-options";
     const columnLabel = header => header.textContent.trim() || header.getAttribute('aria-label') || 'Links / actions';
     const keys = headers.map(header => header.dataset.column);
+    const isLookup = key => table.dataset.crmColumns === 'mahs' && key.startsWith('sd_');
     let order = (preference.column_order || keys).filter(key => keys.includes(key));
     order = [...order, ...keys.filter(key => !order.includes(key))];
+    order = [...order.filter(key => !isLookup(key)), ...order.filter(isLookup)];
     const rows = Array.from(table.rows).map(row => ({
         row,
         cells: Array.from(row.cells),
     }));
     const items = new Map();
     const choices = new Map();
-    headers.forEach((header, index) => {
+    headers.forEach(header => {
         const label = document.createElement("label");
         label.className = "resolve-confirm";
         const checkbox = document.createElement("input");
@@ -35,6 +39,8 @@ export function initialiseColumns(form, preference) {
         checkbox.disabled = pinned;
         label.append(checkbox, document.createTextNode(columnLabel(header)));
         choices.set(header.dataset.column, checkbox);
+        // Related output visibility is controlled exclusively by the Lookups tab.
+        if (isLookup(header.dataset.column)) return;
         checkbox.addEventListener("change", applyColumns);
         const item = document.createElement("div");
         item.className = "crm-column-option";
@@ -51,7 +57,7 @@ export function initialiseColumns(form, preference) {
             move.addEventListener("click", () => {
                 const position = order.indexOf(header.dataset.column);
                 const destination = position + direction;
-                if (destination < 0 || destination >= order.length) return;
+                if (destination < 0 || destination >= order.filter(key => !isLookup(key)).length) return;
                 [order[position], order[destination]] = [order[destination], order[position]];
                 applyColumns();
                 const focusButton = move.disabled ? item.querySelector("button:not(:disabled)") : move;
@@ -62,30 +68,30 @@ export function initialiseColumns(form, preference) {
         item.append(moves);
         items.set(header.dataset.column, item);
     });
-    let availableLookup = null;
-    function permitted(key) { return !key.startsWith('sd_') || availableLookup === null || availableLookup.has(key); }
+    let availableLookup = new Set((preference.columns || []).filter(isLookup));
     function filterOptions() {
         const term = search.value.trim().toLocaleLowerCase();
-        for (const [key, item] of items) item.hidden = !permitted(key) || !item.querySelector("label").textContent.toLocaleLowerCase().includes(term);
+        for (const item of items.values()) item.hidden = !item.querySelector("label").textContent.toLocaleLowerCase().includes(term);
     }
     function applyColumns() {
         const required = new Set((table.dataset.pinnedColumns || headers[0].dataset.column).split(','));
         for (const header of headers) {
-            if (permitted(header.dataset.column) && choices.get(header.dataset.column).checked) {
+            if (!isLookup(header.dataset.column) && choices.get(header.dataset.column).checked) {
                 for (const key of (header.dataset.requiresColumn || '').split(',')) if (choices.has(key)) required.add(key);
             }
         }
         for (const [key, checkbox] of choices) {
-            checkbox.disabled = !permitted(key) || required.has(key);
-            if (!permitted(key)) checkbox.checked = false;
-            if (required.has(key)) checkbox.checked = true;
+            checkbox.disabled = required.has(key);
+            if (isLookup(key)) checkbox.checked = availableLookup.has(key);
+            else if (required.has(key)) checkbox.checked = true;
         }
         for (const [position, key] of order.entries()) {
             const item = items.get(key);
+            if (!item) continue;
             options.append(item);
             const buttons = item.querySelectorAll("button");
             buttons[0].disabled = position === 0;
-            buttons[1].disabled = position === order.length - 1;
+            buttons[1].disabled = position === items.size - 1;
         }
         const visibleCount = Array.from(choices.values()).filter(checkbox => checkbox.checked).length;
         for (const {row, cells} of rows) {
@@ -127,8 +133,8 @@ export function initialiseColumns(form, preference) {
     toolbar.append(note);
     form.append(toolbar);
     reset.addEventListener("click", () => {
-        for (const header of headers) choices.get(header.dataset.column).checked = header.dataset.defaultVisible !== "false";
-        order = [...keys];
+        for (const header of headers) if (!isLookup(header.dataset.column)) choices.get(header.dataset.column).checked = header.dataset.defaultVisible !== "false";
+        order = [...keys.filter(key => !isLookup(key)), ...order.filter(isLookup)];
         applyColumns();
     });
     return {

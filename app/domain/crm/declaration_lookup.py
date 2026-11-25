@@ -107,7 +107,7 @@ def normalise_lookup(value=None):
         raise ValueError(
             "Select Unique match, Minimum or Maximum with a numeric field."
         )
-    outputs = value.get("outputs", ["sd_year", "sd_selection"])
+    outputs = value.get("outputs", [])
     if not isinstance(outputs, list) or any(
         not isinstance(k, str) or k not in LOOKUP_KEYS for k in outputs
     ):
@@ -116,7 +116,7 @@ def normalise_lookup(value=None):
         "match": match,
         "conditions": cleaned,
         "selection": {"rule": rule, "field": field},
-        "outputs": list(dict.fromkeys(["sd_year", "sd_selection", *outputs])),
+        "outputs": list(dict.fromkeys(outputs)),
     }
 
 

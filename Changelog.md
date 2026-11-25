@@ -6,6 +6,12 @@ baseline. Detailed scope/evidence: [change register](docs/validation/CHANGE-REGI
 
 ## Unreleased — local CRM relation/integrity experiment
 
+- CHG-013: Lookups alone controls displayed relation fields; Columns lists fixed
+  MAH fields only. SD year and Selection result become optional. Fixed-column
+  reset preserves lookup choices; saved views and exports use the same selection.
+  URS draft v0.13 refines URS-111. Local feedback correction; no server deployment.
+
+
 - CHG-012: Separate Lookups tab with structured AND/OR conditions, Unique match,
   Min/Max and output projection for MAH Self-declarations. Add explicit source-record
   return links and parent-scoped contact navigation. Existing trial views remain

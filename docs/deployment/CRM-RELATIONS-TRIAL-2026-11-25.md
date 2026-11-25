@@ -3,11 +3,11 @@
 ## Boundary
 
 Branch: `experiment/crm-lookups-integrity`, base `4f93b93` /
-`pilot-2026-11-25-dev`. This is a local pilot experiment (CHG-011/012), not a server
+`pilot-2026-11-25-dev`. This is a local pilot experiment (CHG-011/012/013), not a server
 release or approved QMS baseline. No production files, schema or data are changed.
 No notifications, participant workflows or automatic repair are introduced.
 
-URS-001 draft v0.12 records URS-111–114. FRS, RA and RTM reconciliation is deferred
+URS-001 draft v0.13 records URS-111–114. FRS, RA and RTM reconciliation is deferred
 until trial feedback, with explicit tasks in the implementation list. Existing
 Word requirements drafts are not silently revised or approved by this change.
 
@@ -16,13 +16,13 @@ Word requirements drafts are not silently revised or approved by this change.
 - In MAHs, open **Configure view → Lookups**. Configure up to eight conditions
   with AND/OR, then Unique match or Min/Max on SD year or RX packs sold. For the
   latest year use Maximum → SD year; for a fixed year add SD year is YYYY.
-- Choose output fields under Lookups, then show/order the configured
-  **Self-declaration · …** columns under Columns. Data year and Selection
-  result remain visible when lookup data columns are shown. All values come from
+- Under Lookups choose **Columns to display**; these appear directly without
+  another toggle. Columns contains only fixed MAH fields. SD year and Selection
+  result are optional. Reset columns leaves lookup choices unchanged. All values come from
   one selected source; no column silently falls back to another year.
 - Apply, filter, sort and save as a separate **Lookup trial** view. Open a MAH or
   the linked declaration to inspect the source. Try a missing year and a known
-  duplicate: source values remain empty, with an explicit selection result.
+  duplicate: no source value is selected, and the affected cells identify the error.
 - CSV/Excel exports collect the applied relation selection across matching pages.
   Pack counts remain numeric where faithful; a reported zero remains zero.
 - Open **CRM → Data integrity**. Source filters are under **Configure view →
@@ -89,3 +89,9 @@ edit/cancel preservation and parent-scoped Previous/Next. No operational records
 were edited during these checks; the browser uses the isolated synthetic fixture.
 New structured view configurations require removing/restoring those trial views
 before reverting code to CHG-011, which only understands the original selector.
+
+CHG-013 simplifies the visibility model after owner feedback: only Lookups selects
+related display columns, while Columns contains fixed MAH fields. Year/selection
+result are optional; unresolved source selections remain visible in affected cells.
+Saved view visibility and CSV projection follow the same output selection. No
+schema or operational-record changes are required.

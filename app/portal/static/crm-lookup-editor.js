@@ -13,7 +13,7 @@ export function initialiseLookup(form, config, onOutputs) {
     const initial = legacy ? {
         match:'and', conditions:existing.rule==='year'?[{field:'sd_year',operator:'equals',value:String(existing.year)}]:[],
         selection:{rule:existing.rule==='year'?'unique':'max',field:'sd_year'},
-        outputs:[...new Set(['sd_year','sd_selection',...(config.columns||[]).filter(k=>k.startsWith('sd_')), ...config.conditions.map(c=>c.field).filter(k=>k.startsWith('sd_')), ...(config.sort?.startsWith('sd_')?[config.sort]:[])])],
+        outputs:[...new Set([...(config.columns||[]).filter(k=>k.startsWith('sd_')), ...config.conditions.map(c=>c.field).filter(k=>k.startsWith('sd_')), ...(config.sort?.startsWith('sd_')?[config.sort]:[])])],
     } : existing;
     const panel=node('details');panel.className='crm-filter-settings crm-view-lookups';panel.append(node('summary','Lookups'));
     panel.append(node('h3','Self-declarations'));
@@ -43,9 +43,11 @@ export function initialiseLookup(form, config, onOutputs) {
     const basisLabel=labelled('Based on',basis);const selectionRow=node('div');selectionRow.className='crm-view-sorting';selectionRow.append(labelled('Select one record',selection),basisLabel);panel.append(selectionRow);
     const showBasis=()=>{basisLabel.hidden=selection.value==='unique';};selection.addEventListener('change',showBasis);showBasis();
     const hint=node('p','Unique match requires exactly one matching record. Min/Max select a record; ties remain unresolved. Duplicate MAH/year records are data errors.');hint.className='subtle';panel.append(hint);
-    const outputs=node('fieldset');outputs.className='analysis-edit-fields';outputs.append(node('legend','Output fields'));
-    const choices=new Map();for(const [key,label] of Object.entries(labels)){const check=node('input');check.type='checkbox';check.checked=initial.outputs.includes(key);check.disabled=['sd_year','sd_selection'].includes(key);const wrap=labelled(label+(check.disabled?' · required':''),check);wrap.className='resolve-confirm';outputs.append(wrap);choices.set(key,check);check.addEventListener('change',refresh);}
+    const outputs=node('fieldset');outputs.className='analysis-edit-fields';outputs.append(node('legend','Columns to display'));
+    const choices=new Map();for(const [key,label] of Object.entries(labels)){const check=node('input');check.type='checkbox';check.checked=initial.outputs.includes(key);const wrap=labelled(label,check);wrap.className='resolve-confirm';outputs.append(wrap);choices.set(key,check);check.addEventListener('change',refresh);}
     panel.append(outputs);
+    const outputNote=node('p','Selected lookup fields appear directly in the table. SD year and Selection result are optional. Fixed MAH columns are configured under Columns.');
+    outputNote.className='subtle';panel.append(outputNote);
     function refresh(){onOutputs([...choices].filter(([,c])=>c.checked).map(([k])=>k));form.dispatchEvent(new CustomEvent('crm-view-change'));}
     refresh();
     return {panel,getValue(){return {match:join.value,conditions:entries.map(e=>e.value()),selection:{rule:selection.value,field:basis.value},outputs:[...choices].filter(([,c])=>c.checked).map(([k])=>k)};}};

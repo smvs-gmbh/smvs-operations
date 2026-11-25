@@ -359,3 +359,28 @@ the relevant distribution market.
   across two pages. Contact review verified source identity/view/section,
   parent-scoped Previous/Next and edit/cancel preservation. Save preservation is
   covered by the HTTP regression. Fixture checks made no operational data edits.
+
+
+## CHG-013 — One display selector for lookup fields
+
+- **Authority.** Owner feedback identified duplicate column selection and unwanted
+  compulsory context columns in CHG-012. Local development correction only.
+- **Behaviour.** Lookups → Columns to display is the sole control for related
+  display fields. Checked fields appear immediately and persist through apply,
+  private view saving/reload and complete-view exports. Columns contains fixed
+  directory fields only; fixed-field ordering/reset does not alter lookup choices.
+  SD year and Selection result are optional. Duplicate/ambiguous selections are
+  labelled in affected cells, so omitting the diagnostic column cannot disguise
+  an invalid source choice. Original source evidence is unchanged.
+- **Compatibility.** Existing configured outputs remain selected and may be
+  unchecked. No silent database rewrite, schema migration or server deployment.
+  Stale layout settings cannot suppress checked outputs or add unchecked ones.
+- **Requirements.** URS-111 refined in draft v0.13; deferred FRS/RA/RTM reconciliation
+  remains tracked. This is not an approved validation baseline.
+
+- **Verification.** 524 full-suite Python tests, three Node export tests and changed
+  Python/JavaScript/whitespace checks passed. An isolated synthetic browser fixture
+  verified that selecting only RX packs sold immediately adds only that related
+  column, optional diagnostic toggles, fixed-only Columns/reset, apply/save/reload,
+  duplicate error labels without a diagnostic column, and an exact 48-row CSV over
+  two pages at 1500/650 CSS-pixel widths. No operational views or records were edited.

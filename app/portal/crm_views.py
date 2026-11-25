@@ -103,12 +103,6 @@ def normalise_config(directory, config):
         or DEFAULT_COLUMNS[directory][0] not in columns
     ):
         raise HTTPException(422, "Select valid columns, including the record name.")
-    if (
-        directory == "mahs"
-        and columns is not None
-        and any(key.startswith("sd_") and key != "sd_selection" for key in columns)
-    ):
-        columns = list(dict.fromkeys([*columns, "sd_year", "sd_selection"]))
     if directory == "mahs" and "rule" not in lookup:
         available = set(lookup["outputs"])
         dependencies = {c["field"] for c in cleaned}
@@ -119,10 +113,12 @@ def normalise_config(directory, config):
                 422,
                 "A condition or sort uses a lookup output. Keep that output configured or remove its condition and sort first.",
             )
-        if columns is not None:
-            columns = [
-                key for key in columns if not key.startswith("sd_") or key in available
-            ]
+        # Lookup output selection owns visibility; there is no second column toggle.
+        columns = [
+            key
+            for key in (columns if columns is not None else DEFAULT_COLUMNS[directory])
+            if not key.startswith("sd_")
+        ] + lookup["outputs"]
     order = config.get("column_order")
     if order is not None:
         if (

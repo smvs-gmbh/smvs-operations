@@ -1,7 +1,7 @@
 import {installCsvDownload} from './table-csv.js?v=crm-lookups-1';
 import {rightToolbox} from './right-toolbox.js?v=record-actions-1';
-import {initialiseLookup} from './crm-lookup-editor.js?v=structured-lookups-1';
-import {initialiseColumns} from './crm-list-columns.js?v=structured-lookups-1';
+import {initialiseLookup} from './crm-lookup-editor.js?v=lookup-visibility-2';
+import {initialiseColumns} from './crm-list-columns.js?v=lookup-visibility-2';
 
 const form = document.querySelector('form[data-crm-filters]');
 if (form) initialiseViews(form);
