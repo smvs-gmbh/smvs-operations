@@ -62,15 +62,22 @@ export function initialiseColumns(form, preference) {
         item.append(moves);
         items.set(header.dataset.column, item);
     });
+    let availableLookup = null;
+    function permitted(key) { return !key.startsWith('sd_') || availableLookup === null || availableLookup.has(key); }
+    function filterOptions() {
+        const term = search.value.trim().toLocaleLowerCase();
+        for (const [key, item] of items) item.hidden = !permitted(key) || !item.querySelector("label").textContent.toLocaleLowerCase().includes(term);
+    }
     function applyColumns() {
         const required = new Set((table.dataset.pinnedColumns || headers[0].dataset.column).split(','));
         for (const header of headers) {
-            if (choices.get(header.dataset.column).checked) {
+            if (permitted(header.dataset.column) && choices.get(header.dataset.column).checked) {
                 for (const key of (header.dataset.requiresColumn || '').split(',')) if (choices.has(key)) required.add(key);
             }
         }
         for (const [key, checkbox] of choices) {
-            checkbox.disabled = required.has(key);
+            checkbox.disabled = !permitted(key) || required.has(key);
+            if (!permitted(key)) checkbox.checked = false;
             if (required.has(key)) checkbox.checked = true;
         }
         for (const [position, key] of order.entries()) {
@@ -102,8 +109,7 @@ export function initialiseColumns(form, preference) {
     search.type = "search";
     search.placeholder = "Name, email, status…";
     search.addEventListener("input", () => {
-        const term = search.value.trim().toLocaleLowerCase();
-        for (const item of items.values()) item.hidden = !item.querySelector("label").textContent.toLocaleLowerCase().includes(term);
+        filterOptions();
     });
     searchLabel.append(search);
     toolbar.append(searchLabel, options);
@@ -126,6 +132,11 @@ export function initialiseColumns(form, preference) {
         applyColumns();
     });
     return {
+        setAvailableLookupOutputs(outputs) {
+            availableLookup = new Set(outputs);
+            filterOptions();
+            applyColumns();
+        },
         getState() {
             return {columns: order.filter(key => choices.get(key).checked), column_order: [...order]};
         },

@@ -13,7 +13,7 @@
 {% endmacro %}
 {% macro section_heading(label, section) %}
 <div class="mah-section-heading"><h2 id="{{ section }}">{{ label }}</h2>
-{% if not edit and not contact.archived_at %}<a class="preview-label" href="{{ filter_query(request, 'q') ~ '&' if request.query_params.get('q') else '?' }}edit={{ section }}#{{ section }}" aria-label="Edit {{ label|lower }}">Edit</a>{% endif %}
+{% if not edit and not contact.archived_at %}<a class="preview-label" href="{{ filter_query(request, 'q') ~ '&' if filter_query(request, 'q') else '?' }}edit={{ section }}#{{ section }}" aria-label="Edit {{ label|lower }}">Edit</a>{% endif %}
 </div>
 {% endmacro %}
 {% macro form_start(section) %}

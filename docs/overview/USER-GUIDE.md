@@ -465,13 +465,35 @@ End User is unavailable for a second assignment.
 
 ### Local trial: MAH declaration lookups and Data integrity
 
-In MAHs, open **Configure view → Columns → Relation lookup · Self-declarations**.
-Choose **Highest data year** or **Data year equals** and enter a year. Select the
-optional **Self-declaration · …** columns, then **Apply**. All these columns use
-one record. Data year and Selection result remain visible when lookup data columns
-are selected. Highest year is not a receipt/approval status. **Selection result**
-distinguishes a match, no declaration and duplicate MAH/year data errors. Zero
-packs stays zero. Conditions/sort and CSV/Excel exports use the applied selection.
+In MAHs, open **Configure view → Lookups → Self-declarations**. Add up to eight
+field/operator/value conditions and select **All conditions (AND)** or **Any condition
+(OR)**. These conditions choose declarations within each MAH; the Conditions tab
+filters MAH rows. Empty conditions include all related declarations.
+Choose **Unique match** (exactly one candidate), **Minimum (Min)** or **Maximum (Max)**
+on SD year or RX packs sold. For the latest declaration use **Maximum → SD year**;
+for a fixed year add **SD year is 2025** and use **Unique match**. Numeric empty values
+are excluded from Min/Max; reported zero remains zero. Ties and duplicate MAH/year
+records never supply arbitrary values. A filter cannot hide the duplicate source
+of a selected year. The separate Data integrity check still reports all duplicates.
+Select the required **Output fields**, then choose their visibility/order under
+**Columns** and **Apply**. Only configured lookup outputs appear under Columns.
+SD year and Selection result supply mandatory context when lookup values are shown.
+If an output is used by MAH conditions or sorting, remove that dependency before
+removing the output. All outputs refer to one declaration; Min/Max do not aggregate
+individual columns. The highest year is not a receipt/approval status. Conditions,
+sorting and CSV/Excel exports use the applied selection across all export pages.
+Existing highest/fixed-year personal views remain readable and are converted when
+saved through the new editor. This first implementation has one Self-declarations
+lookup per MAH view; independent named lookups and contract lookups are future work.
+
+Opening a SPOC or Alert contact from a MAH or End User adds **← MAH: Name** or
+**← End User: Name** beside **← Contacts**. The new link returns to that exact
+parent's Contacts section and retains its original view context. It survives edit,
+save and cancel, and opening the link in a separate tab. Previous/Next steps through
+that parent's contacts. Direct entry from Contacts has no fabricated source link.
+MAH links to individual agreements and selected self-declarations also carry a
+source-record return link. Missing source records omit the contextual link.
+
 Save this experiment as a separate personal view, for example **Lookup trial**,
 so an existing working view need not change. The MAH detail shows the same lookup
 scope with a source-record link where unique.

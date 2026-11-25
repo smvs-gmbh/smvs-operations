@@ -86,6 +86,7 @@ from app.portal.crm_list_preferences import (
 from app.portal.crm_list_preferences import (
     router as preferences_router,
 )
+from app.portal.crm_record_origin import crm_record_origin
 from app.portal.crm_views import (
     configured_rows,
     crm_navigation,
@@ -470,7 +471,12 @@ def render_end_user(request, session, user, edit, q="", unlinked=False):
             if edit == "contacts"
             else CRMContact.id.in_(ids)
         )
-        contacts=contacts.where(or_(CRMContact.profile['registration_pending'].as_boolean().is_not(True),CRMContact.id.in_(ids)))
+        contacts = contacts.where(
+            or_(
+                CRMContact.profile["registration_pending"].as_boolean().is_not(True),
+                CRMContact.id.in_(ids),
+            )
+        )
         contact_options = list(session.scalars(contacts))
     pending_contacts = []
     if source.get("SPOC") or source.get("Alert contacts"):
@@ -480,23 +486,35 @@ def render_end_user(request, session, user, edit, q="", unlinked=False):
     navigation_query = filter_query(request, "q", "unlinked", "archived")
     if user and user.archived_at and "archived" not in request.query_params:
         navigation_query += ("&" if navigation_query else "?") + "archived=true"
-    navigation = record_navigation("/crm/end-users", "End Users", query=navigation_query)
+    navigation = record_navigation(
+        "/crm/end-users", "End Users", query=navigation_query
+    )
     if user and not edit:
         navigation = crm_navigation(
-            request, session, end_user_directory_statement(q, unlinked, bool(user.archived_at)),
-            CRMEndUser.id, user.id, (CRMEndUser.name, CRMEndUser.id),
-            "/crm/end-users", "End Users", query=navigation_query,
+            request,
+            session,
+            end_user_directory_statement(q, unlinked, bool(user.archived_at)),
+            CRMEndUser.id,
+            user.id,
+            (CRMEndUser.name, CRMEndUser.id),
+            "/crm/end-users",
+            "End Users",
+            query=navigation_query,
         )
     return templates.TemplateResponse(
         request=request,
         name="crm_end_user_detail.html",
         context={
-            **(crm_notes_context(request, session, "end-users", user.id) if user and not edit else {}),
+            **(
+                crm_notes_context(request, session, "end-users", user.id)
+                if user and not edit
+                else {}
+            ),
             "title": user.name if user else "New End User",
             "active": "crm",
             "crm_section": True,
             "user": user,
-            "record_nav": navigation,
+            "record_nav": navigation | {"origin": crm_record_origin(request, session)},
             "detail_query": navigation_query,
             "source": source,
             "profile": profile,
@@ -731,7 +749,12 @@ def crm_it_supplier(request: Request, identifier: int, session: DbSession):
     links, pending, _ = supplier_contact_links(session, export[3])
     ids = [
         row.id
-        for row in configured_rows(request, session, "it-suppliers", filtered_suppliers(export[3], request.query_params.get("q", "")))
+        for row in configured_rows(
+            request,
+            session,
+            "it-suppliers",
+            filtered_suppliers(export[3], request.query_params.get("q", "")),
+        )
     ]
     position = ids.index(identifier) if identifier in ids else None
     navigation = record_navigation(
@@ -746,14 +769,17 @@ def crm_it_supplier(request: Request, identifier: int, session: DbSession):
         name="crm_it_supplier_detail.html",
         context={
             **crm_notes_context(
-                request, session, "it-suppliers", identifier,
+                request,
+                session,
+                "it-suppliers",
+                identifier,
                 supplier_key=supplier_note_key(export[3], identifier),
             ),
             "title": supplier["IT Supplier Name"],
             "active": "crm",
             "crm_section": True,
             "supplier": supplier,
-            "record_nav": navigation,
+            "record_nav": navigation | {"origin": crm_record_origin(request, session)},
             "supplier_contacts": sorted(
                 links[identifier].values(),
                 key=lambda item: item[0].display_name.casefold(),
@@ -975,12 +1001,26 @@ def crm_contact_detail(
     export = staged_crm_export(session, "IT Suppliers")
     suppliers = export[3] if export else []
     links, _, pending_suppliers = supplier_contact_links(session, suppliers)
+    origin = crm_record_origin(request, session)
+    contact_statement = contact_directory_statement(
+        request.query_params.get("q", ""), bool(contact.archived_at)
+    )
+    if origin and origin["directory"] in {"mahs", "end-users"}:
+        source_profile = origin["record"].profile or {}
+        ids = [
+            value
+            for value in [
+                *spoc_ids(source_profile),
+                *source_profile.get("alert_contact_ids", []),
+            ]
+            if type(value) is int and value > 0
+        ]
+        contact_statement = contact_statement.where(CRMContact.id.in_(ids))
     navigation = (
         crm_navigation(
-            request, session,
-            contact_directory_statement(
-                request.query_params.get("q", ""), bool(contact.archived_at)
-            ),
+            request,
+            session,
+            contact_statement,
             CRMContact.id,
             identifier,
             (CRMContact.label, CRMContact.id),
@@ -995,12 +1035,16 @@ def crm_contact_detail(
         request=request,
         name="crm_contact_detail.html",
         context={
-            **(crm_notes_context(request, session, "contacts", identifier) if edit not in CONTACT_SECTIONS else {}),
+            **(
+                crm_notes_context(request, session, "contacts", identifier)
+                if edit not in CONTACT_SECTIONS
+                else {}
+            ),
             "title": contact.display_name,
             "active": "crm",
             "crm_section": True,
             "contact": contact,
-            "record_nav": navigation,
+            "record_nav": navigation | {"origin": crm_record_origin(request, session)},
             "profile": profile,
             "roles": linked_values(contact.function or ""),
             "function_options": contact_functions(session) if edit == "general" else [],
@@ -1271,14 +1315,16 @@ def crm_agreement(request: Request, identifier: int, session: DbSession):
     )
     statement, candidates, counts = agreement_directory(session, request.query_params)
     navigation = crm_navigation(
-        request, session,
+        request,
+        session,
         statement,
         CRMAgreement.id,
         identifier,
         (CRMAgreement.contract_id,),
         AGREEMENTS_PATH,
         "MAH Agreements",
-        query=filter_query(request, *AGREEMENT_FILTERS), pdf_counts=counts,
+        query=filter_query(request, *AGREEMENT_FILTERS),
+        pdf_counts=counts,
     )
     documents = session.execute(
         agreement_documents()
@@ -1300,7 +1346,7 @@ def crm_agreement(request: Request, identifier: int, session: DbSession):
             "agreement_statuses": tuple(
                 dict.fromkeys((*AGREEMENT_STATUSES, agreement.status))
             ),
-            "record_nav": navigation,
+            "record_nav": navigation | {"origin": crm_record_origin(request, session)},
             "documents": documents,
             "source": source.raw_row_json if source else {},
             "candidates": candidates[agreement.contract_id],
@@ -1578,7 +1624,8 @@ def crm_self_declaration(
     except (ValueError, InvalidOperation):
         pass
     navigation = crm_navigation(
-        request, session,
+        request,
+        session,
         declaration_directory(q, year, assignment, duplicates, mah_id),
         CRMSelfDeclaration.id,
         identifier,
@@ -1602,7 +1649,7 @@ def crm_self_declaration(
             "mah": session.get(CRMMah, declaration.mah_id)
             if declaration.mah_id
             else None,
-            "record_nav": navigation,
+            "record_nav": navigation | {"origin": crm_record_origin(request, session)},
         },
     )
 
@@ -1736,7 +1783,11 @@ NOTE_FLAGS = {"": "No flag", "important": "Important", "review_later": "Review l
 NOTE_RECORDS = {
     "mahs": (CRMMah, "mah_id", ("q", "agreement", "archived")),
     "agreements": (CRMAgreement, "agreement_id", AGREEMENT_FILTERS),
-    "self-declarations": (CRMSelfDeclaration, "self_declaration_id", DECLARATION_FILTERS),
+    "self-declarations": (
+        CRMSelfDeclaration,
+        "self_declaration_id",
+        DECLARATION_FILTERS,
+    ),
     "contacts": (CRMContact, "contact_id", ("q", "archived")),
     "end-users": (CRMEndUser, "end_user_id", ("q", "unlinked", "archived")),
     "it-suppliers": (None, "it_supplier_key", ("q",)),
@@ -1981,7 +2032,12 @@ def render_mah(request, session, mah=None, source=None, *, edit="", summary_draf
             if edit_section == "contacts"
             else CRMContact.id.in_(assigned_ids)
         )
-        statement=statement.where(or_(CRMContact.profile['registration_pending'].as_boolean().is_not(True),CRMContact.id.in_(assigned_ids)))
+        statement = statement.where(
+            or_(
+                CRMContact.profile["registration_pending"].as_boolean().is_not(True),
+                CRMContact.id.in_(assigned_ids),
+            )
+        )
         contacts = list(session.scalars(statement))
     agreements = (
         list(
@@ -2067,7 +2123,13 @@ def render_mah(request, session, mah=None, source=None, *, edit="", summary_draf
         "incoming_transfers": incoming_transfers,
         "outgoing_transfer": outgoing_transfer,
         "transfer_targets": transfer_targets,
-        "declaration_lookup": declaration_values(session, [mah.id], getattr(request.state, "crm_view_config", {}).get("declaration_lookup")).get(mah.id) if mah else None,
+        "declaration_lookup": declaration_values(
+            session,
+            [mah.id],
+            getattr(request.state, "crm_view_config", {}).get("declaration_lookup"),
+        ).get(mah.id)
+        if mah
+        else None,
         "self_declaration_count": session.scalar(
             select(func.count())
             .select_from(CRMSelfDeclaration)
@@ -2117,7 +2179,8 @@ def render_mah(request, session, mah=None, source=None, *, edit="", summary_draf
     )
     if mah and not edit_section:
         navigation = crm_navigation(
-            request, session,
+            request,
+            session,
             mah_directory_statement(
                 request.query_params.get("q", ""),
                 bool(mah.archived_at),
@@ -2140,9 +2203,13 @@ def render_mah(request, session, mah=None, source=None, *, edit="", summary_draf
             "crm_section": True,
             **return_context,
             "mah": mah,
-            "record_nav": navigation,
+            "record_nav": navigation | {"origin": crm_record_origin(request, session)},
             "source": source,
-            **(crm_notes_context(request, session, "mahs", mah.id) if mah and not edit_section else {}),
+            **(
+                crm_notes_context(request, session, "mahs", mah.id)
+                if mah and not edit_section
+                else {}
+            ),
         },
     )
 

@@ -375,3 +375,203 @@ def test_imported_contact_relations_and_invalid_role_emails_are_review_items(
             f["rule"] in ("mah_spoc", "mah_alert_manager") and f["id"] == mah.id
             for f in findings
         )
+
+
+def test_structured_lookup_and_or_unique_min_max_ties_and_hidden_duplicates(
+    views_portal,
+):
+    client, factory = views_portal
+    ids = seed(factory)
+    lookup = {
+        "match": "and",
+        "conditions": [
+            {"field": "sd_packs", "operator": "greater_than", "value": "5000"},
+            {"field": "sd_year", "operator": "equals", "value": "2025"},
+        ],
+        "selection": {"rule": "unique", "field": "sd_year"},
+        "outputs": ["sd_packs"],
+    }
+    with factory() as session:
+        assert (
+            declaration_values(session, ids, lookup)[ids[0]]["sd_selection"]
+            == "No declaration"
+        )
+        lookup["match"] = "or"
+        assert (
+            declaration_values(session, ids, lookup)[ids[0]]["sd_selection"]
+            == "Ambiguous selection"
+        )
+        lookup["selection"]["rule"] = "max"
+        assert declaration_values(session, ids, lookup)[ids[0]]["sd_packs"] == 0
+        lookup["selection"]["rule"] = "min"
+        assert declaration_values(session, ids, lookup)[ids[0]]["sd_packs"] == 120000
+        # A packs condition cannot mask the other Beta declaration for the same year.
+        lookup["conditions"] = [
+            {"field": "sd_packs", "operator": "equals", "value": "55"}
+        ]
+        assert declaration_values(session, ids, lookup)[ids[1]][
+            "sd_selection"
+        ].startswith("Data error")
+        lookup["conditions"] = []
+        lookup["selection"] = {"rule": "max", "field": "sd_packs"}
+        assert declaration_values(session, ids, lookup)[ids[2]]["sd_year"] is None
+        rows = list(
+            session.scalars(
+                select(CRMSelfDeclaration).where(CRMSelfDeclaration.mah_id == ids[0])
+            )
+        )
+        for row in rows:
+            row.packs_sold = 5000
+        session.flush()
+        assert (
+            declaration_values(session, ids, lookup)[ids[0]]["sd_selection"]
+            == "Ambiguous selection"
+        )
+        session.rollback()
+    lookup["selection"] = {"rule": "max", "field": "sd_year"}
+    config = {
+        "declaration_lookup": lookup,
+        "columns": ["name", "sd_packs", "sd_sales_group"],
+        "sort": "sd_packs",
+    }
+    saved = post_view(client, command="create", name="Structured lookup", config=config)
+    assert saved.status_code == 200, saved.text
+    result = saved.json()["view"]
+    assert set(result["config"]["declaration_lookup"]["outputs"]) == {
+        "sd_year",
+        "sd_selection",
+        "sd_packs",
+    }
+    assert "sd_sales_group" not in result["config"]["columns"]
+    page = client.get(
+        "/crm/mahs", params={"view": result["id"]}, headers={"x-test-user": "1"}
+    )
+    assert page.status_code == 200
+    # GET URL and saved personal views use the same validated configuration.
+    assert (
+        client.get(
+            "/crm/mahs", params={"declaration_lookup": json.dumps(lookup)}
+        ).status_code
+        == 200
+    )
+    config["sort"] = "sd_sales_group"
+    assert post_view(client, command="preview", config=config).status_code == 422
+    for invalid in (
+        {**lookup, "match": "xor"},
+        {
+            **lookup,
+            "conditions": [{"field": "sql", "operator": "equals", "value": "1"}],
+        },
+        {
+            **lookup,
+            "conditions": [{"field": "sd_packs", "operator": "equals", "value": "NaN"}],
+        },
+        {
+            **lookup,
+            "conditions": [{"field": "sd_year", "operator": "contains", "value": "25"}],
+        },
+        {
+            **lookup,
+            "conditions": [{"field": "sd_year", "operator": "equals", "value": True}],
+        },
+        {**lookup, "conditions": [{}] * 9},
+        {**lookup, "selection": {"rule": "first", "field": "sd_year"}},
+        {**lookup, "outputs": ["untrusted"]},
+    ):
+        assert (
+            post_view(
+                client, command="preview", config={"declaration_lookup": invalid}
+            ).status_code
+            == 422
+        )
+
+
+def test_related_contact_return_link_preserves_source_context_and_editing(views_portal):
+    import html
+    import re
+    from urllib.parse import parse_qs, urljoin, urlsplit
+
+    client, factory = views_portal
+    ids = seed(factory)
+    with factory.begin() as session:
+        contacts = [
+            CRMContact(
+                airtable_id=f"origin-{i}",
+                label=f"Contact {i}",
+                profile={"email": f"c{i}@example.test"},
+            )
+            for i in range(3)
+        ]
+        session.add_all(contacts)
+        session.flush()
+        session.get(CRMMah, ids[0]).profile = {
+            "spoc_ids": [contacts[0].id],
+            "alert_contact_ids": [contacts[1].id],
+        }
+        # A shared contact must return to the source MAH, not the other linked MAH.
+        session.get(CRMMah, ids[1]).profile = {"spoc_ids": [contacts[0].id]}
+        contact_ids = [c.id for c in contacts]
+    page = client.get(
+        f"/crm/mahs/{ids[0]}",
+        params={"view": "all", "q": "Alpha", "sort": "name", "direction": "desc"},
+    )
+    assert page.status_code == 200
+    href = html.unescape(
+        re.search(
+            r'href="([^"]*/crm/contacts/' + str(contact_ids[0]) + r'[^\"]*)"', page.text
+        )[1]
+    )
+    assert parse_qs(urlsplit(href).query)["origin"] == [f"mahs:{ids[0]}"]
+    contact = client.get(href)
+    assert contact.status_code == 200, contact.text
+    back = html.unescape(
+        re.search(r'href="([^"]+)" data-record-origin', contact.text)[1]
+    )
+    assert urlsplit(back).path == f"/crm/mahs/{ids[0]}"
+    assert urlsplit(back).fragment == "contacts"
+    assert parse_qs(urlsplit(back).query)["q"] == ["Alpha"]
+    assert parse_qs(urlsplit(back).query)["direction"] == ["desc"]
+    directory = html.unescape(
+        re.search(r'href="([^"]+)" data-record-back', contact.text)[1]
+    )
+    assert "origin" not in directory and urlsplit(directory).path == "/crm/contacts"
+    next_href = html.unescape(re.search(r'rel="next" href="([^"]+)"', contact.text)[1])
+    assert urlsplit(next_href).path == f"/crm/contacts/{contact_ids[1]}"
+    assert "origin" in urlsplit(next_href).query
+    assert 'rel="next" href=' not in client.get(next_href).text
+    edit = html.unescape(
+        re.search(r'href="([^"]+)" aria-label="Edit communication"', contact.text)[1]
+    )
+    editing = client.get(urljoin(href, edit))
+    assert editing.status_code == 200 and "data-record-origin" in editing.text
+    with factory() as session:
+        version = session.get(CRMContact, contact_ids[0]).version
+    saved = client.post(
+        href,
+        data={
+            "section": "communication",
+            "version": str(version),
+            "email": "new@example.test",
+            "phone": "",
+        },
+        headers={"origin": "http://testserver"},
+        follow_redirects=False,
+    )
+    assert saved.status_code == 303 and "origin=" in saved.headers["location"]
+    assert "data-record-origin" in client.get(saved.headers["location"]).text
+    assert (
+        "data-record-origin" not in client.get(f"/crm/contacts/{contact_ids[0]}").text
+    )
+    for origin in ("mahs:999999", "https://example.test/", "mahs:0", "other:1"):
+        assert (
+            "data-record-origin"
+            not in client.get(
+                f"/crm/contacts/{contact_ids[0]}", params={"origin": origin}
+            ).text
+        )
+    hostile = client.get(
+        href
+        + "&origin_context="
+        + "redirect%3Dhttps%253A%252F%252Fexample.test%26edit%3Dgeneral"
+    )
+    assert hostile.status_code == 200 and "https://example.test" not in hostile.text

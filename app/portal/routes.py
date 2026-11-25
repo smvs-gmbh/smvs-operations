@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.core.db.session import get_session
 from app.domain.models import Batch, ProductSourceRecord, ProductVersion
 from app.portal import queries
+from app.portal.crm_record_origin import related_record_url
 from app.portal.record_navigation import filter_query, list_record_navigation
 from app.portal.snapshot_fields import BATCH_FIELDS, PRODUCT_FIELDS
 
@@ -26,6 +27,7 @@ def number(value):
 
 templates.env.filters["number"] = number
 templates.env.globals["filter_query"] = filter_query
+templates.env.globals["related_record_url"] = related_record_url
 templates.env.globals["product_snapshot_fields"] = PRODUCT_FIELDS
 templates.env.globals["batch_snapshot_fields"] = BATCH_FIELDS
 

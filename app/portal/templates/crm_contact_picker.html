@@ -37,4 +37,4 @@
 </dialog>
 </div>
 {% endmacro %}
-{% macro contact_labels(ids) %}{% for id in ids if id in assigned_contacts %}<a href="/crm/contacts/{{ id }}">{{ assigned_contacts[id].display_name }}</a>{% if assigned_contacts[id].archived_at %} (archived){% endif %}{{ ', ' if not loop.last }}{% else %}—{% endfor %}{% endmacro %}
+{% macro contact_labels(ids) %}{% for id in ids if id in assigned_contacts %}<a href="{{ related_record_url(request, '/crm/contacts/' ~ id, 'contacts') }}">{{ assigned_contacts[id].display_name }} →</a>{% if assigned_contacts[id].archived_at %} (archived){% endif %}{{ ', ' if not loop.last }}{% else %}—{% endfor %}{% endmacro %}

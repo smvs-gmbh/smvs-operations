@@ -38,7 +38,9 @@ def normalise_config(directory, config):
         except ValueError as error:
             raise HTTPException(422, str(error)) from None
     elif "declaration_lookup" in config:
-        raise HTTPException(422, "Self-declaration lookups are available for MAHs only.")
+        raise HTTPException(
+            422, "Self-declaration lookups are available for MAHs only."
+        )
     fields = {field.key: field for field in CATALOGUE[directory]}
     quick = config.get("quick_filters", {})
     if not isinstance(quick, dict) or not set(quick).issubset(FIELDS[directory]):
@@ -101,10 +103,26 @@ def normalise_config(directory, config):
         or DEFAULT_COLUMNS[directory][0] not in columns
     ):
         raise HTTPException(422, "Select valid columns, including the record name.")
-    if directory == "mahs" and columns is not None and any(
-        key.startswith("sd_") and key != "sd_selection" for key in columns
+    if (
+        directory == "mahs"
+        and columns is not None
+        and any(key.startswith("sd_") and key != "sd_selection" for key in columns)
     ):
         columns = list(dict.fromkeys([*columns, "sd_year", "sd_selection"]))
+    if directory == "mahs" and "rule" not in lookup:
+        available = set(lookup["outputs"])
+        dependencies = {c["field"] for c in cleaned}
+        if isinstance(config.get("sort"), str):
+            dependencies.add(config["sort"])
+        if any(key.startswith("sd_") and key not in available for key in dependencies):
+            raise HTTPException(
+                422,
+                "A condition or sort uses a lookup output. Keep that output configured or remove its condition and sort first.",
+            )
+        if columns is not None:
+            columns = [
+                key for key in columns if not key.startswith("sd_") or key in available
+            ]
     order = config.get("column_order")
     if order is not None:
         if (
@@ -213,11 +231,13 @@ def resolve_view(request, session, directory):
     if "declaration_lookup" in request.query_params:
         try:
             raw_lookup = request.query_params["declaration_lookup"]
-            if len(raw_lookup) > 200:
+            if len(raw_lookup) > 6000:
                 raise ValueError()
             config["declaration_lookup"] = json.loads(raw_lookup)
         except ValueError:
-            raise HTTPException(422, "Select a valid self-declaration discriminator.") from None
+            raise HTTPException(
+                422, "Select a valid self-declaration discriminator."
+            ) from None
     for key in ("sort", "direction"):
         if key in request.query_params:
             config[key] = request.query_params[key]

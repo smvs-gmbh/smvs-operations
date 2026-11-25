@@ -9,8 +9,8 @@ release. Dated sections further down preserve earlier decisions and milestones.
 ## Next
 
 - [ ] **Local CRM relation/integrity trial (CHG-011).** Review MAH → Self-declarations
-  lookups (highest/specified data year), private views, export/filter/sort and the
-  new Data integrity page. Requirements: URS-111–113, URS-001 draft v0.11.
+  lookups (structured AND/OR conditions, Unique match/Min/Max and configured outputs), private views, export/filter/sort and the
+  new Data integrity page. Requirements: URS-111–114, URS-001 draft v0.12.
 - [ ] **After trial feedback: update the FRS, RA and RTM** for URS-111–113,
   discriminator behaviour, applicability scope, uniqueness enforcement and
   integrity findings. No FRS approval or formal validation is implied by the trial.
@@ -651,3 +651,15 @@ No Jelastic deployment or production source request was performed.
 - [x] Reject new duplicate assigned MAH/year records through the declaration import service.
 - [x] Complete local automated/browser verification (521 Python tests, three Node tests, multi-page browser export).
 - [ ] Owner review of the local trial; no server deployment.
+
+### Structured lookup editor and originating-record return links — 2026-11-25 (CHG-012)
+
+- [x] Separate Lookups from Columns for the existing MAH → Self-declarations lookup.
+- [x] Typed conditions (AND/OR), Unique match/Min/Max and explicit output fields;
+  preserve legacy views, same-record values, ambiguity and duplicate source protection.
+- [x] Explicit return links with source view/section, contact edit/save/cancel context
+  and parent-scoped contact Previous/Next; no schema change or production deployment.
+- [ ] Owner acceptance of the structured editor, lookup export and return navigation.
+- [ ] Reconcile FRS, RA and RTM with URS-111/114 after local trial acceptance.
+- [ ] Consider independent named lookup definitions and Contracts as an additional
+  relation after the initial Self-declarations trial. No First/Last without explicit sort.

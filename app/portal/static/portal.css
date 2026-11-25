@@ -558,3 +558,9 @@ div.test-case-columns { color: var(--muted); background: #f7f9fb; font-weight: 6
 
 .table-csv-controls { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; }
 .table-csv-controls [role="status"] { flex-basis: 100%; margin: 0 0 .75rem; overflow-wrap: anywhere; }
+
+/* Keep the directory and originating-record links distinct and responsive. */
+.record-navigation-back-links { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.25rem; min-width: 0; }
+.record-navigation-back-links a { overflow-wrap: anywhere; }
+.crm-toolbox-lookups > :is(label, h3, p, fieldset) { margin-bottom: 1rem; }
+.crm-toolbox-lookups > label { display: grid; gap: .4rem; }

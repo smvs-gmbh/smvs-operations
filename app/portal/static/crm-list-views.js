@@ -1,6 +1,7 @@
 import {installCsvDownload} from './table-csv.js?v=crm-lookups-1';
 import {rightToolbox} from './right-toolbox.js?v=record-actions-1';
-import {initialiseColumns} from './crm-list-columns.js?v=crm-lookups-1';
+import {initialiseLookup} from './crm-lookup-editor.js?v=structured-lookups-1';
+import {initialiseColumns} from './crm-list-columns.js?v=structured-lookups-1';
 
 const form = document.querySelector('form[data-crm-filters]');
 if (form) initialiseViews(form);
@@ -31,6 +32,8 @@ function labelled(text, control) {
 }
 
 export async function initialiseViews(form) {
+    if (form.dataset.crmViewsInitialised) return;
+    form.dataset.crmViewsInitialised = 'true';
     const directory = form.dataset.crmFilters;
     const csvTable=form.closest('section').querySelector('table[data-crm-columns]');
     if(csvTable)installCsvDownload(csvTable,{workspace:form.closest('section'),form});
@@ -209,22 +212,9 @@ export async function initialiseViews(form) {
     settings.append(actions);
     if (!response.available) settings.append(element('p', 'subtle', 'Sign in to save personal views.'));
     const columnsPanel = form.querySelector('details:has(.crm-column-options)');
-    let lookupRule, lookupYear;
+    let lookupEditor;
     if (directory === 'mahs') {
-        const lookup = config.declaration_lookup || {rule: 'latest', year: null};
-        lookupRule = element('select');
-        lookupRule.append(new Option('Highest data year', 'latest'), new Option('Data year equals', 'year'));
-        lookupRule.value = lookup.rule;
-        lookupYear = element('input');
-        lookupYear.type = 'number'; lookupYear.min = '1900'; lookupYear.max = '9999'; lookupYear.step = '1';
-        lookupYear.value = lookup.year || new Date().getFullYear() - 1;
-        const yearLabel = labelled('Data year', lookupYear);
-        function showYear() { yearLabel.hidden = lookupRule.value !== 'year'; lookupYear.disabled = yearLabel.hidden; }
-        lookupRule.addEventListener('change', showYear); showYear();
-        const relation = element('div', 'crm-view-sorting');
-        relation.append(element('h3', '', 'Relation lookup · Self-declarations'), labelled('Discriminator', lookupRule), yearLabel,
-            element('p', 'subtle', 'All Self-declaration columns use this selection. Duplicate MAH/year records are a data error; no value is selected. Highest year does not confirm receipt or approval.'));
-        columnsPanel.prepend(relation);
+        lookupEditor = initialiseLookup(form, config, outputs => columns.setAvailableLookupOutputs(outputs));
     }
 
     const resultPanel = form.closest('section');
@@ -262,6 +252,7 @@ export async function initialiseViews(form) {
     let activeTab = 'conditions';
     for (const [key, title, original] of [
         ['conditions', 'Conditions', conditionsPanel],
+        ...(lookupEditor ? [['lookups', 'Lookups', lookupEditor.panel]] : []),
         ['columns', 'Columns', columnsPanel],
         ['save', 'Save view', settings],
     ]) {
@@ -281,9 +272,9 @@ export async function initialiseViews(form) {
         tab.addEventListener('click', () => activateTab(key));
         tab.addEventListener('keydown', event => {
             const index = tabButtons.indexOf(tab);
-            const destination = event.key === 'ArrowRight' ? (index + 1) % 3
-                : event.key === 'ArrowLeft' ? (index + 2) % 3
-                : event.key === 'Home' ? 0 : event.key === 'End' ? 2 : null;
+            const destination = event.key === 'ArrowRight' ? (index + 1) % tabButtons.length
+                : event.key === 'ArrowLeft' ? (index + tabButtons.length - 1) % tabButtons.length
+                : event.key === 'Home' ? 0 : event.key === 'End' ? tabButtons.length - 1 : null;
             if (destination === null) return;
             event.preventDefault();
             activateTab(tabButtons[destination].dataset.tab);
@@ -335,7 +326,7 @@ export async function initialiseViews(form) {
     try {
         const resume = sessionStorage.getItem(resumeKey);
         sessionStorage.removeItem(resumeKey);
-        if (['conditions', 'columns', 'save'].includes(resume)) showToolbox(resume, false);
+        if (['conditions', 'lookups', 'columns', 'save'].includes(resume)) showToolbox(resume, false);
     } catch {}
 
     function currentConfig() {
@@ -344,7 +335,7 @@ export async function initialiseViews(form) {
             conditions: conditionRows.map(row => row.getValue()),
             sort: sort.value, direction: direction.value,
             ...columns.getState(),
-            ...(lookupRule ? {declaration_lookup: {rule: lookupRule.value, year: lookupRule.value === 'year' ? Number(lookupYear.value) : null}} : {}),
+            ...(lookupEditor ? {declaration_lookup: lookupEditor.getValue()} : {}),
         };
     }
     function navigate(configuration, view = selected ? String(selected.id) : 'all', preset = '') {

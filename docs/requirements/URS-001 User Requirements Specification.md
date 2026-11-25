@@ -7,7 +7,7 @@
 | **Document ID**    | URS-001                         |
 | **Title**          | User Requirements Specification |
 | **Status**         | Draft                           |
-| **Version**        | 0.11                            |
+| **Version**        | 0.12                            |
 | **Classification** | Internal                        |
 | **Owner**          | SMVS GmbH                       |
 | **Author**         | Reinhold Sojer                  |
@@ -22,6 +22,7 @@
 | ------- | ---------- | -------------- | ------------- |
 | 0.9     | 2026-06-27 | Reinhold Sojer | Initial draft |
 | 0.10    | 2026-11-17 | SMVS Operations project | Reconciled the intended use and added requirements for current workflows and planned Hub integration |
+| 0.12    | 2026-11-25 | SMVS Operations project | Structured lookup conditions/output configuration and explicit related-record return navigation (local pilot); FRS/RTM/risk reconciliation pending |
 | 0.11    | 2026-11-25 | SMVS Operations project | Added relation lookups, MAH/year self-declaration uniqueness and read-only CRM integrity checks for local pilot evaluation; FRS/RTM/risk reconciliation pending |
 
 ---
@@ -510,12 +511,20 @@ operational data after deployment, migration or recovery.
 
 Authorised staff shall be able to add values from related CRM records to personal
 working views using an explicit discriminator. The initial relation is MAH to
-Self-declarations, selected by highest data year or a specified data year. All
-lookup columns sharing a selection shall refer to the same record. Staff shall
-be able to display, filter, sort and export these values with the current view.
-The selection and data year shall remain identifiable when a view is saved or
-reopened. Highest data year shall not imply receipt or approval. Missing values
-shall remain distinct from reported zero values.
+Self-declarations. Lookup configuration shall be separate from column visibility
+and order. Staff shall select output fields and configure typed field/operator/value
+conditions, combined as all (AND) or any (OR), separately from the MAH list conditions.
+The initial selection rules shall be Unique match, Minimum and Maximum on a numeric
+field. Unique match shall require exactly one candidate; Min/Max shall select one
+record, not aggregate output fields. Ties shall remain unresolved. Empty numeric
+selection values shall not be treated as zero. All lookup columns sharing a selection
+shall refer to the same record. Only configured outputs shall be offered as lookup
+columns. Removing an output used in list conditions or sorting shall require resolving
+that dependency before applying or saving the view. Existing highest/specific-year
+views shall retain their meaning. Staff shall be able to display, filter, sort and
+export these values with the current view. The selection and data year shall remain
+identifiable when a view is saved or reopened. Highest data year shall not imply
+receipt or approval. Missing values shall remain distinct from reported zero values.
 
 ## URS-112
 
@@ -547,3 +556,16 @@ of historical declaration obligation or of an overdue deadline.
 
 These requirements are recorded for the local pilot experiment. The detailed
 FRS, risk and traceability updates and business acceptance remain pending.
+
+## URS-114
+
+When an authorised user opens a related CRM record from a record detail, the
+application shall provide an explicit return link to that originating record,
+identified by type and name, in addition to the destination directory link.
+For the initial MAH/End User to Contact flow, return context shall survive reload,
+opening in a separate browser tab, editing, saving and cancellation, and shall restore
+the source view context and Contacts section. Contact Previous/Next navigation shall
+be scoped to the originating parent's assigned contacts. A contact linked to multiple
+parents shall return to the actual originating parent. Missing or invalid source
+records shall not produce a misleading return link. User-supplied context shall not
+allow an external redirect or an editing command on the originating record.

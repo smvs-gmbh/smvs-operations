@@ -317,3 +317,45 @@ the relevant distribution market.
   retained. A synthetic browser fixture verified saving a fixed-year view and a
   48-MAH CSV across two pages, plus integrity navigation at 1500/650 CSS pixels.
   Existing dependency warnings are unchanged. No operational records were repaired.
+
+
+## CHG-012 — Structured declaration lookup and related-record return navigation
+
+- **Authority/scope.** Owner requested local implementation of the structured editor
+  and explicit return link to the originating record. Continues CHG-011 on
+  `experiment/crm-lookups-integrity`. No production deployment or data repair.
+- **Requirements.** URS draft v0.12, refined URS-111 and new URS-114. FRS, risk and
+  RTM reconciliation remain tracked for trial acceptance; no approved QMS baseline.
+- **Lookup.** Separate Lookups tab; up to eight typed conditions combined as AND/OR,
+  Unique match or Min/Max numeric record selection, and explicit output projection.
+  Only configured lookup outputs are offered as columns. Source year/selection
+  context stays mandatory when showing values. Sort/filter output dependencies
+  block removal until resolved. No arbitrary selection on ties; no aggregation.
+  A candidate's duplicate MAH/year cannot be masked by filtering its other source.
+  Empty numeric fields are excluded from Min/Max; zero remains a valid value.
+  Legacy highest/fixed-year saved views remain readable without a migration.
+  This increment has one Self-declarations definition per MAH view. Independent
+  named lookups and Contracts remain separate follow-up work.
+- **Navigation.** Explicit source kind/ID with allowlisted view context and section,
+  independent of browser history and shared session state. Source names are resolved
+  from the database, not query text. Contacts retain origin during edit/save/cancel;
+  related-parent contact Previous/Next is scoped to assigned contacts. MAH agreement
+  and selected-declaration links carry the same return context. Directory back links
+  remain separate. Invalid/missing sources omit the extra link. No external return
+  destinations, nested origin chain or source edit commands are accepted.
+- **Reversibility.** No schema/source-data change. Save new trial views separately;
+  new structured view configurations are not understood by the previous revision.
+  Remove those trial views or restore their pre-trial configuration before rolling
+  source back. Existing prior views are converted only on user apply/save.
+- **Verification.** Regression tests cover AND/OR, Unique/Min/Max, ties, empty/zero,
+  hidden duplicate sources, output dependencies, saved views and malformed input;
+  source identity, view/section preservation, scoped contact navigation, editing,
+  saving and invalid/missing origins. Browser and final suite evidence recorded below.
+
+- **Final evidence.** 523 full-suite Python tests and three Node export tests
+  passed; changed Python lint, module syntax and Git whitespace checks passed.
+  Isolated browser review at 1500/650 CSS pixels verified the new Lookup/Columns
+  panels, typed conditions, projection, save/reload and an exact 48-record CSV
+  across two pages. Contact review verified source identity/view/section,
+  parent-scoped Previous/Next and edit/cancel preservation. Save preservation is
+  covered by the HTTP regression. Fixture checks made no operational data edits.

@@ -1,14 +1,33 @@
 """Shared navigation for records opened from a portal list."""
 
-from urllib.parse import urlencode
+from urllib.parse import parse_qsl, urlencode
 
 from sqlalchemy import func, select
 
 
 def filter_query(request, *keys):
     if request.url.path.startswith("/crm/"):
-        keys = tuple(dict.fromkeys((*keys, "view", "rules", "sort", "direction", "layout", "preset", "declaration_lookup")))
-    keys = tuple(dict.fromkeys((*keys, *(key for key in request.query_params if key.startswith("tv_")))))
+        keys = tuple(
+            dict.fromkeys(
+                (
+                    *keys,
+                    "view",
+                    "rules",
+                    "sort",
+                    "direction",
+                    "layout",
+                    "preset",
+                    "declaration_lookup",
+                )
+            )
+        )
+    keys = tuple(
+        dict.fromkeys(
+            (*keys, *(key for key in request.query_params if key.startswith("tv_")))
+        )
+    )
+    if request.url.path.startswith("/crm/"):
+        keys = (*keys, "origin", "origin_context", "origin_section")
     values = {
         key: request.query_params[key] for key in keys if key in request.query_params
     }
@@ -26,8 +45,19 @@ def record_navigation(
     back_query=None,
     back_path=None,
 ):
+    # A directory link is distinct from the explicit source-record link.
+    directory_query = query if back_query is None else back_query
+    if directory_query:
+        directory_query = urlencode(
+            [
+                (k, v)
+                for k, v in parse_qsl(directory_query.lstrip("?"), keep_blank_values=True)
+                if k not in {"origin", "origin_context", "origin_section"}
+            ]
+        )
+        directory_query = "?" + directory_query if directory_query else ""
     return {
-        "back": (back_path or path) + (query if back_query is None else back_query),
+        "back": (back_path or path) + directory_query,
         "label": label,
         "previous": f"{path}/{previous}{suffix}{query}"
         if previous is not None

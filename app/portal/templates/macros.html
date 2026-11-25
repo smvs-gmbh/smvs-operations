@@ -12,7 +12,8 @@
 
 {% macro record_bar(navigation, steps=true) %}
 <nav class="record-navigation" aria-label="Record navigation" data-record-editing="{{ 'false' if steps else 'true' }}">
-  <a href="{{ navigation.back }}" data-record-back>← {{ navigation.label }}</a>
+  <div class="record-navigation-back-links"><a href="{{ navigation.back }}" data-record-back>← {{ navigation.label }}</a>
+  {% if navigation.origin %}<a href="{{ navigation.origin.path }}" data-record-origin>← {{ navigation.origin.label }}</a>{% endif %}</div>
   <div class="record-navigation-steps">
     {% if navigation.previous %}<a rel="prev"{% if steps %} href="{{ navigation.previous }}"{% endif %} data-record-href="{{ navigation.previous }}"{% if not steps %} aria-disabled="true" tabindex="-1"{% endif %}>← Previous</a>{% else %}<span aria-disabled="true">← Previous</span>{% endif %}
     {% if navigation.next %}<a rel="next"{% if steps %} href="{{ navigation.next }}"{% endif %} data-record-href="{{ navigation.next }}"{% if not steps %} aria-disabled="true" tabindex="-1"{% endif %}>Next →</a>{% else %}<span aria-disabled="true">Next →</span>{% endif %}

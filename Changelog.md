@@ -6,6 +6,13 @@ baseline. Detailed scope/evidence: [change register](docs/validation/CHANGE-REGI
 
 ## Unreleased — local CRM relation/integrity experiment
 
+- CHG-012: Separate Lookups tab with structured AND/OR conditions, Unique match,
+  Min/Max and output projection for MAH Self-declarations. Add explicit source-record
+  return links and parent-scoped contact navigation. Existing trial views remain
+  readable; no migration or production deployment. URS draft v0.12, URS-111/114;
+  detailed FRS/risk/traceability reconciliation and owner acceptance remain pending.
+
+
 - CHG-011: MAH self-declaration lookup selection and typed view columns; read-only
   CRM Data integrity findings; import guard against new duplicate assigned MAH/year
   records. Branch `experiment/crm-lookups-integrity`; no server deployment.

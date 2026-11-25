@@ -3,19 +3,21 @@
 ## Boundary
 
 Branch: `experiment/crm-lookups-integrity`, base `4f93b93` /
-`pilot-2026-11-25-dev`. This is a local pilot experiment (CHG-011), not a server
+`pilot-2026-11-25-dev`. This is a local pilot experiment (CHG-011/012), not a server
 release or approved QMS baseline. No production files, schema or data are changed.
 No notifications, participant workflows or automatic repair are introduced.
 
-URS-001 draft v0.11 records URS-111–113. FRS, RA and RTM reconciliation is deferred
+URS-001 draft v0.12 records URS-111–114. FRS, RA and RTM reconciliation is deferred
 until trial feedback, with explicit tasks in the implementation list. Existing
 Word requirements drafts are not silently revised or approved by this change.
 
 ## Review the trial
 
-- In MAHs, open **Configure view → Columns**. The **Relation lookup ·
-  Self-declarations** group chooses highest data year or a fixed data year.
-- Show the desired **Self-declaration · …** columns. Data year and Selection
+- In MAHs, open **Configure view → Lookups**. Configure up to eight conditions
+  with AND/OR, then Unique match or Min/Max on SD year or RX packs sold. For the
+  latest year use Maximum → SD year; for a fixed year add SD year is YYYY.
+- Choose output fields under Lookups, then show/order the configured
+  **Self-declaration · …** columns under Columns. Data year and Selection
   result remain visible when lookup data columns are shown. All values come from
   one selected source; no column silently falls back to another year.
 - Apply, filter, sort and save as a separate **Lookup trial** view. Open a MAH or
@@ -76,3 +78,14 @@ columns. The browser
 review uses an isolated SQLite fixture with synthetic MAHs/declarations and no
 scheduler or external delivery. The existing local operational database is used
 only for read-only checks and the pre-trial view backup during this work.
+
+CHG-012 extends the same local trial with a structured editor and explicit
+originating-record return navigation. Verification: 523 Python tests and three
+Node export tests passed. Browser review at 1500/650 CSS pixels checked the
+separate Lookup/Columns panels, typed two-condition selection, output projection,
+saving/reloading a private view, and an exact 48-MAH CSV over two pages. Contact
+review verified the explicit source link, source view and Contacts anchor,
+edit/cancel preservation and parent-scoped Previous/Next. No operational records
+were edited during these checks; the browser uses the isolated synthetic fixture.
+New structured view configurations require removing/restoring those trial views
+before reverting code to CHG-011, which only understands the original selector.
