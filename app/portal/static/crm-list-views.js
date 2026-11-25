@@ -1,6 +1,6 @@
-import {installCsvDownload} from './table-csv.js?v=excel-1';
+import {installCsvDownload} from './table-csv.js?v=crm-lookups-1';
 import {rightToolbox} from './right-toolbox.js?v=record-actions-1';
-import {initialiseColumns} from './crm-list-columns.js?v=registration-workflow-1';
+import {initialiseColumns} from './crm-list-columns.js?v=crm-lookups-1';
 
 const form = document.querySelector('form[data-crm-filters]');
 if (form) initialiseViews(form);
@@ -209,6 +209,24 @@ export async function initialiseViews(form) {
     settings.append(actions);
     if (!response.available) settings.append(element('p', 'subtle', 'Sign in to save personal views.'));
     const columnsPanel = form.querySelector('details:has(.crm-column-options)');
+    let lookupRule, lookupYear;
+    if (directory === 'mahs') {
+        const lookup = config.declaration_lookup || {rule: 'latest', year: null};
+        lookupRule = element('select');
+        lookupRule.append(new Option('Highest data year', 'latest'), new Option('Data year equals', 'year'));
+        lookupRule.value = lookup.rule;
+        lookupYear = element('input');
+        lookupYear.type = 'number'; lookupYear.min = '1900'; lookupYear.max = '9999'; lookupYear.step = '1';
+        lookupYear.value = lookup.year || new Date().getFullYear() - 1;
+        const yearLabel = labelled('Data year', lookupYear);
+        function showYear() { yearLabel.hidden = lookupRule.value !== 'year'; lookupYear.disabled = yearLabel.hidden; }
+        lookupRule.addEventListener('change', showYear); showYear();
+        const relation = element('div', 'crm-view-sorting');
+        relation.append(element('h3', '', 'Relation lookup · Self-declarations'), labelled('Discriminator', lookupRule), yearLabel,
+            element('p', 'subtle', 'All Self-declaration columns use this selection. Duplicate MAH/year records are a data error; no value is selected. Highest year does not confirm receipt or approval.'));
+        columnsPanel.prepend(relation);
+    }
+
     const resultPanel = form.closest('section');
     resultPanel.classList.add('crm-list-workspace');
     form.classList.add('crm-toolbox-enabled');
@@ -326,6 +344,7 @@ export async function initialiseViews(form) {
             conditions: conditionRows.map(row => row.getValue()),
             sort: sort.value, direction: direction.value,
             ...columns.getState(),
+            ...(lookupRule ? {declaration_lookup: {rule: lookupRule.value, year: lookupRule.value === 'year' ? Number(lookupYear.value) : null}} : {}),
         };
     }
     function navigate(configuration, view = selected ? String(selected.id) : 'all', preset = '') {
@@ -341,6 +360,7 @@ export async function initialiseViews(form) {
         if (configuration.columns || configuration.column_order) query.set(key('layout'), JSON.stringify({columns: configuration.columns, column_order: configuration.column_order}));
         if (configuration.sort !== undefined) query.set(key('sort'), configuration.sort);
         if (configuration.direction) query.set(key('direction'), configuration.direction);
+        if (configuration.declaration_lookup) query.set('declaration_lookup', JSON.stringify(configuration.declaration_lookup));
         if (query.toString().length > 12000) {
             status.textContent = 'Save this view to apply these conditions.';
             showToolbox('save');
@@ -424,6 +444,7 @@ export async function initialiseViews(form) {
     form.addEventListener('crm-view-change', markUnsaved);
     function signature(value) {
         return JSON.stringify({
+            lookup: value.declaration_lookup,
             quick: Object.entries(value.quick_filters || {}).sort(),
             conditions: value.conditions, sort: value.sort, direction: value.direction,
             columns: value.columns || standardColumns, order: value.column_order || standardOrder,

@@ -1,4 +1,4 @@
-"""Import historical Airtable declarations and retain differing source rows."""
+"""Import declarations without creating duplicate MAH/year business records."""
 
 import hashlib
 import json
@@ -29,19 +29,30 @@ def seed_self_declarations(session, dataset_id):
         .where(StagingRow.staging_dataset_id == dataset_id)
         .order_by(StagingRow.source_row_number)
     ).all()
-    existing = set(
-        session.scalars(select(CRMSelfDeclaration.source_key).with_for_update())
-    )
     names, references = defaultdict(set), defaultdict(set)
     for mah, source in session.execute(
-        select(CRMMah, StagingRow.raw_row_json).outerjoin(
-            StagingRow, CRMMah.source_row_id == StagingRow.id
-        )
+        select(CRMMah, StagingRow.raw_row_json)
+        .outerjoin(StagingRow, CRMMah.source_row_id == StagingRow.id)
+        .order_by(CRMMah.id)
+        .with_for_update()
     ):
         names[identity(mah.name)].add(mah.id)
         for label in linked_values((source or {}).get("Selfdeclarations", "")):
             references[identity(label)].add(mah.id)
 
+    # Lock MAHs before reading existing business keys so concurrent imports
+    # through this service cannot create the same assigned MAH/year pair.
+    existing = set(
+        session.scalars(select(CRMSelfDeclaration.source_key).with_for_update())
+    )
+    pairs = set(
+        session.execute(
+            select(CRMSelfDeclaration.mah_id, CRMSelfDeclaration.declaration_year)
+            .where(CRMSelfDeclaration.mah_id.is_not(None))
+            .with_for_update()
+        ).all()
+    )
+    planned = []
     created = 0
     for row in rows:
         raw = row.raw_row_json
@@ -64,13 +75,21 @@ def seed_self_declarations(session, dataset_id):
             raise ValueError(
                 f"Invalid self-declaration at source row {row.source_row_number}."
             )
-        session.add(
+        mah_id = next(iter(candidates)) if len(candidates) == 1 else None
+        if mah_id is not None:
+            pair = (mah_id, year)
+            if pair in pairs:
+                raise ValueError(
+                    "Duplicate self-declaration for MAH/data year. Review the retained source rows before importing."
+                )
+            pairs.add(pair)
+        planned.append(
             CRMSelfDeclaration(
                 source_key=key,
                 source_row_id=row.id,
                 record_label=label,
                 source_mah_name=name,
-                mah_id=next(iter(candidates)) if len(candidates) == 1 else None,
+                mah_id=mah_id,
                 declaration_year=year,
                 packs_sold=packs,
                 status=raw.get("Status", "").strip() or None,
@@ -78,4 +97,5 @@ def seed_self_declarations(session, dataset_id):
         )
         existing.add(key)
         created += 1
+    session.add_all(planned)
     return created

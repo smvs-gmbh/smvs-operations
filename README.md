@@ -35,6 +35,7 @@ distinguishes deployed functionality from the next local release and defines the
 local-development → test → commit → push → deployment workflow.
 
 The [User Guide](docs/overview/USER-GUIDE.md) describes portal workflows.
+The [local CRM relation/integrity trial](docs/deployment/CRM-RELATIONS-TRIAL-2026-11-25.md) records lookup scope, remaining specification work and safe rollback.
 
 The [portal UI conventions](docs/technical/PORTAL-UI-GUIDELINES.md) define the shared page layout, link styles and editing patterns.
 

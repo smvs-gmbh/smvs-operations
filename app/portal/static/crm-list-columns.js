@@ -63,6 +63,16 @@ export function initialiseColumns(form, preference) {
         items.set(header.dataset.column, item);
     });
     function applyColumns() {
+        const required = new Set((table.dataset.pinnedColumns || headers[0].dataset.column).split(','));
+        for (const header of headers) {
+            if (choices.get(header.dataset.column).checked) {
+                for (const key of (header.dataset.requiresColumn || '').split(',')) if (choices.has(key)) required.add(key);
+            }
+        }
+        for (const [key, checkbox] of choices) {
+            checkbox.disabled = required.has(key);
+            if (required.has(key)) checkbox.checked = true;
+        }
         for (const [position, key] of order.entries()) {
             const item = items.get(key);
             options.append(item);

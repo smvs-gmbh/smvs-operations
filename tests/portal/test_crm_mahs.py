@@ -973,7 +973,7 @@ def test_create_agreement_and_attach_pdf(portal):
     assert authenticated.get(download[1]).content == pdf
 
 
-def test_self_declaration_import_retains_conflicts_and_is_repeatable(portal):
+def test_self_declaration_import_retains_repeated_labels_across_years(portal):
     from app.domain.crm.self_declarations import seed_self_declarations
     from app.domain.models import CRMSelfDeclaration
 
@@ -983,7 +983,7 @@ def test_self_declaration_import_retains_conflicts_and_is_repeatable(portal):
     data = (
         b"Record Id,Declaration year,MAH Name,RX packs sold,Sales related amount\n"
         b'Old Holder 2025,2025,Old Holder,120,"1000,00"\n'
-        b'Old Holder 2025,2025,Old Holder,130,"1000,00"\n'
+        b'Old Holder 2025,2024,Old Holder,130,"1000,00"\n'
         b"Unknown 2024,2024,Unknown,,\n"
     )
     with factory() as s:

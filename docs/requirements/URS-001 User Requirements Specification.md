@@ -7,7 +7,7 @@
 | **Document ID**    | URS-001                         |
 | **Title**          | User Requirements Specification |
 | **Status**         | Draft                           |
-| **Version**        | 0.10                            |
+| **Version**        | 0.11                            |
 | **Classification** | Internal                        |
 | **Owner**          | SMVS GmbH                       |
 | **Author**         | Reinhold Sojer                  |
@@ -22,6 +22,7 @@
 | ------- | ---------- | -------------- | ------------- |
 | 0.9     | 2026-06-27 | Reinhold Sojer | Initial draft |
 | 0.10    | 2026-11-17 | SMVS Operations project | Reconciled the intended use and added requirements for current workflows and planned Hub integration |
+| 0.11    | 2026-11-25 | SMVS Operations project | Added relation lookups, MAH/year self-declaration uniqueness and read-only CRM integrity checks for local pilot evaluation; FRS/RTM/risk reconciliation pending |
 
 ---
 
@@ -503,3 +504,46 @@ a process decision.
 SMVS shall be able to recover the application and the evidence required for
 operational decisions from a controlled backup and verify the integrity of
 operational data after deployment, migration or recovery.
+
+
+## URS-111
+
+Authorised staff shall be able to add values from related CRM records to personal
+working views using an explicit discriminator. The initial relation is MAH to
+Self-declarations, selected by highest data year or a specified data year. All
+lookup columns sharing a selection shall refer to the same record. Staff shall
+be able to display, filter, sort and export these values with the current view.
+The selection and data year shall remain identifiable when a view is saved or
+reopened. Highest data year shall not imply receipt or approval. Missing values
+shall remain distinct from reported zero values.
+
+## URS-112
+
+There shall be no more than one assigned Self-declaration per MAH and data year.
+Where a declaration is required for an applicable year, its absence shall be
+identifiable. A conflicting import shall not create duplicate assigned business
+records or discard the retained source evidence. Existing duplicate MAH/year
+records shall be identified as data errors and shall not supply arbitrary or
+aggregated lookup values. Resolution shall require explicit review; historical
+source records shall not be silently corrected or removed.
+
+## URS-113
+
+Authorised staff shall have a central, read-only CRM Data integrity view with
+record links, check descriptions and filters by check, assessment and record
+type. Initial checks shall identify duplicate or unassigned Self-declarations,
+missing declarations within an explicit year/applicability scope, current MAHs
+without an available SPOC or Alert Manager, unavailable contact assignments,
+assigned role contacts without usable email addresses, orphaned/imported-only
+contact relations, and repeated MAH GLN/UID values needing review.
+
+A contact may fulfil both SPOC and Alert Manager roles. Archived or provisional
+contacts shall not satisfy a required current assignment. Imported relation
+references shall remain distinguishable from confirmed operational assignments.
+Checks shall distinguish definite errors from review items, identify their scope
+and check time, and shall not change records, send messages or automatically
+repair findings. Current invitation eligibility shall not be presented as proof
+of historical declaration obligation or of an overdue deadline.
+
+These requirements are recorded for the local pilot experiment. The detailed
+FRS, risk and traceability updates and business acceptance remain pending.

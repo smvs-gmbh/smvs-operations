@@ -8,6 +8,22 @@ release. Dated sections further down preserve earlier decisions and milestones.
 
 ## Next
 
+- [ ] **Local CRM relation/integrity trial (CHG-011).** Review MAH → Self-declarations
+  lookups (highest/specified data year), private views, export/filter/sort and the
+  new Data integrity page. Requirements: URS-111–113, URS-001 draft v0.11.
+- [ ] **After trial feedback: update the FRS, RA and RTM** for URS-111–113,
+  discriminator behaviour, applicability scope, uniqueness enforcement and
+  integrity findings. No FRS approval or formal validation is implied by the trial.
+- [ ] Review the existing duplicate MAH/year declarations and ambiguous or
+  missing assignments explicitly; do not merge/delete source evidence automatically.
+- [ ] After reviewed duplicate cleanup, add a database-level unique MAH/year
+  constraint and verify concurrent creation/assignment paths. The trial import
+  service rejects duplicate assigned pairs under MAH locks; existing historical
+  duplicates are retained for review.
+- [ ] Confirm the annual expected-declaration population and dates. The trial
+  missing-declaration check uses current signed-agreement/invoice eligibility
+  as a review scope, not a historical or overdue determination.
+
 - [ ] **Top priority — system validation.** Use [VP-001](../VP-001%20Validation%20Plan.md)
   to baseline the existing release, confirm intended use and applicable
   requirements, reconcile URS/FRS with the implemented workflows, and prepare
@@ -624,3 +640,14 @@ No Jelastic deployment or production source request was performed.
 - [x] Distinguish confirmed linkage, time-window context and unknown kill causes.
 - [x] Verify diagnostic boundaries, source filters, browser widths and keyboard control.
 - [x] Deploy the targeted UI change with rollback backup; verify production rendering.
+
+
+### CRM relation and integrity experiment — 2026-11-25 (CHG-011)
+
+- [x] Record intended-use requirements in URS-111–113; keep the detailed FRS update pending.
+- [x] Isolate local work on `experiment/crm-lookups-integrity`, based on `4f93b93`.
+- [x] Add one shared declaration discriminator and typed lookup columns to MAH views.
+- [x] Add read-only CRM integrity findings with scoped assessments and record links.
+- [x] Reject new duplicate assigned MAH/year records through the declaration import service.
+- [x] Complete local automated/browser verification (521 Python tests, three Node tests, multi-page browser export).
+- [ ] Owner review of the local trial; no server deployment.

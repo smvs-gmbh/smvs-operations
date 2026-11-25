@@ -5,12 +5,12 @@
   <title>{{ title }} · SMVS Operations</title>
   <link rel="stylesheet" href="{{ request.url_for('portal_static', path='portal.css') }}?v=test-case-overview-1">
   <script src="{{ request.url_for('portal_static', path='text-size.js') }}"></script>
-  {% if active == 'crm' %}<script src="{{ request.url_for('portal_static', path='crm-list-views.js') }}?v=excel-1" type="module"></script>
+  {% if active == 'crm' %}<script src="{{ request.url_for('portal_static', path='crm-list-views.js') }}?v=crm-lookups-1" type="module"></script>
   <script src="{{ request.url_for('portal_static', path='record-actions.js') }}?v=crm-record-actions-1" type="module"></script>
   <script src="{{ request.url_for('portal_static', path='crm-navigation.js') }}?v=registration-workflow-1" type="module"></script>{% endif %}
   {% if active == 'workflows' %}<script src="{{ request.url_for('portal_static', path='record-actions.js') }}?v=registration-workflow-1" type="module"></script>{% endif %}
-  {% block table_views %}<script src="{{ request.url_for('portal_static', path='portal-list-views.js') }}?v=excel-1" type="module"></script>{% endblock %}
-  <script src="{{ request.url_for('portal_static', path='table-csv.js') }}?v=excel-1" type="module"></script>
+  {% block table_views %}<script src="{{ request.url_for('portal_static', path='portal-list-views.js') }}?v=crm-lookups-1" type="module"></script>{% endblock %}
+  <script src="{{ request.url_for('portal_static', path='table-csv.js') }}?v=crm-lookups-1" type="module"></script>
 </head>
 <body>
 <aside class="sidebar">
@@ -77,7 +77,7 @@
   <main class="portal-workspace{% if crm_section %} crm-workspace{% endif %}">
     {% if crm_section %}
     <nav class="crm-nav" aria-label="CRM navigation">
-      {% for label, path in [('MAHs', '/crm/mahs'), ('Agreements', '/crm/agreements'), ('Self-declarations', '/crm/self-declarations'), ('Contacts', '/crm/contacts'), ('End Users', '/crm/end-users'), ('IT Suppliers', '/crm/it-suppliers'), ('Import review', '/crm/imports')] %}
+      {% for label, path in [('MAHs', '/crm/mahs'), ('Agreements', '/crm/agreements'), ('Self-declarations', '/crm/self-declarations'), ('Contacts', '/crm/contacts'), ('End Users', '/crm/end-users'), ('IT Suppliers', '/crm/it-suppliers'), ('Data integrity', '/crm/integrity'), ('Import review', '/crm/imports')] %}
       {% set current = request.url.path == path or request.url.path.startswith(path ~ '/') %}
       <a href="{{ path }}"{% if current %} aria-current="{{ 'page' if request.url.path == path else 'location' }}"{% endif %}>{{ label }}</a>
       {% endfor %}

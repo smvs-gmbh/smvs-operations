@@ -23,6 +23,7 @@ committed, identified source candidate.
 | CHG-008 | 2026-11-25 | Reduce import worker memory pressure | Pilot server repair | Implemented and verified on development and server; reconciled in `f951354`. |
 | CHG-009 | 2026-11-25 | Expandable import failure diagnostics | Pilot server repair | Implemented and verified on development and server; reconciled in `f951354`. |
 | CHG-010 | 2026-11-25 | Pilot consolidation and development-first workflow | Development checkpoint | Phase decision recorded; source, delivery scope and draft evidence consolidated. No additional feature deployment. |
+| CHG-011 | 2026-11-25 | Local CRM relation lookups and integrity checks | Local experiment | Implemented and verified locally; owner review and FRS/RA/RTM update pending. |
 
 ## CHG-001 — AMS Hub in Exceptions
 
@@ -274,3 +275,45 @@ the relevant distribution market.
   in their respective latest-30 histories (411/145 ms measured render times).
   Portal health and stylesheet returned HTTP 200; unauthenticated Imports still
   redirected to sign-in (303). Historical failure records were not modified.
+
+
+## CHG-011 — Local CRM relation lookups and integrity checks
+
+- **Authority/scope.** Owner approved a reversible local trial, following the UI
+  proposal and the MAH/year uniqueness clarification. Branch:
+  `experiment/crm-lookups-integrity`, based on development checkpoint `4f93b93`.
+  No server update, participant delivery or automatic data repair is authorised.
+- **Requirements.** URS-001 draft v0.11, URS-111–113. The detailed FRS, risk and
+  RTM reconciliation is explicitly deferred until trial feedback and tracked in
+  the implementation list. The trial is not a formal validated release.
+- **Lookup.** One per-view MAH → Self-declarations selection (highest data year
+  or specified year) supplies typed columns, conditions, sorting, links and
+  CSV/Excel view exports. It survives preview, private view saving, navigation
+  and export paging. No exact turnover value is inferred from the RX sales group
+  or from the sales-related fee. Missing data and zero remain distinct.
+- **Uniqueness.** Existing duplicates yield a data error and no lookup source
+  values. Historical data remains untouched. The current import service locks
+  MAHs and rejects a conflicting assigned pair before adding any business rows,
+  while retaining staged evidence. No schema migration is applied; a database
+  unique constraint and future write/assignment paths remain follow-up work
+  after explicit duplicate resolution.
+- **Checks.** Read-only CRM Data integrity page with check/severity/type/year
+  filters, source links and UTC check time. Required roles apply to non-archived
+  MAHs and exclude archived/provisional contacts. A single contact can fulfil
+  both roles. Missing SD review uses the existing current invitation scope;
+  imported-only links remain review items rather than assumed orphan records.
+- **Reversibility.** No new table or source-data transformation. Save trial views
+  separately; preserve a private pre-trial MAH-view/preferences backup. Before
+  switching back to the base branch, remove the trial views or restore their
+  prior configuration: Git alone does not revert database view preferences.
+
+- **Verification.** Clean indexed source export: 521 Python tests and three Node
+  tests passed; application import (67 tables), changed Python lint, JavaScript
+  syntax and Git whitespace checks passed. New cases cover zero/missing/conflict
+  selection, fixed/highest year, private view ownership/validation, required lookup
+  context, sorting/filtering before pagination and export-page collection, read-
+  only integrity checks, dual contact roles, malformed/unavailable assignments,
+  imported-only relations and atomic duplicate-import rejection with staged data
+  retained. A synthetic browser fixture verified saving a fixed-year view and a
+  48-MAH CSV across two pages, plus integrity navigation at 1500/650 CSS pixels.
+  Existing dependency warnings are unchanged. No operational records were repaired.

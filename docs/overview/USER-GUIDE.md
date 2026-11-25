@@ -461,3 +461,31 @@ organisation created after that report was generated. A newer acquired/staged
 report is also not the same as a newer published participant reference. Existing
 one-to-one CRM links remain protected; an organisation assigned to another CRM
 End User is unavailable for a second assignment.
+
+
+### Local trial: MAH declaration lookups and Data integrity
+
+In MAHs, open **Configure view → Columns → Relation lookup · Self-declarations**.
+Choose **Highest data year** or **Data year equals** and enter a year. Select the
+optional **Self-declaration · …** columns, then **Apply**. All these columns use
+one record. Data year and Selection result remain visible when lookup data columns
+are selected. Highest year is not a receipt/approval status. **Selection result**
+distinguishes a match, no declaration and duplicate MAH/year data errors. Zero
+packs stays zero. Conditions/sort and CSV/Excel exports use the applied selection.
+Save this experiment as a separate personal view, for example **Lookup trial**,
+so an existing working view need not change. The MAH detail shows the same lookup
+scope with a source-record link where unique.
+
+**CRM → Data integrity** reruns read-only checks. Choose the data year, check,
+assessment or record type and use **Run checks**. Duplicate SDs are checked across
+all years; missing SDs are review items in the current signed-agreement/invoice-
+eligible population. No deadline or historical obligation is inferred. Contact
+links retained only in the import need review; they are not silently treated as
+confirmed assignments or automatically deleted. Open the linked records to review
+findings. Rerun checks after an explicit correction.
+
+The experiment applies no schema migration. Before reverting its Git branch,
+remove separately saved trial views/defaults (or restore their private pre-trial
+backup). A Git checkout does not restore database view configurations. New
+assigned duplicate declarations are rejected by the import service; do not use
+this trial to silently merge the existing conflicting historical records.

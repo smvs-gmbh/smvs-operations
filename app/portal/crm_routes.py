@@ -38,6 +38,7 @@ from app.domain.crm.company_research import draft_company_summary
 from app.domain.crm.contact_assignments import spoc_ids
 from app.domain.crm.contacts import MAILBOX_TYPES
 from app.domain.crm.declaration_fees import DEFAULT_BASE_FEE, calculate_fees
+from app.domain.crm.declaration_lookup import declaration_values
 from app.domain.crm.end_users import (
     contact_reference_index,
     current_organisations,
@@ -78,6 +79,7 @@ from app.domain.models import (
     PortalUser,
 )
 from app.integration.artifacts.storage import utcnow
+from app.portal.crm_integrity_routes import router as integrity_router
 from app.portal.crm_list_preferences import (
     apply_saved_crm_filters,
 )
@@ -103,6 +105,7 @@ from app.portal.routes import DbSession, templates
 router = APIRouter(dependencies=[Depends(apply_saved_crm_filters)])
 router.include_router(preferences_router)
 router.include_router(views_router)
+router.include_router(integrity_router)
 
 EDIT_SECTIONS = {
     "general": "General",
@@ -2064,6 +2067,7 @@ def render_mah(request, session, mah=None, source=None, *, edit="", summary_draf
         "incoming_transfers": incoming_transfers,
         "outgoing_transfer": outgoing_transfer,
         "transfer_targets": transfer_targets,
+        "declaration_lookup": declaration_values(session, [mah.id], getattr(request.state, "crm_view_config", {}).get("declaration_lookup")).get(mah.id) if mah else None,
         "self_declaration_count": session.scalar(
             select(func.count())
             .select_from(CRMSelfDeclaration)

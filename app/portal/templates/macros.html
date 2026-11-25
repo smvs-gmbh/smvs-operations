@@ -48,9 +48,9 @@
 
 
 {% macro crm_extra_headers(fields) %}
-{% for field in fields %}<th scope="col" data-column="{{ field.key }}" data-default-visible="false" hidden>{{ field.label }}{% if field.origin == 'Airtable import' %} · imported{% endif %}</th>{% endfor %}
+{% for field in fields %}<th scope="col" data-column="{{ field.key }}"{% if field.origin == 'Self-declarations lookup' and field.key != 'sd_selection' %} data-requires-column="{{ 'sd_selection' if field.key == 'sd_year' else 'sd_year,sd_selection' }}"{% endif %} data-default-visible="false" hidden>{{ field.label }}{% if field.origin == 'Airtable import' %} · imported{% endif %}</th>{% endfor %}
 {% endmacro %}
 
 {% macro crm_extra_cells(fields, values) %}
-{% for field in fields %}<td class="crm-field-cell" hidden>{{ values[field.key] }}</td>{% endfor %}
+{% for field in fields %}<td class="crm-field-cell" hidden>{% if field.key == 'sd_declaration' and values.get('_sd_source_id') %}<a class="audit-link" href="/crm/self-declarations/{{ values['_sd_source_id'] }}">{{ values[field.key] }} →</a>{% else %}{{ values[field.key] }}{% endif %}</td>{% endfor %}
 {% endmacro %}

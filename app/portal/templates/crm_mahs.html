@@ -4,6 +4,7 @@
 {% block content %}
 
 {{ ui.crm_list_status(imported_at) }}
+<p class="information-note">Self-declaration lookup: {{ 'Data year ' ~ request.state.crm_view_config.declaration_lookup.year if request.state.crm_view_config.declaration_lookup.rule == 'year' else 'Highest data year per MAH' }}. Configure view → Columns to change the discriminator. Duplicate records are reported in <a href="/crm/integrity">Data integrity →</a>.</p>
 {{ ui.list_metrics('MAH overview', [('MAHs in this directory', directory_total|number, 'Archived records' if archived else 'Current records'), ('Registration checked', checked_total|number, 'In this directory'), ('Matching results', pagination.total|number, 'With the current filters')]) }}
 <section class="panel">
 <div class="panel-heading"><h2>{{ 'Archived MAHs' if archived else 'Current MAHs' }}</h2><span class="subtle">{{ pagination.total|number }} results · <a href="/crm/imports">Airtable import review →</a></span></div>

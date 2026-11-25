@@ -89,6 +89,7 @@ function freezeScope(url, state, form) {
     url.searchParams.set(prefix + 'rules', JSON.stringify(state.config.conditions || []));
     url.searchParams.set(prefix + 'sort', state.config.sort || '');
     url.searchParams.set(prefix + 'direction', state.config.direction || 'asc');
+    if (state.config.declaration_lookup) url.searchParams.set('declaration_lookup', JSON.stringify(state.config.declaration_lookup));
     for (const [name, value] of Object.entries(state.config.quick_filters || {})) {
         const key = form.dataset.localSearch && name === 'q' ? prefix + 'q' : name;
         url.searchParams.set(key, value);

@@ -4,6 +4,14 @@ Entries distinguish deployed pilot changes from development-only increments.
 Pilot checkpoints and requirements drafts do not constitute an approved QMS
 baseline. Detailed scope/evidence: [change register](docs/validation/CHANGE-REGISTER.md).
 
+## Unreleased — local CRM relation/integrity experiment
+
+- CHG-011: MAH self-declaration lookup selection and typed view columns; read-only
+  CRM Data integrity findings; import guard against new duplicate assigned MAH/year
+  records. Branch `experiment/crm-lookups-integrity`; no server deployment.
+- URS-111–113 recorded in draft v0.11. FRS/risk/traceability update and acceptance
+  remain explicit follow-up work. Existing historical records are not repaired.
+
 ## 2026-11-25 — Pilot server corrections
 
 Source checkpoint: `f9513549b514f7c2aabcf8219090ab03488e1990`.
