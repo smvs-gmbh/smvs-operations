@@ -1,7 +1,7 @@
-import {installCsvDownload} from './table-csv.js?v=crm-lookups-1';
+import {installCsvDownload} from './table-csv.js?v=agreement-lookups-1';
 import {rightToolbox} from './right-toolbox.js?v=record-actions-1';
-import {initialiseLookup} from './crm-lookup-editor.js?v=lookup-visibility-2';
-import {initialiseColumns} from './crm-list-columns.js?v=lookup-visibility-2';
+import {initialiseLookup} from './crm-lookup-editor.js?v=agreement-lookups-1';
+import {initialiseColumns} from './crm-list-columns.js?v=agreement-lookups-1';
 
 const form = document.querySelector('form[data-crm-filters]');
 if (form) initialiseViews(form);
@@ -335,7 +335,7 @@ export async function initialiseViews(form) {
             conditions: conditionRows.map(row => row.getValue()),
             sort: sort.value, direction: direction.value,
             ...columns.getState(),
-            ...(lookupEditor ? {declaration_lookup: lookupEditor.getValue()} : {}),
+            ...(lookupEditor ? lookupEditor.getValue() : {}),
         };
     }
     function navigate(configuration, view = selected ? String(selected.id) : 'all', preset = '') {
@@ -351,6 +351,7 @@ export async function initialiseViews(form) {
         if (configuration.columns || configuration.column_order) query.set(key('layout'), JSON.stringify({columns: configuration.columns, column_order: configuration.column_order}));
         if (configuration.sort !== undefined) query.set(key('sort'), configuration.sort);
         if (configuration.direction) query.set(key('direction'), configuration.direction);
+        if (configuration.agreement_lookup) query.set('agreement_lookup', JSON.stringify(configuration.agreement_lookup));
         if (configuration.declaration_lookup) query.set('declaration_lookup', JSON.stringify(configuration.declaration_lookup));
         if (query.toString().length > 12000) {
             status.textContent = 'Save this view to apply these conditions.';
@@ -435,7 +436,7 @@ export async function initialiseViews(form) {
     form.addEventListener('crm-view-change', markUnsaved);
     function signature(value) {
         return JSON.stringify({
-            lookup: value.declaration_lookup,
+            lookup: value.declaration_lookup, agreements: value.agreement_lookup,
             quick: Object.entries(value.quick_filters || {}).sort(),
             conditions: value.conditions, sort: value.sort, direction: value.direction,
             columns: value.columns || standardColumns, order: value.column_order || standardOrder,

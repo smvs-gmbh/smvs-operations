@@ -25,6 +25,7 @@ from app.core.db.models import (
     StagingDataset,
     StagingRow,
 )
+from app.domain.crm.agreement_lookup import agreement_values
 from app.domain.crm.agreements import (
     AGREEMENT_PDF_SOURCES,
     AGREEMENT_STATUSES,
@@ -2130,6 +2131,8 @@ def render_mah(request, session, mah=None, source=None, *, edit="", summary_draf
         ).get(mah.id)
         if mah
         else None,
+        "agreement_lookup": agreement_values(session, [mah.id], getattr(request.state, "crm_view_config", {}).get("agreement_lookup"), linked_records=[(mah.id, record) for record in agreements]).get(mah.id)
+        if mah and getattr(request.state, "crm_view_config", {}).get("agreement_lookup", {}).get("outputs") else None,
         "self_declaration_count": session.scalar(
             select(func.count())
             .select_from(CRMSelfDeclaration)

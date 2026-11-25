@@ -8,6 +8,7 @@ from datetime import date, datetime
 from sqlalchemy import select
 
 from app.core.db.models import StagingRow
+from app.domain.crm.agreement_lookup import agreement_values
 from app.domain.crm.contact_assignments import spoc_ids
 from app.domain.crm.declaration_lookup import declaration_values
 from app.domain.crm.imports import linked_values
@@ -75,6 +76,13 @@ CATALOGUE = {
             for group in PROFILE_GROUPS.values()
             for key, label, header in group
         ),
+        CRMField("ag_contract_id", "Agreement · contract ID", origin="Agreements lookup"),
+        CRMField("ag_contractor", "Agreement · contractor", origin="Agreements lookup"),
+        CRMField("ag_status", "Agreement · status", origin="Agreements lookup"),
+        CRMField("ag_signing_date", "Agreement · signing date", "date", origin="Agreements lookup"),
+        CRMField("ag_start_date", "Agreement · start date (imported)", origin="Agreements lookup"),
+        CRMField("ag_termination_date", "Agreement · termination date (imported)", origin="Agreements lookup"),
+        CRMField("ag_selection", "Agreement · selection result", origin="Agreements lookup"),
         CRMField("sd_year", "Self-declaration · data year", "number", origin="Self-declarations lookup"),
         CRMField("sd_packs", "Self-declaration · RX packs sold", "number", origin="Self-declarations lookup"),
         CRMField("sd_sales_group", "Self-declaration · RX sales group", origin="Self-declarations lookup"),
@@ -278,7 +286,7 @@ def display_value(value):
     return str(value)
 
 
-def catalogue_context(session, view, records, *, pdf_counts=None, declaration_lookup=None):
+def catalogue_context(session, view, records, *, pdf_counts=None, declaration_lookup=None, agreement_lookup=None):
     """Batch-load source and relation values for one result page."""
     fields = CATALOGUE[view]
     extras = [field for field in fields if field.key not in DEFAULT_COLUMNS[view]]
@@ -378,6 +386,8 @@ def catalogue_context(session, view, records, *, pdf_counts=None, declaration_lo
                 ).all()
             )
     lookup_values = declaration_values(session, [r.id for r in records], declaration_lookup) if view == "mahs" else {}
+    agreement_lookup_values = agreement_values(session, [r.id for r in records], agreement_lookup,
+        linked_records=[(mah_id, record) for mah_id, items in agreements.items() for record in items]) if view == "mahs" else {}
     cells = {}
     raw_values = {}
     for record in records:
@@ -473,6 +483,8 @@ def catalogue_context(session, view, records, *, pdf_counts=None, declaration_lo
             )
         if view == "mahs":
             values.update(lookup_values[record.id])
+            values.update(agreement_lookup_values[record.id])
+            values["_lookup_mah_id"] = record.id
         raw_values[record.id] = values
         cells[record.id] = {key: display_value(value) for key, value in values.items()}
         if view == "mahs" and values["sd_packs"] is not None:

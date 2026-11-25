@@ -4,7 +4,7 @@
 {% block content %}
 
 {{ ui.crm_list_status(imported_at) }}
-<p class="subtle">Self-declaration lookup: {% if request.state.crm_view_config.declaration_lookup.rule == 'year' %}Data year {{ request.state.crm_view_config.declaration_lookup.year }}{% elif request.state.crm_view_config.declaration_lookup.rule == 'latest' %}Highest data year per MAH{% else %}Configured conditions and selection{% endif %}. Configure view → Lookups to change the selection and output fields. Duplicate records are reported in <a href="/crm/integrity">Data integrity →</a>.</p>
+<p class="subtle">Self-declaration lookup: {% if request.state.crm_view_config.declaration_lookup.rule == 'year' %}Data year {{ request.state.crm_view_config.declaration_lookup.year }}{% elif request.state.crm_view_config.declaration_lookup.rule == 'latest' %}Highest data year per MAH{% else %}Configured conditions and selection{% endif %}. Configure view → Lookups to configure Self-declarations and Agreements independently. Duplicate records are reported in <a href="/crm/integrity">Data integrity →</a>.</p>
 {{ ui.list_metrics('MAH overview', [('MAHs in this directory', directory_total|number, 'Archived records' if archived else 'Current records'), ('Registration checked', checked_total|number, 'In this directory'), ('Matching results', pagination.total|number, 'With the current filters')]) }}
 <section class="panel">
 <div class="panel-heading"><h2>{{ 'Archived MAHs' if archived else 'Current MAHs' }}</h2><span class="subtle">{{ pagination.total|number }} results · <a href="/crm/imports">Airtable import review →</a></span></div>
@@ -31,7 +31,7 @@
 <td><a class="mah-name-link" href="/crm/mahs/{{ mah.id }}{{ filter_query(request, 'q', 'agreement') }}">{% if logos.get(mah.id) %}<img class="mah-logo-icon" src="{{ logos[mah.id] }}" alt="" loading="lazy" referrerpolicy="no-referrer">{% endif %}<span>{{ mah.name }}</span></a></td><td>{{ mah.gln or '—' }}</td><td>{{ mah.uid or '—' }}</td>
 <td>{{ 'Checked' if mah.registration_checked == 1 else 'Not checked' if mah.registration_checked == 0 else 'Unknown' }}</td>
 <td>{{ agreement_statuses[mah.id]|join(', ') or 'No linked agreement' }}</td>
-{{ ui.crm_extra_cells(crm_extra_columns, crm_field_cells[mah.id]) }}</tr>{% else %}<tr><td colspan="5">No MAHs for this selection.</td></tr>{% endfor %}</tbody>
+{{ ui.crm_extra_cells(crm_extra_columns, crm_field_cells[mah.id], request) }}</tr>{% else %}<tr><td colspan="5">No MAHs for this selection.</td></tr>{% endfor %}</tbody>
 </table></div>{{ ui.pagination(pagination, request) }}
 </section>
 {% endblock %}

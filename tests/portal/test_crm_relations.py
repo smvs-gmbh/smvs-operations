@@ -617,3 +617,270 @@ def test_lookup_outputs_alone_control_visibility_without_automatic_context_colum
         )
         assert response.status_code == 200
         assert response.json()["config"]["columns"] == ["name", *outputs]
+
+
+def seed_agreements(factory, ids):
+    from datetime import date
+
+    with factory.begin() as session:
+        mahs = [session.get(CRMMah, identifier) for identifier in ids]
+        records = [
+            CRMAgreement(
+                contract_id="OLD",
+                contractor="Old contractor",
+                status="Signed",
+                signing_date=date(2022, 1, 1),
+                mahs=[mahs[0]],
+            ),
+            CRMAgreement(
+                contract_id="NEW",
+                contractor="Shared contractor",
+                status="Signed",
+                signing_date=date(2025, 2, 3),
+                mahs=mahs[:2],
+            ),
+            CRMAgreement(
+                contract_id="DRAFT",
+                contractor="Draft contractor",
+                status="Draft",
+                signing_date=date(2026, 1, 1),
+                mahs=[mahs[0]],
+            ),
+            CRMAgreement(
+                contract_id="UNDATED",
+                contractor="Undated",
+                status="Signed",
+                mahs=[mahs[0]],
+            ),
+            CRMAgreement(
+                contract_id="TIE-A",
+                contractor="First tie",
+                status="Signed",
+                signing_date=date(2024, 6, 1),
+                mahs=[mahs[2]],
+            ),
+            CRMAgreement(
+                contract_id="TIE-B",
+                contractor="Second tie",
+                status="Signed",
+                signing_date=date(2024, 6, 1),
+                mahs=[mahs[2]],
+            ),
+            CRMAgreement(
+                contract_id="UNLINKED",
+                contractor="Unlinked",
+                status="Signed",
+                signing_date=date(2099, 1, 1),
+            ),
+        ]
+        session.add_all(records)
+        session.flush()
+        evidence = b"Contract ID,Contractor,Start Date,Termination Date\nNEW,Shared contractor,01.02.2025,31.12.2029\n"
+        dataset, _ = stage_export(
+            session,
+            parse_export("MAH Agreements", evidence),
+            evidence,
+            "synthetic-agreements.csv",
+        )
+        source = session.scalar(
+            select(StagingRow).where(StagingRow.staging_dataset_id == dataset.id)
+        )
+        records[1].source_row_id = source.id
+        return {record.contract_id: record.id for record in records}
+
+
+def test_agreement_lookup_typed_filters_date_selection_missing_and_shared_contracts(
+    views_portal,
+):
+    from datetime import date
+
+    from app.domain.crm.agreement_lookup import agreement_values
+
+    _, factory = views_portal
+    ids = seed(factory)
+    contracts = seed_agreements(factory, ids)
+    config = {
+        "conditions": [{"field": "ag_status", "operator": "equals", "value": "Signed"}],
+        "match": "and",
+        "selection": {"rule": "max", "field": "ag_signing_date"},
+        "outputs": ["ag_contract_id", "ag_status", "ag_signing_date"],
+    }
+    with factory() as session:
+        values = agreement_values(session, [*ids, 999999], config)
+        assert values[ids[0]]["ag_contract_id"] == "NEW"
+        assert values[ids[0]]["ag_signing_date"] == date(2025, 2, 3)
+        assert values[ids[0]]["ag_status"] == "Signed"
+        assert values[ids[0]]["ag_start_date"] == "01.02.2025"
+        assert values[ids[0]]["ag_termination_date"] == "31.12.2029"
+        assert (
+            values[ids[0]]["_ag_source_id"]
+            == values[ids[1]]["_ag_source_id"]
+            == contracts["NEW"]
+        )
+        assert values[ids[2]]["ag_selection"] == "Ambiguous selection"
+        assert (
+            values[ids[2]]["ag_contract_id"] is None
+        )  # No tie-breaking by ID or source order.
+        assert values[999999]["ag_selection"] == "No agreement"
+        config["selection"]["rule"] = "min"
+        assert agreement_values(session, ids, config)[ids[0]]["ag_contract_id"] == "OLD"
+        config["selection"]["rule"] = "unique"
+        assert (
+            agreement_values(session, ids, config)[ids[0]]["ag_selection"]
+            == "Ambiguous selection"
+        )
+        config["conditions"].append(
+            {
+                "field": "ag_signing_date",
+                "operator": "greater_than",
+                "value": "2024-12-31",
+            }
+        )
+        assert agreement_values(session, ids, config)[ids[0]]["ag_contract_id"] == "NEW"
+        config["conditions"] = [
+            {"field": "ag_signing_date", "operator": "empty", "value": ""}
+        ]
+        assert (
+            agreement_values(session, ids, config)[ids[0]]["ag_contract_id"]
+            == "UNDATED"
+        )
+        config["selection"]["rule"] = "max"
+        assert agreement_values(session, ids, config)[ids[0]]["ag_contract_id"] is None
+        config["selection"]["rule"] = "unique"
+        config["match"] = "or"
+        config["conditions"] = [
+            {"field": "ag_status", "operator": "equals", "value": "Draft"},
+            {"field": "ag_contract_id", "operator": "equals", "value": "NEW"},
+        ]
+        assert (
+            agreement_values(session, ids, config)[ids[0]]["ag_selection"]
+            == "Ambiguous selection"
+        )
+        config["match"] = "and"
+        assert (
+            agreement_values(session, ids, config)[ids[0]]["ag_selection"]
+            == "No agreement"
+        )
+
+
+def test_agreement_and_declaration_views_are_independent_and_return_to_source(
+    views_portal,
+):
+    import html
+    import re
+    from urllib.parse import parse_qs, urlsplit
+
+    client, factory = views_portal
+    ids = seed(factory)
+    seed_agreements(factory, ids)
+    config = {
+        "declaration_lookup": {
+            "match": "and",
+            "conditions": [],
+            "selection": {"rule": "max", "field": "sd_year"},
+            "outputs": ["sd_packs"],
+        },
+        "agreement_lookup": {
+            "match": "and",
+            "conditions": [
+                {"field": "ag_status", "operator": "equals", "value": "Signed"}
+            ],
+            "selection": {"rule": "max", "field": "ag_signing_date"},
+            "outputs": ["ag_contract_id", "ag_signing_date"],
+        },
+        "columns": ["name"],
+        "conditions": [
+            {"field": "ag_signing_date", "operator": "after", "value": "2024-01-01"}
+        ],
+        "sort": "ag_signing_date",
+        "direction": "desc",
+    }
+    saved = post_view(
+        client, command="create", name="Agreements and declarations", config=config
+    )
+    assert saved.status_code == 200, saved.text
+    view = saved.json()["view"]
+    assert view["config"]["columns"] == [
+        "name",
+        "sd_packs",
+        "ag_contract_id",
+        "ag_signing_date",
+    ]
+    page = client.get(
+        "/crm/mahs", params={"view": view["id"]}, headers={"x-test-user": "1"}
+    )
+    assert (
+        page.status_code == 200
+        and "2 results" in page.text
+        and "2025-02-03" in page.text
+    )
+    assert "Draft contractor" not in page.text
+    match = re.search(r'href="([^"]*/crm/agreements/[^\"]*)"[^>]*>NEW →', page.text)
+    assert match
+    target = html.unescape(match[1])
+    assert parse_qs(urlsplit(target).query)["origin"] == [f"mahs:{ids[0]}"]
+    agreement = client.get(target, headers={"x-test-user": "1"})
+    assert agreement.status_code == 200
+    back = html.unescape(
+        re.search(r'href="([^"]+)" data-record-origin', agreement.text)[1]
+    )
+    assert urlsplit(back).path == f"/crm/mahs/{ids[0]}"
+    assert parse_qs(urlsplit(back).query)["view"] == [str(view["id"])]
+    api = client.get(
+        "/crm/views/mahs", params={"view": view["id"]}, headers={"x-test-user": "1"}
+    ).json()["config"]
+    assert api["agreement_lookup"] == config["agreement_lookup"]
+    assert api["declaration_lookup"] == config["declaration_lookup"]
+    assert (
+        client.get(
+            "/crm/mahs",
+            params={"agreement_lookup": json.dumps(config["agreement_lookup"])},
+        ).status_code
+        == 200
+    )
+    inline = client.get(
+        "/crm/mahs", params={"agreement_lookup": json.dumps(config["agreement_lookup"])}
+    )
+    assert "agreement_lookup=" in inline.text
+    for invalid in (
+        {
+            "conditions": [
+                {
+                    "field": "ag_signing_date",
+                    "operator": "equals",
+                    "value": "31.12.2025",
+                }
+            ]
+        },
+        {
+            "conditions": [
+                {"field": "ag_signing_date", "operator": "equals", "value": True}
+            ]
+        },
+        {
+            "conditions": [
+                {"field": "ag_signing_date", "operator": "contains", "value": "2025"}
+            ]
+        },
+        {"outputs": ["sd_packs"]},
+        {"selection": {"rule": "max", "field": "ag_status"}},
+        {"rule": "latest"},
+        {"conditions": [{"field": "sd_year", "operator": "equals", "value": "2025"}]},
+    ):
+        assert (
+            post_view(
+                client, command="preview", config={"agreement_lookup": invalid}
+            ).status_code
+            == 422
+        )
+    for directory in ("contacts", "self-declarations", "agreements"):
+        assert (
+            post_view(
+                client, directory, command="preview", config={"agreement_lookup": {}}
+            ).status_code
+            == 422
+        )
+    config["agreement_lookup"]["outputs"] = []
+    assert (
+        post_view(client, command="preview", config=config).status_code == 422
+    )  # Resolve sort/filter dependency first.

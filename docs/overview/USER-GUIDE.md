@@ -489,8 +489,23 @@ removing the output. All outputs refer to one declaration; Min/Max do not aggreg
 individual columns. The highest year is not a receipt/approval status. Conditions,
 sorting and CSV/Excel exports use the applied selection across all export pages.
 Existing highest/fixed-year personal views remain readable and are converted when
-saved through the new editor. This first implementation has one Self-declarations
-lookup per MAH view; independent named lookups and contract lookups are future work.
+saved through the new editor. The view supports one Self-declarations lookup and one Agreements lookup, configured
+independently using the **Relation** selector. Multiple named definitions for the
+same relation remain future work.
+
+For **Agreements**, choose **Configure view → Lookups → Relation: Agreements**.
+For the latest signed record add **Contract status is Signed**, select **Maximum
+(Max) → Signing date**, and choose the desired columns. **Unique match** requires
+exactly one matching linked agreement; several linked agreements are allowed.
+Min/Max ignores missing signing dates, and equal dates remain ambiguous. Outputs
+include Contract ID (opens the selected record), Contractor, Contract status,
+Signing date, imported Start date/Termination date, and optional Selection result.
+Signing date supports date comparisons using YYYY-MM-DD inputs. Imported start/
+termination fields retain source text and support text comparisons; their format
+is not guessed. A signing date or Signed status alone does not establish legal
+validity at the current date. Changing the selected relation in the editor does
+not discard the other relation's settings. Both selections survive apply, saving,
+filtering/sorting, source-record return navigation and complete-view exports.
 
 Opening a SPOC or Alert contact from a MAH or End User adds **← MAH: Name** or
 **← End User: Name** beside **← Contacts**. The new link returns to that exact

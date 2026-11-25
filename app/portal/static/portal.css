@@ -564,3 +564,6 @@ div.test-case-columns { color: var(--muted); background: #f7f9fb; font-weight: 6
 .record-navigation-back-links a { overflow-wrap: anywhere; }
 .crm-toolbox-lookups > :is(label, h3, p, fieldset) { margin-bottom: 1rem; }
 .crm-toolbox-lookups > label { display: grid; gap: .4rem; }
+
+.crm-relation-editor > :is(label, h3, p, fieldset) { margin-bottom: 1rem; }
+.crm-relation-editor > label { display: grid; gap: .4rem; }

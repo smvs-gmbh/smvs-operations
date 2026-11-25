@@ -7,7 +7,7 @@
 | **Document ID**    | URS-001                         |
 | **Title**          | User Requirements Specification |
 | **Status**         | Draft                           |
-| **Version**        | 0.13                            |
+| **Version**        | 0.14                            |
 | **Classification** | Internal                        |
 | **Owner**          | SMVS GmbH                       |
 | **Author**         | Reinhold Sojer                  |
@@ -22,6 +22,7 @@
 | ------- | ---------- | -------------- | ------------- |
 | 0.9     | 2026-06-27 | Reinhold Sojer | Initial draft |
 | 0.10    | 2026-11-17 | SMVS Operations project | Reconciled the intended use and added requirements for current workflows and planned Hub integration |
+| 0.14    | 2026-11-25 | SMVS Operations project | Independent Agreements lookup with typed date selection alongside Self-declarations (local pilot) |
 | 0.13    | 2026-11-25 | SMVS Operations project | Lookup selections directly control displayed relation columns; Columns contains fixed fields only; optional year/selection context (local pilot feedback) |
 | 0.12    | 2026-11-25 | SMVS Operations project | Structured lookup conditions/output configuration and explicit related-record return navigation (local pilot); FRS/RTM/risk reconciliation pending |
 | 0.11    | 2026-11-25 | SMVS Operations project | Added relation lookups, MAH/year self-declaration uniqueness and read-only CRM integrity checks for local pilot evaluation; FRS/RTM/risk reconciliation pending |
@@ -511,12 +512,12 @@ operational data after deployment, migration or recovery.
 ## URS-111
 
 Authorised staff shall be able to add values from related CRM records to personal
-working views using an explicit discriminator. The initial relation is MAH to
-Self-declarations. Lookup configuration shall be separate from column visibility
+working views using an explicit discriminator. Initial relations are MAH to
+Self-declarations and MAH to Agreements, independently configured in the same view. Lookup configuration shall be separate from column visibility
 and order. Staff shall select output fields and configure typed field/operator/value
 conditions, combined as all (AND) or any (OR), separately from the MAH list conditions.
 The initial selection rules shall be Unique match, Minimum and Maximum on a numeric
-field. Unique match shall require exactly one candidate; Min/Max shall select one
+or date field. Unique match shall require exactly one candidate; Min/Max shall select one
 record, not aggregate output fields. Ties shall remain unresolved. Empty numeric
 selection values shall not be treated as zero. All lookup columns sharing a selection
 shall refer to the same record. Lookup output checkboxes shall directly control
@@ -530,7 +531,13 @@ that dependency before applying or saving the view. Existing highest/specific-ye
 views shall retain their meaning. Staff shall be able to display, filter, sort and
 export these values with the current view. The selection and data year shall remain
 identifiable when a view is saved or reopened. Highest data year shall not imply
-receipt or approval. Missing values shall remain distinct from reported zero values.
+receipt or approval. Multiple explicitly linked Agreements shall be permitted;
+ambiguity is not itself a duplicate-source integrity error. Agreement selection
+shall support typed comparisons and Min/Max on signing date, exclude missing
+dates from date extrema and retain ties as unresolved. Imported start/termination
+date text shall be preserved without guessing its format. Signing date alone
+shall not establish current contractual validity. Each selected record shall
+remain inspectable, including a return link to the source MAH and its view. Missing values shall remain distinct from reported zero values.
 
 ## URS-112
 

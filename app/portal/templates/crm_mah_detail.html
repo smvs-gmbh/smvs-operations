@@ -312,6 +312,18 @@
 <dl class="mah-values"><div><dt>Selection result</dt><dd>{{ declaration_lookup.sd_selection }}</dd></div><div><dt>Data year</dt><dd>{{ declaration_lookup.sd_year or '—' }}</dd></div><div><dt>RX packs sold</dt><dd>{{ declaration_lookup.sd_packs|number }}</dd></div><div><dt>RX sales group</dt><dd>{{ declaration_lookup.sd_sales_group or '—' }}</dd></div></dl>
 {% if declaration_lookup._sd_source_id %}<p><a class="audit-link" href="{{ related_record_url(request, '/crm/self-declarations/' ~ declaration_lookup._sd_source_id, 'related-records') }}">{{ declaration_lookup.sd_declaration }} →</a></p>{% elif declaration_lookup.sd_selection.startswith('Data error') %}<p><a class="audit-link" href="/crm/integrity?rule=sd_duplicate">Review duplicate declarations →</a></p>{% endif %}
 {% endif %}
+{% if agreement_lookup %}
+<h3>Agreement lookup</h3>
+<dl class="mah-values">
+<div><dt>Selection result</dt><dd>{{ agreement_lookup.ag_selection }}</dd></div>
+<div><dt>Contract ID</dt><dd>{% if agreement_lookup._ag_source_id %}<a href="{{ related_record_url(request, '/crm/agreements/' ~ agreement_lookup._ag_source_id, 'related-records') }}">{{ agreement_lookup.ag_contract_id }} →</a>{% else %}—{% endif %}</dd></div>
+<div><dt>Contractor</dt><dd>{{ agreement_lookup.ag_contractor or '—' }}</dd></div>
+<div><dt>Contract status</dt><dd>{{ agreement_lookup.ag_status or '—' }}</dd></div>
+<div><dt>Signing date</dt><dd>{{ agreement_lookup.ag_signing_date or '—' }}</dd></div>
+<div><dt>Start date · imported</dt><dd>{{ agreement_lookup.ag_start_date or '—' }}</dd></div>
+<div><dt>Termination date · imported</dt><dd>{{ agreement_lookup.ag_termination_date or '—' }}</dd></div>
+</dl>
+{% endif %}
 {% if mah %}<p><a href="{{ related_record_url(request, '/crm/self-declarations?mah_id=' ~ mah.id, 'related-records') }}">Self-declarations ({{ self_declaration_count }}) →</a></p>{% endif %}
 <p>Invoices · Bexio planned from 2027-01-01</p>
 

@@ -18,6 +18,7 @@ def filter_query(request, *keys):
                     "layout",
                     "preset",
                     "declaration_lookup",
+                    "agreement_lookup",
                 )
             )
         )

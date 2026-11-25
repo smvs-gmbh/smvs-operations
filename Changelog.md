@@ -6,6 +6,12 @@ baseline. Detailed scope/evidence: [change register](docs/validation/CHANGE-REGI
 
 ## Unreleased — local CRM relation/integrity experiment
 
+- CHG-014: Add an independent Agreements lookup beside Self-declarations, with
+  typed signing-date comparisons/Min/Max, selected agreement fields, source-MAH
+  return links and consistent full-view exports. Preserve missing values, ties
+  and imported start/termination text. URS draft v0.14; local development only.
+
+
 - CHG-013: Lookups alone controls displayed relation fields; Columns lists fixed
   MAH fields only. SD year and Selection result become optional. Fixed-column
   reset preserves lookup choices; saved views and exports use the same selection.

@@ -10,7 +10,7 @@ release. Dated sections further down preserve earlier decisions and milestones.
 
 - [ ] **Local CRM relation/integrity trial (CHG-011).** Review MAH → Self-declarations
   lookups (structured AND/OR conditions, Unique match/Min/Max and configured outputs), private views, export/filter/sort and the
-  new Data integrity page. Requirements: URS-111–114, URS-001 draft v0.13.
+  new Data integrity page. Requirements: URS-111–114, URS-001 draft v0.14.
 - [ ] **After trial feedback: update the FRS, RA and RTM** for URS-111–113,
   discriminator behaviour, applicability scope, uniqueness enforcement and
   integrity findings. No FRS approval or formal validation is implied by the trial.
@@ -661,8 +661,8 @@ No Jelastic deployment or production source request was performed.
   and parent-scoped contact Previous/Next; no schema change or production deployment.
 - [ ] Owner acceptance of the structured editor, lookup export and return navigation.
 - [ ] Reconcile FRS, RA and RTM with URS-111/114 after local trial acceptance.
-- [ ] Consider independent named lookup definitions and Contracts as an additional
-  relation after the initial Self-declarations trial. No First/Last without explicit sort.
+- [x] Add Agreements as a second independent relation (CHG-014).
+- [ ] Consider multiple named definitions per relation. No First/Last without explicit sort.
 
 ### Lookup visibility ownership — 2026-11-25 (CHG-013)
 
@@ -672,3 +672,12 @@ No Jelastic deployment or production source request was performed.
   complete-view CSV exports. Show unresolved selection errors in affected cells.
 - [ ] Owner acceptance; include revised URS-111 (draft v0.13) in the deferred
   FRS/RA/RTM reconciliation.
+
+### Agreements relation lookup — 2026-11-25 (CHG-014)
+
+- [x] Independent Self-declarations/Agreements configurations in the Lookups tab;
+  direct output visibility and fixed-only Columns remain in place.
+- [x] Typed signing-date conditions and Min/Max, missing dates/ties, shared contracts,
+  original start/termination text, private view persistence, source-record return,
+  filtering/sorting before pagination and full-view CSV export.
+- [ ] Owner acceptance and deferred FRS/RA/RTM reconciliation of URS-111 v0.14.

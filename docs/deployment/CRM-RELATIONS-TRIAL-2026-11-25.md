@@ -3,11 +3,11 @@
 ## Boundary
 
 Branch: `experiment/crm-lookups-integrity`, base `4f93b93` /
-`pilot-2026-11-25-dev`. This is a local pilot experiment (CHG-011/012/013), not a server
+`pilot-2026-11-25-dev`. This is a local pilot experiment (CHG-011/012/013/014), not a server
 release or approved QMS baseline. No production files, schema or data are changed.
 No notifications, participant workflows or automatic repair are introduced.
 
-URS-001 draft v0.13 records URS-111–114. FRS, RA and RTM reconciliation is deferred
+URS-001 draft v0.14 records URS-111–114. FRS, RA and RTM reconciliation is deferred
 until trial feedback, with explicit tasks in the implementation list. Existing
 Word requirements drafts are not silently revised or approved by this change.
 
@@ -95,3 +95,11 @@ related display columns, while Columns contains fixed MAH fields. Year/selection
 result are optional; unresolved source selections remain visible in affected cells.
 Saved view visibility and CSV projection follow the same output selection. No
 schema or operational-record changes are required.
+
+CHG-014 adds a separate Agreements selection beside Self-declarations. Choose
+Relation: Agreements, Contract status is Signed and Maximum → Signing date to
+review the most recently signed matching linked record. Several linked contracts
+are allowed; ties remain unresolved. Original start/termination text is retained.
+No signing date is interpreted as proof of current contractual validity. New views
+using agreement fields must be removed/restored before reverting to code that does
+not recognise those fields. No schema, server or operational-record change occurs.

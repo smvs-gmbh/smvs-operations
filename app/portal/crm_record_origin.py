@@ -37,6 +37,7 @@ CONTEXT_KEYS = {
     "layout",
     "preset",
     "declaration_lookup",
+    "agreement_lookup",
     "page",
     "page_size",
 }
@@ -49,16 +50,24 @@ def clean_context(query):
         pairs = parse_qsl(query.lstrip("?"), max_num_fields=100, keep_blank_values=True)
     except ValueError:
         return ""
-    return urlencode([(k, v) for k, v in pairs if k in CONTEXT_KEYS or k.startswith("tv_")])
+    return urlencode(
+        [(k, v) for k, v in pairs if k in CONTEXT_KEYS or k.startswith("tv_")]
+    )
 
 
-def related_record_url(request, path, section=""):
-    """Called with application-owned destination paths, never a user return URL."""
+def related_record_url(
+    request, path, section="", *, source_directory=None, source_id=None
+):
+    """Called with application-owned destinations and optional database-backed source rows."""
     match = re.fullmatch(r"/crm/([a-z-]+)/([1-9][0-9]*)", request.url.path)
-    if not match or match[1] not in MODELS:
+    if source_directory in MODELS and type(source_id) is int and source_id > 0:
+        directory, identifier = source_directory, source_id
+    elif match and match[1] in MODELS:
+        directory, identifier = match[1], match[2]
+    else:
         return path
     context = clean_context(request.url.query)
-    query = {"origin": f"{match[1]}:{match[2]}", "origin_context": context}
+    query = {"origin": f"{directory}:{identifier}", "origin_context": context}
     if section in ("contacts", "contract", "related-records"):
         query["origin_section"] = section
     return path + ("&" if "?" in path else "?") + urlencode(query)

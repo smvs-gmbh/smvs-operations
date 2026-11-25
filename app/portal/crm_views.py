@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import StaleDataError
 
+from app.domain.crm.agreement_lookup import normalise_agreement_lookup
 from app.domain.crm.declaration_lookup import normalise_lookup
 from app.domain.models import CRMListView, PortalListPreference, PortalUser
 from app.integration.artifacts.storage import utcnow
@@ -35,11 +36,12 @@ def normalise_config(directory, config):
     if directory == "mahs":
         try:
             lookup = normalise_lookup(config.get("declaration_lookup"))
+            agreement_lookup = normalise_agreement_lookup(config.get("agreement_lookup"))
         except ValueError as error:
             raise HTTPException(422, str(error)) from None
-    elif "declaration_lookup" in config:
+    elif "declaration_lookup" in config or "agreement_lookup" in config:
         raise HTTPException(
-            422, "Self-declaration lookups are available for MAHs only."
+            422, "Relation lookups are available for MAHs only."
         )
     fields = {field.key: field for field in CATALOGUE[directory]}
     quick = config.get("quick_filters", {})
@@ -103,22 +105,16 @@ def normalise_config(directory, config):
         or DEFAULT_COLUMNS[directory][0] not in columns
     ):
         raise HTTPException(422, "Select valid columns, including the record name.")
-    if directory == "mahs" and "rule" not in lookup:
-        available = set(lookup["outputs"])
+    if directory == "mahs":
         dependencies = {c["field"] for c in cleaned}
         if isinstance(config.get("sort"), str):
             dependencies.add(config["sort"])
-        if any(key.startswith("sd_") and key not in available for key in dependencies):
-            raise HTTPException(
-                422,
-                "A condition or sort uses a lookup output. Keep that output configured or remove its condition and sort first.",
-            )
-        # Lookup output selection owns visibility; there is no second column toggle.
-        columns = [
-            key
-            for key in (columns if columns is not None else DEFAULT_COLUMNS[directory])
-            if not key.startswith("sd_")
-        ] + lookup["outputs"]
+        for prefix, selection in (("sd_", lookup), ("ag_", agreement_lookup)):
+            if "rule" in selection:  # Legacy declaration views retain their original visible fields.
+                continue
+            if any(key.startswith(prefix) and key not in selection["outputs"] for key in dependencies):
+                raise HTTPException(422, "A condition or sort uses a lookup output. Keep that output configured or remove its condition and sort first.")
+            columns = [key for key in (columns if columns is not None else DEFAULT_COLUMNS[directory]) if not key.startswith(prefix)] + selection["outputs"]
     order = config.get("column_order")
     if order is not None:
         if (
@@ -139,7 +135,7 @@ def normalise_config(directory, config):
     ):
         raise HTTPException(422, "Select a valid sort field and direction.")
     return {
-        **({"declaration_lookup": lookup} if directory == "mahs" else {}),
+        **({"declaration_lookup": lookup, "agreement_lookup": agreement_lookup} if directory == "mahs" else {}),
         "quick_filters": quick,
         "conditions": cleaned,
         "columns": list(dict.fromkeys(columns)) if columns is not None else None,
@@ -224,16 +220,15 @@ def resolve_view(request, session, directory):
             config.update(layout)
         except ValueError:
             raise HTTPException(422, "Select valid view columns.") from None
-    if "declaration_lookup" in request.query_params:
-        try:
-            raw_lookup = request.query_params["declaration_lookup"]
-            if len(raw_lookup) > 6000:
-                raise ValueError()
-            config["declaration_lookup"] = json.loads(raw_lookup)
-        except ValueError:
-            raise HTTPException(
-                422, "Select a valid self-declaration discriminator."
-            ) from None
+    for key in ("declaration_lookup", "agreement_lookup"):
+        if key in request.query_params:
+            try:
+                raw_lookup = request.query_params[key]
+                if len(raw_lookup) > 6000:
+                    raise ValueError()
+                config[key] = json.loads(raw_lookup)
+            except ValueError:
+                raise HTTPException(422, "Select valid relation lookup settings.") from None
     for key in ("sort", "direction"):
         if key in request.query_params:
             config[key] = request.query_params[key]
@@ -467,7 +462,7 @@ def configured_rows(request, session, directory, records, *, pdf_counts=None):
     conditions, sort = config.get("conditions", []), config.get("sort", "")
     if not conditions and not sort:
         return records
-    context = catalogue_context(session, directory, records, pdf_counts=pdf_counts, declaration_lookup=config.get("declaration_lookup"))
+    context = catalogue_context(session, directory, records, pdf_counts=pdf_counts, declaration_lookup=config.get("declaration_lookup"), agreement_lookup=config.get("agreement_lookup"))
     request.state.crm_catalogue_context = context
     values = context["crm_field_values"]
     fields = {field.key: field for field in CATALOGUE[directory]}
@@ -530,7 +525,7 @@ def list_catalogue_context(request, session, directory, records, *, pdf_counts=N
     return (
         cached
         if cached is not None
-        else catalogue_context(session, directory, records, pdf_counts=pdf_counts, declaration_lookup=getattr(request.state, "crm_view_config", {}).get("declaration_lookup"))
+        else catalogue_context(session, directory, records, pdf_counts=pdf_counts, declaration_lookup=getattr(request.state, "crm_view_config", {}).get("declaration_lookup"), agreement_lookup=getattr(request.state, "crm_view_config", {}).get("agreement_lookup"))
     )
 
 

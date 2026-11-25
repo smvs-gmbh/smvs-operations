@@ -52,6 +52,10 @@
 {% for field in fields %}<th scope="col" data-column="{{ field.key }}" data-default-visible="false" hidden>{{ field.label }}{% if field.origin == 'Airtable import' %} · imported{% endif %}</th>{% endfor %}
 {% endmacro %}
 
-{% macro crm_extra_cells(fields, values) %}
-{% for field in fields %}<td class="crm-field-cell"{% if field.origin == 'Self-declarations lookup' %} title="{{ values.get('sd_selection', '') }}"{% endif %} hidden>{% if field.origin == 'Self-declarations lookup' and field.key != 'sd_selection' and (values.get('sd_selection', '').startswith('Data error') or values.get('sd_selection') == 'Ambiguous selection') %}{{ values.sd_selection }}{% elif field.key == 'sd_declaration' and values.get('_sd_source_id') %}<a class="audit-link" href="/crm/self-declarations/{{ values['_sd_source_id'] }}">{{ values[field.key] }} →</a>{% else %}{{ values[field.key] }}{% endif %}</td>{% endfor %}
+{% macro crm_extra_cells(fields, values, request=none) %}
+{% for field in fields %}
+{% set selection_key = 'sd_selection' if field.origin == 'Self-declarations lookup' else 'ag_selection' if field.origin == 'Agreements lookup' else '' %}
+{% set selection_result = values.get(selection_key, '') if selection_key else '' %}
+<td class="crm-field-cell"{% if selection_key %} title="{{ selection_result }}"{% endif %} hidden>{% if selection_key and field.key != selection_key and (selection_result.startswith('Data error') or selection_result == 'Ambiguous selection') %}{{ selection_result }}{% elif field.key == 'sd_declaration' and values.get('_sd_source_id') %}<a class="audit-link" href="/crm/self-declarations/{{ values['_sd_source_id'] }}">{{ values[field.key] }} →</a>{% elif field.key == 'ag_contract_id' and values.get('_ag_source_id') %}<a class="audit-link" href="{{ related_record_url(request, '/crm/agreements/' ~ values['_ag_source_id'], 'contract', source_directory='mahs', source_id=values.get('_lookup_mah_id')|int) }}">{{ values[field.key] }} →</a>{% else %}{{ values[field.key] }}{% endif %}</td>
+{% endfor %}
 {% endmacro %}

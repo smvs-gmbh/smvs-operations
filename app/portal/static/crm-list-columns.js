@@ -17,7 +17,7 @@ export function initialiseColumns(form, preference) {
     options.className = "crm-column-options";
     const columnLabel = header => header.textContent.trim() || header.getAttribute('aria-label') || 'Links / actions';
     const keys = headers.map(header => header.dataset.column);
-    const isLookup = key => table.dataset.crmColumns === 'mahs' && key.startsWith('sd_');
+    const isLookup = key => table.dataset.crmColumns === 'mahs' && (key.startsWith('sd_') || key.startsWith('ag_'));
     let order = (preference.column_order || keys).filter(key => keys.includes(key));
     order = [...order, ...keys.filter(key => !order.includes(key))];
     order = [...order.filter(key => !isLookup(key)), ...order.filter(isLookup)];

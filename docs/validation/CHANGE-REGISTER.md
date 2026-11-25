@@ -384,3 +384,39 @@ the relevant distribution market.
   column, optional diagnostic toggles, fixed-only Columns/reset, apply/save/reload,
   duplicate error labels without a diagnostic column, and an exact 48-row CSV over
   two pages at 1500/650 CSS-pixel widths. No operational views or records were edited.
+
+
+## CHG-014 — Independent Agreements lookup
+
+- **Authority/scope.** Owner requested the same lookup behaviour for Agreements.
+  Continues the local `experiment/crm-lookups-integrity` trial; no server deployment,
+  migration, external delivery or automatic record changes.
+- **Behaviour.** Lookups → Relation switches between two independently retained
+  configurations: Self-declarations and Agreements. Each uses typed AND/OR conditions,
+  Unique match or Min/Max, and directly selected optional display fields. Columns
+  contains fixed MAH fields only. Conditions/sort dependencies remain validated.
+- **Agreement semantics.** Use explicit MAH/agreement assignments, including a
+  contract shared by several MAHs. Several linked agreements are allowed, rather
+  than treated as duplicate declaration-year data. Min/Max uses signing date;
+  missing dates are excluded and ties never select by ID/source order. Outputs
+  come from a single matching contract. Status and signing date do not establish
+  legal validity. Imported start/termination date text remains unchanged and is
+  not used as a guessed chronological discriminator.
+- **Integration.** Typed main-view filtering/sorting occurs before pagination.
+  Both configurations survive saved private views, inline URLs, record navigation
+  and frozen multi-page export scope. The Contract ID opens the selected agreement
+  with an explicit return to its source MAH/view. A selected agreement summary is
+  available in that MAH detail. Shared typed rule evaluation retains the declaration
+  lookup's independent MAH/year duplicate protection and legacy saved views.
+- **Requirements/rollback.** URS-111 updated in draft v0.14; FRS/RA/RTM reconciliation
+  remains deferred and tracked. New trial views require removal/restoration before
+  reverting to a revision without agreement fields. No approved QMS baseline implied.
+- **Verification.** 526 full-suite Python tests and three Node export tests passed;
+  changed Python lint, JavaScript syntax and Git whitespace checks passed. Regression
+  coverage includes shared/unlinked contracts, typed dates, missing dates, min/max,
+  ties, independent SD/agreement settings, private view ownership/dependencies,
+  pre-pagination date filtering/sorting, original start/termination text and exact
+  source-MAH return. Isolated browser review at 1500/650 CSS pixels verified relation
+  switching without configuration loss, typed date controls, latest Signed selection,
+  optional outputs/fixed-only Columns, saved-view restoration, a 48-row two-page CSV,
+  and agreement/source-MAH navigation. No operational records/views were edited.
