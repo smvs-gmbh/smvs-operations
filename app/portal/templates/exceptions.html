@@ -27,7 +27,7 @@
 {% if alert_group %}<input type="hidden" name="alert_group" value="{{ alert_group }}">{% endif %}
 {% if country %}<input type="hidden" name="country" value="{{ country }}">{% endif %}
 <label>Error Code<select name="error"><option value="">All</option>{% for e in errors %}<option {{ 'selected' if e==error }}>{{ e }}</option>{% endfor %}</select></label>
-<label>Requesting market<select name="market"><option value="">All</option>{% for m in markets %}<option {{ 'selected' if m==market }}>{{ m }}</option>{% endfor %}</select></label>
+<label>Requesting markets<select name="market" multiple size="6" data-multiple-select aria-label="Requesting markets"><!-- Empty selection includes all markets. -->{% for m in markets %}{% if m %}<option value="{{ m }}" {{ 'selected' if m in selected_markets }}>{{ 'EU · Hub/OBP' if m == 'EU' else m }}</option>{% endif %}{% endfor %}</select><small class="subtle">Selected markets match any (OR). No selection includes all markets. EU identifies Hub/OBP transactions, not a destination market.</small></label>
 <label>Business Process<select name="process"><option value="">All</option>{% for p in processes %}<option {{ 'selected' if p==process }}>{{ p }}</option>{% endfor %}</select></label>
 </div><details class="exception-advanced"><summary>More filters</summary><div class="activity-filter-row"><label>Organisation ID<input name="organisation" value="{{ organisation_filter }}" maxlength="100"></label><label>Source Location ID<input name="location" value="{{ location_filter }}" maxlength="100"></label><label>Intermarket flag<select name="intermarket"><option value="">All</option><option value="yes" {{ 'selected' if intermarket=='yes' }}>Yes</option><option value="no" {{ 'selected' if intermarket=='no' }}>No</option><option value="unset" {{ 'selected' if intermarket=='unset' }}>Not supplied</option></select></label><label>Date quality<select name="date_quality"><option value="">Date within the selected period</option><option value="unresolved" {{ 'selected' if date_quality=='unresolved' }}>No valid date · all</option></select></label></div></details><div class="activity-presets"><button type="submit" class="exception-filter-button">Filter</button><a href="/exceptions">Reset</a><span>{{ pagination.total|number }} matches</span></div></form>
 {% if not latest_exception_publication %}<div class="notice">No exceptions have been published yet.</div>{% endif %}
@@ -41,8 +41,9 @@
 {% set selectable = rows and (preview_allowed or can_reopen or can_remind) %}
 {% if selectable %}
 <details class="exception-actions list-filters">
-  <summary><strong>Actions</strong> <span id="exception-selection-count" class="subtle" role="status"></span></summary>
+  <summary><strong>Actions</strong></summary>
   <div class="review-body">
+    <p id="exception-selection-count" class="subtle" role="status"></p>
     <p class="subtle">Select exceptions on this page and choose an action.</p>
     <form method="post" action="{{ '/intelligence/apply' if preview_allowed else '/exceptions/reopen-selected?' ~ request.url.query if can_reopen else '/exceptions/response-reminders' }}" class="review-form" id="exception-actions-form">
       <div class="review-controls">

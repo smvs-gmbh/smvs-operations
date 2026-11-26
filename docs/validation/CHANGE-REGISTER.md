@@ -507,3 +507,35 @@ the relevant distribution market.
   pages and original-evidence return context. Actual local MySQL rendering
   returned 48 observations across all five sections for 2026-11-10. No
   operational records were modified by these checks.
+
+
+## CHG-017 — Multiple requesting-market selection (local pilot)
+
+- **Request.** Select several markets while investigating Swiss product Alerts
+  from abroad; clarify the EU source value. No production deployment implied.
+- **Scope.** Multiple checkbox selection in Exceptions, using SQL IN (OR) before
+  counts/paging alongside existing conditions. Empty means All. Bounded canonical
+  comma-separated scope supports old scalar links/views and repeated native GET
+  values; unknown selected codes remain explicit. No schema/source-data changes.
+- **Integration.** Shared view controls serialize all selected values into one
+  saved quick-filter value, preserving scope on Apply/save/restore, pagination,
+  detail/return and CSV/Excel exports. Native multiple selection is the fallback.
+  Summary/fieldset keyboard controls retain visible selection and Escape behaviour.
+- **Source meaning.** EU is labelled Hub/OBP only in the selector; raw source codes
+  remain unchanged. API Swagger defines EU for OBP transactions. EMVO-00306 and
+  EMVS Master Data Guide distinguish this context from explicit PMD target-market
+  distribution; an IMT can query another market without local pack-data copies.
+- **Related correction.** Browser testing exposed an existing race: Actions
+  relocation discarded the selection-count element inside its summary. Move it
+  into the retained Actions body so row selection/count/button states initialise
+  regardless of script order. No action endpoint or permission changes.
+- **Verification.** Full Python suite: 542 passed (one existing dependency
+  deprecation warning). Regression covers OR selection before pagination, scalar
+  and repeated GETs, EU inclusion, unknown/oversized/invalid values and detail
+  scope. Browser review confirms checkbox selection, Apply/private save/restore,
+  47-row two-page CSV, detail return, Clear/All, Escape, preserved row-selection
+  counter and 1500/650 CSS-pixel layouts. Lint, JavaScript syntax and Git whitespace
+  checks pass. Temporary fixtures contain synthetic records only.
+- **Documentation/boundary.** URS draft v0.17 / URS-119, guide and ToDo updated.
+  FRS/RA/RTM reconciliation, owner acceptance and production installation remain
+  open. Runtime source on production remains the previously recorded release.

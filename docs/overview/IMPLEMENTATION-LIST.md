@@ -716,3 +716,16 @@ No Jelastic deployment or production source request was performed.
   destination markets and IP geolocation distinct from snapshot observations.
 - [ ] Owner acceptance with an actual Barracuda report/IP; production deployment.
 - [ ] Reconcile FRS/RA/RTM before the formal validation baseline.
+
+
+### Multiple requesting markets — CHG-017 (2026-11-26, local)
+
+- [x] Checkbox-based OR selection, Select all/Clear selection, bounded canonical
+  filters and old single-market link/view compatibility.
+- [x] Preserve selection before pagination and across saved private views, Alert
+  record navigation and multi-page CSV/Excel export scope.
+- [x] Label EU as Hub/OBP context and distinguish it from destination markets.
+- [x] Keep the page-selection counter when moving Actions into its toolbox.
+- [x] Record URS-119 and browser/server verification.
+- [ ] Owner acceptance and separately authorised production deployment.
+- [ ] Reconcile FRS/RA/RTM before the controlled validation baseline.

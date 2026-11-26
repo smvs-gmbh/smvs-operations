@@ -604,3 +604,30 @@ These sections do not supply WAF timeout events, traffic volumes, URL paths,
 business operations, destination market or IP geolocation. A Verification API
 observation alone cannot confirm an intermarket request to Sweden. Correlate the
 matching identities with the WAF report and the relevant service/transaction logs.
+
+
+## Multiple requesting markets in Exceptions
+
+Open **Configure view → Conditions → Requesting markets**. Open the market
+selector and tick each required market; for example DE and NL. The market
+selection uses OR: an Alert from either market qualifies. Other active filters
+still apply. **Apply** previews all matching rows before pagination; **Save view**
+preserves the selection. Use **Select all** to begin with every listed market,
+then untick codes to refine the selection. **Clear selection** returns to All
+markets, as shown by the selector summary. Escape closes an expanded market
+selector before closing the surrounding View toolbox. The native multiple select
+remains available if enhancement is unavailable.
+
+Existing `market=DE` links still work. New links use one canonical value, such as
+`market=DE,NL`; native repeated values are redirected into this form. Detail
+Previous/Next and the return to Exceptions preserve the market scope. CSV/Excel
+exports preserve the same selection across pages. Unknown saved/query codes remain
+visible with zero matching source rows instead of being silently cleared.
+
+**EU · Hub/OBP** identifies OBP-origin Hub transactions in the requesting-market
+context. It does not denote unspecified target countries or distribution to every
+NMVS. Product destination markets are defined separately in the product master
+data; the corresponding batch/version context must be used when investigating
+where pack data was distributed. Incoming IMT Alerts may have an unset Intermarket
+flag. Requesting market, destination-market configuration and last pack update
+market are separate source assertions.

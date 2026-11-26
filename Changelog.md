@@ -4,6 +4,14 @@ Entries distinguish deployed pilot changes from development-only increments.
 Pilot checkpoints and requirements drafts do not constitute an approved QMS
 baseline. Detailed scope/evidence: [change register](docs/validation/CHANGE-REGISTER.md).
 
+## Unreleased — multiple requesting markets (local pilot)
+
+- CHG-017: Select several requesting markets in Exceptions with OR semantics;
+  retain the selection in saved views, navigation and exports. Existing single
+  market URLs/views remain compatible. EU is labelled Hub/OBP source context.
+- Preserve the selection counter when Actions moves into its toolbox. URS-119,
+  user guidance and validation follow-ups recorded; no production deployment.
+
 ## Unreleased — API Access (local pilot)
 
 - CHG-016: User → API Access combines the five already imported snapshot API

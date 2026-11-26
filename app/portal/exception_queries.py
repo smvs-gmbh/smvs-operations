@@ -21,6 +21,7 @@ from app.domain.models import (
     SAIPackage,
     SAIPreparation,
 )
+from app.portal.market_filter import selected_markets
 from app.portal.queries import paged
 
 
@@ -239,9 +240,11 @@ def listing_statement(
                 )
             )
         )
+    market_values = selected_markets(market)
+    if market_values:
+        statement = statement.where(NMVSException.source_market.in_(market_values))
     for column, value in (
         (NMVSException.error_code, error),
-        (NMVSException.source_market, market),
         (NMVSException.organisation_id, organisation),
         (NMVSException.source_location_id, location),
         (NMVSException.business_process, process),

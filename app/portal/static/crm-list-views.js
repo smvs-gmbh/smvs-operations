@@ -1,3 +1,4 @@
+import {controlValue, restoreControl, enhanceMultipleSelects} from './multiple-select.js?v=markets-1';
 import {installCsvDownload} from './table-csv.js?v=crm-cutover-1';
 import {rightToolbox} from './right-toolbox.js?v=record-actions-1';
 import {initialiseLookup} from './crm-lookup-editor.js?v=crm-cutover-1';
@@ -82,8 +83,7 @@ export async function initialiseViews(form) {
     const selected = response.selected;
     if (prefix) for (const control of controls) {
         if (!new URLSearchParams(location.search).has(control.name) && config.quick_filters[control.name] !== undefined) {
-            if (control.type === 'checkbox') control.checked = ['true','yes','on','1'].includes(config.quick_filters[control.name]);
-            else control.value = config.quick_filters[control.name];
+            restoreControl(control, config.quick_filters[control.name]);
         }
     }
     const currentPreset = response.presets.find(preset => preset.id === new URLSearchParams(window.location.search).get('preset'));
@@ -344,7 +344,7 @@ export async function initialiseViews(form) {
 
     function currentConfig() {
         return {
-            quick_filters: Object.fromEntries(controls.map(control => [control.name, control.type === 'checkbox' ? control.checked ? control.value : '' : control.value])),
+            quick_filters: Object.fromEntries(controls.map(control => [control.name, controlValue(control)])),
             conditions: conditionRows.map(row => row.getValue()),
             sort: sort.value, direction: direction.value,
             ...columns.getState(),
@@ -460,4 +460,5 @@ export async function initialiseViews(form) {
     } else if (currentPreset) {
         status.textContent = 'Template applied. Save it as a personal view.';
     }
+    enhanceMultipleSelects(form);
 }

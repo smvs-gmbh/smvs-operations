@@ -7,7 +7,7 @@
 | **Document ID**    | URS-001                         |
 | **Title**          | User Requirements Specification |
 | **Status**         | Draft                           |
-| **Version**        | 0.16                            |
+| **Version**        | 0.17                            |
 | **Classification** | Internal                        |
 | **Owner**          | SMVS GmbH                       |
 | **Author**         | Reinhold Sojer                  |
@@ -22,6 +22,7 @@
 | ------- | ---------- | -------------- | ------------- |
 | 0.9     | 2026-06-27 | Reinhold Sojer | Initial draft |
 | 0.10    | 2026-11-17 | SMVS Operations project | Reconciled the intended use and added requirements for current workflows and planned Hub integration |
+| 0.17    | 2026-11-26 | SMVS Operations project | Multiple requesting-market selection in Exceptions; OR semantics, saved scope/navigation/export and explicit EU Hub/OBP meaning (local pilot) |
 | 0.16    | 2026-11-25 | SMVS Operations project | Snapshot API Access investigation: service/client/IP/User-Agent observations, fixed delivery scope and evidence limits (local pilot) |
 | 0.15    | 2026-11-25 | SMVS Operations project | CRM cutover: durable general affiliations, explicit roles, field retirement, protected reimports and consistent database backup/recovery |
 | 0.14    | 2026-11-25 | SMVS Operations project | Independent Agreements lookup with typed date selection alongside Self-declarations (local pilot) |
@@ -649,3 +650,20 @@ not be represented as WAF events, request volumes, URL/business-operation or
 destination-market evidence or IP geolocation. A shared User-Agent alone shall
 not establish a unique integration. Raw observations and contextual return links
 shall remain available within the existing authenticated NMVO boundary.
+
+
+## URS-119
+
+Authorised staff shall select several requesting markets in the Exceptions view.
+Selected markets shall be combined with OR, alongside the other active conditions
+(AND), before counting, ordering and pagination. Empty selection shall mean all
+requesting markets. Single-market links and private views shall remain compatible;
+repeated market parameters shall be normalised without dropping selections.
+Selected markets shall persist through Apply, private-view saving/restoration,
+page navigation, related Alert detail/return links and whole-view exports. Invalid
+or oversized selections shall be rejected; unavailable saved values shall remain
+explicit rather than silently changing a restricted view into All. The UI shall
+provide accessible selection/clear controls and disclose that EU in this source
+field denotes Hub/OBP-origin transactions, not a destination market or worldwide
+pack-data distribution. Original market values, source records, authorisation
+boundaries and local case state shall not be changed by filtering.

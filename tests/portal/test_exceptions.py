@@ -324,3 +324,36 @@ def test_english_interface_preserves_source_message_language(
         assert '<html lang="en">' in response.text
         assert source_message in response.text
         assert "Main navigation" in response.text
+
+
+def test_multiple_requesting_markets_are_or_filtered_and_survive_navigation(exceptions_portal):
+    import re
+    from html import unescape
+    from urllib.parse import parse_qs, urlsplit
+
+    client, factory = exceptions_portal
+    records = [alert(f'MULTI-{i:03}', sourceMarket=('DE' if i < 42 else 'NL' if i < 47 else 'EU' if i < 49 else 'CH'), isIntermarket=None) for i in range(51)]
+    publish_exceptions(factory, acquire(factory,[page(records)]), NS)
+    base='/exceptions?start=2026-10-01&end=2026-10-31&work_status=all'
+    response=client.get(base+'&market=DE,NL')
+    assert response.status_code==200 and '47 matches' in response.text
+    assert '>MULTI-050</a>' not in response.text and '>MULTI-048</a>' not in response.text
+    selector=re.search(r'<select name="market"[^>]*>(.*?)</select>',response.text,re.DOTALL)
+    assert selector and 'multiple' in selector.group(0)
+    assert set(re.findall(r'<option value="([^"]+)" selected>',selector.group(1)))=={'DE','NL'}
+    second=client.get(base+'&market=DE,NL&page=2')
+    assert '47 matches' in second.text and 'MULTI-000' in second.text
+    link=unescape(re.search(r'href="(/exceptions/\d+\?nav_start[^"]+)"',response.text).group(1))
+    assert parse_qs(urlsplit(link).query)['market']==['DE,NL']
+    detail=client.get(link)
+    assert detail.status_code==200 and 'market=DE%2CNL' in detail.text
+    repeated=client.get(base+'&market=DE&market=NL')
+    assert repeated.status_code==200 and '47 matches' in repeated.text
+    assert parse_qs(urlsplit(str(repeated.url)).query)['market']==['DE,NL']
+    both=client.get(base+'&market=EU,NL')
+    assert '7 matches' in both.text and 'EU · Hub/OBP' in both.text
+    assert '51 matches' in client.get(base+'&market=').text
+    assert '0 matches' in client.get(base+'&market=ZZ').text
+    assert 'value="ZZ" selected' in client.get(base+'&market=ZZ').text
+    assert client.get(base+'&market='+','.join('X'+str(i) for i in range(65))).status_code==422
+    assert client.get(base+'&market=,,,').status_code==422

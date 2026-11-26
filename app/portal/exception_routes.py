@@ -20,6 +20,7 @@ from app.domain.models import ExceptionReview, ExceptionReviewEvent, NMVSExcepti
 from app.integration.sources import ams
 from app.portal import alert_trends
 from app.portal import exception_queries as queries
+from app.portal.market_filter import selected_markets
 from app.portal.queries import paged
 from app.portal.record_navigation import list_record_navigation
 from app.portal.routes import DbSession, templates
@@ -77,7 +78,7 @@ def exception_list(
     alert_group: str = Query("", pattern="^(|a2-a3)$"),
     gtin14: str = Query("", pattern="^(|[0-9]{14})$"),
     country: str = Query("", pattern="^(|CH|LI)$"),
-    market: str = Query("", max_length=100),
+    market: str = Query("", max_length=1500),
     organisation: str = Query("", max_length=100),
     location: str = Query("", max_length=100),
     process: str = Query("", max_length=255),
@@ -93,6 +94,12 @@ def exception_list(
     from app.portal.collaboration_routes import pilot_enabled
     from app.portal.table_views import has_exception_response_conditions, prepare
 
+    market_values = selected_markets(request.query_params.getlist("market") or [market])
+    market = ",".join(market_values)
+    if len(request.query_params.getlist("market")) > 1:
+        params = [(k, v) for k, v in request.query_params.multi_items() if k != "market"]
+        params.append(("market", market))
+        return RedirectResponse(request.url.path + "?" + urlencode(params), status_code=303)
     prepare(request, session, "exceptions")
     all_response_dates = bool(
         response_status or response_party
@@ -127,12 +134,15 @@ def exception_list(
         all_response_dates=all_response_dates,
     )
     settings = get_settings()
+    filter_options = queries.options(session)
+    filter_options["markets"] = sorted(set(filter_options["markets"]) | set(market_values))
     return templates.TemplateResponse(
         request=request,
         name="exceptions.html",
         context={
             **ctx,
-            **queries.options(session),
+            **filter_options,
+            "selected_markets": market_values,
             "title": "Exceptions",
             "language_search_enabled": bool(
                 settings.openai_api_key and settings.openai_search_model
@@ -247,6 +257,8 @@ def exception_record_navigation(request, session, record):
 
     params = request.query_params
     filters = {key: params[key] for key in EXCEPTION_NAV_FILTERS if key in params}
+    if "market" in params:
+        filters["market"] = ",".join(selected_markets(params.getlist("market")))
     if filters.get("alert_group", "") not in ("", "a2-a3") or filters.get("country", "") not in ("", "CH", "LI"):
         raise HTTPException(422, "Choose a valid trend filter.")
     if "nav_start" in params or "nav_end" in params:
