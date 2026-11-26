@@ -519,6 +519,8 @@ def render_access_directory(request, session, notice=None):
             "send_url": send_url,
             "case_url": case_url,
             "notice": notice,
+            "test_mailbox_url": "/workflows/alert-desk/mailbox"
+            if get_settings().environment == "test" else "http://localhost:18025/",
             "sent_count": sum(
                 bool(row["grant"] and row["grant"].sent_at) for row in rows
             ),
@@ -531,6 +533,20 @@ def render_access_directory(request, session, notice=None):
 def access_invitations(request: Request, session: DbSession):
     require_invitation_staff(request)
     return render_access_directory(request, session)
+
+
+@router.get("/workflows/alert-desk/mailbox", include_in_schema=False)
+def test_mailbox(request: Request):
+    from app.portal.test_mailbox import page
+
+    return page(request)
+
+
+@router.get("/workflows/alert-desk/mailbox/{identifier}", include_in_schema=False)
+def test_mail_message(request: Request, identifier: str):
+    from app.portal.test_mailbox import page
+
+    return page(request, identifier)
 
 
 @router.post("/workflows/alert-desk/send", include_in_schema=False)

@@ -838,3 +838,19 @@ Completed submissions and browser-cache restoration clear obsolete saved snapsho
 Local pilot services reloaded the implementation without resetting review cases or
 sending invitations/messages. Production remains at `9c04152`, schema 0054; local
 schema remains 0055. Personal template storage/audit rows were not migrated.
+
+### CHG-021 D — Private hosted TEST mailbox (2026-11-26)
+
+Owner reported missing invitation. Read-only inspection verified the End User
+invitation was captured on the TEST server at 14:27:54 UTC; the existing button
+incorrectly opened the Mac's development Mailpit. This is a hosted UX defect,
+not failed SMTP delivery. Preserve the existing invitation and participant access.
+
+Add a same-origin private Operations mailbox for authorised TEST staff only,
+with a newest-first list (100 messages), escaped plain-text message/code view and
+an invitation action restricted to the configured participant origin. Refuse
+production/development access, path traversal, symlinks and oversized messages.
+No-store/no-referrer headers protect captured capabilities. No public gateway
+route, deletion, external mail or database migration is added. The development
+Mailpit link remains unchanged. Review HTTP staff/public refusals and preserve
+existing users/passkeys, fixtures, findings, templates and captured messages.

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block heading %}
+<a class="back-link" href="/workflows/alert-desk">← Alert Desk invitations</a>
+<div class="heading"><div><div class="eyebrow">TEST · Captured mail</div><h1>TEST mailbox</h1>
+<p>Messages captured on this TEST server. No external email is sent.</p></div></div>
+{% endblock %}
+{% block content %}
+{% if message %}
+<section class="panel review-body">
+<a class="audit-link" href="/workflows/alert-desk/mailbox">← All captured messages</a>
+<h2>{{ message.subject }}</h2><p>To: {{ message.to }} · {{ message.at }} UTC</p>
+{% if message.invitation_url %}<p><a class="audit-link" href="{{ message.invitation_url }}" target="_blank" rel="noopener noreferrer">Open participant invitation →</a></p>{% endif %}
+<pre class="test-mail-body">{{ message.body }}</pre>
+</section>
+{% else %}
+<section class="panel review-body">
+<p><a class="audit-link" href="/workflows/alert-desk/mailbox">Refresh mailbox →</a></p>
+<div class="table-scroll"><table><thead><tr><th>Captured at (UTC)</th><th>To</th><th>Subject</th></tr></thead><tbody>
+{% for item in messages %}<tr><td>{{ item.at }}</td><td>{{ item.to }}</td><td><a href="/workflows/alert-desk/mailbox/{{ item.id }}">{{ item.subject }} →</a></td></tr>
+{% else %}<tr><td colspan="3">No captured messages yet.</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endif %}
+{% endblock %}

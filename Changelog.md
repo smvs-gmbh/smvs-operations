@@ -173,3 +173,10 @@ Source checkpoint: `f9513549b514f7c2aabcf8219090ab03488e1990`.
 Earlier development history remains available in Git; this file does not claim
 to reconstruct every earlier change retrospectively.
 
+
+## Unreleased — hosted TEST mailbox correction
+
+- CHG-021 D: Correct Open test mailbox to the private TEST server inbox. List and
+  escaped message/code view require TEST enablement and authorised Operations
+  staff; participant/public/production access remains unavailable. Existing
+  invitations and captures are preserved; no external mail or schema change.

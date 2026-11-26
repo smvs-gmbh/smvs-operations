@@ -586,3 +586,4 @@ div.test-case-columns { color: var(--muted); background: #f7f9fb; font-weight: 6
 .exception-date-inputs > label { flex: 1 1 10rem; min-width: 0; }
 .exception-date-presets { margin-top: .6rem; }
 .exception-date-range p { margin: .6rem 0; }
+.test-mail-body { white-space: pre-wrap; overflow-wrap: anywhere; }

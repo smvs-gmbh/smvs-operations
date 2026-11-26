@@ -32,8 +32,12 @@ Ein späterer privater HTTPS-Zugang über VPN ist noch nicht eingerichtet.
 
 **Mail:** Zunächst erfolgt ausschliesslich Aufzeichnung im privaten TEST-Postfach
 auf dem Server, nicht Versand ins Internet. Einladung und Code werden dort als
-geschützte `.eml`-Dateien unter `private/mail/` abgelegt. Der Betreiber kann sie
-über SSH/SFTP lesen. Es gibt kein öffentliches Postfach. Für selbständige externe
+geschützte `.eml`-Dateien unter `private/mail/` abgelegt. Angemeldete TEST-Mitarbeitende öffnen sie über
+[Open test mailbox](http://localhost:8025/workflows/alert-desk/mailbox) in Operations.
+Die Liste ist nach Eingang sortiert; in der Nachricht öffnet „Open participant
+invitation“ den Teilnehmerzugang. Nach Anforderung des Codes die Postfachliste
+aktualisieren und die neueste „Verification code“-Nachricht öffnen. Der Zugang
+ist nur im privaten Operations verfügbar; es gibt kein öffentliches Postfach. Für selbständige externe
 Tests muss zuerst der Versand an ausdrücklich festgelegte Testempfänger
 eingerichtet und geprüft werden. Die synthetischen `example.test`-Adressen sind
 keine zustellbaren Internetpostfächer.
