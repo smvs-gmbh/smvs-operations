@@ -891,3 +891,20 @@ users/passkeys/sessions/grants/fixtures/findings/templates unchanged by row hash
 Development services reloaded; no resets, invitations or external messages. Keep
 A24 input support separate: the retained A24 fixture has an own requesting Location
 and remains visible. Rollback/evidence recorded in the TEST deployment document.
+
+## CHG-023 — Editable own-location End User A24
+
+Owner reports own-location A24 visible but no input. Root cause: access admitted
+the case but `investigation_for` returned no A24 workflow. Implement End User A24
+findings/CAPA/comment/template/amendment through the current audited API; state
+workflow has no printed-identifier or upload questions and no batch/hold command.
+Source/role/current-case checks remain mandatory. Findings do not perform pack
+operations or close the Case. MAH A24 editing is outside this increment.
+
+URS-124 / URS draft 0.25, FRS-EXC-013 / draft 0.5, RA-01/04/07/09 apply. Retain
+DEMO-A24-1 as the existing local request, now editable. Add a separate idempotent
+DEMO-A24-FOREIGN synthetic fixture (DE requester, earlier own Location) without
+rewriting or deleting prior records. It must be denied to the End User for reads,
+templates and findings. New seeds/local workspace include both; hosted TEST addition
+requires confirmed TEST identity and preservation of existing data/access. No PROD
+rollout, real NMVS call, external mail or automatic closure is authorised here.

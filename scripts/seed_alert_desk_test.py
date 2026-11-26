@@ -35,7 +35,7 @@ def main():
             if session.execute(text("SELECT COUNT(*) FROM `" + table + "`")).scalar():
                 raise RuntimeError("Seed refused: TEST already contains records.")
     from app.alert_desk.test_pack_audits import seed_pack_audits
-    from app.alert_desk.test_workspace import CODES, NS, seed
+    from app.alert_desk.test_workspace import CODES, NS, seed, seed_foreign_a24
     from app.domain.models import AlertDeskAccess, NMVSException, PortalUser
 
     # Reuse reviewed synthetic content, but retain no pre-authenticated fixture
@@ -50,6 +50,7 @@ def main():
             grant.revoked_at = grant.invited_at
         user = session.scalar(select(PortalUser))
         user.handle = secrets.token_hex(32)
+    seed_foreign_a24(get_session_factory())
     seed_pack_audits(SessionFactory, NS, CODES)
     with SessionFactory() as session:
         print("Synthetic TEST alerts:", session.scalar(select(func.count()).select_from(NMVSException)))

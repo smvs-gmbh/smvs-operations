@@ -332,7 +332,7 @@ def live_invitation_preview(
     record = current(session, identifier)
     if record.source_market == "LI" and role == "mah":
         raise HTTPException(404, "This case is scoped to the End User.")
-    if record.error_code not in {"A2", "A3", "A7"}:
+    if record.error_code not in {"A2", "A3", "A7", "A24"} or (record.error_code == "A24" and role != "end_user"):
         raise HTTPException(404, "No participant template for this alert.")
     view = exception_queries.enriched(session, [record])[0]
     organisation, location = view["organisation"], view["location"]

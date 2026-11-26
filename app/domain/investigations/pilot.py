@@ -42,8 +42,15 @@ def in_scope(record, organisation, location):
     )
 
 
-def investigation_for(record, organisation, location, role):
+def investigation_for(record, organisation, location, role, *, requesting_location_verified=False):
     market = record.source_market
+    if record.error_code == "A24":
+        return "end_user_a24" if (
+            role == "end_user"
+            and ((market == "CH" and record.is_intermarket in {0, 1})
+                 or (market == "LI" and record.is_intermarket == 1))
+            and (requesting_location_verified or rca.confirmed_location(organisation, location, record))
+        ) else None
     if market == "LI" and (
         role != "end_user"
         or record.is_intermarket != 1
@@ -163,6 +170,11 @@ def publication(
         if record.error_code == "A7"
         else (participant_intelligence(prechecks), None)
     )
+    if record.error_code == "A24":
+        intelligence = {
+            "summary": "Review the attempted operation and earlier handling of this pack.",
+            "detail": "A pack state discrepancy does not establish its cause. Report what you found; SMVS will review the evidence.",
+        }
     if not audit and share_report and prechecks["report_id"] and role == "end_user":
         audit = participant_report(session, record, prechecks["report_id"])
     review = view["review"]

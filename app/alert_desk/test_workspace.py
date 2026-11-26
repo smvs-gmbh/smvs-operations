@@ -373,6 +373,37 @@ def seed(factory, tokens):
     return actor
 
 
+def seed_foreign_a24(factory):
+    """Add a separate foreign requester fixture; never rewrite the local case."""
+    with factory.begin() as s:
+        existing = s.scalar(select(NMVSException.id).where(
+            NMVSException.source_namespace == NS,
+            NMVSException.unique_alert_id == "DEMO-A24-FOREIGN",
+        ))
+        if existing:
+            return existing
+        local = s.scalar(select(NMVSException).where(
+            NMVSException.source_namespace == NS,
+            NMVSException.unique_alert_id == "DEMO-A24-1",
+        ))
+        if not local:
+            raise ValueError("The local synthetic A24 fixture is required.")
+        fields = {c.key: getattr(local, c.key) for c in NMVSException.__table__.columns if c.key != "id"}
+        row = NMVSException(**{
+            **fields, "alert_key": key(NS, "A24", "foreign"),
+            "unique_alert_id": "DEMO-A24-FOREIGN", "source_market": "DE",
+            "is_intermarket": 1, "organisation_id": None,
+            "source_location_id": "fixture-foreign-requester",
+            "last_update_location_id": "fixture-location",
+            "business_process": "National System Intermarket",
+            "serial_number": "DEMOA24FOREIGN",
+            "payload_hash": key(NS, "A24", "foreign", "payload"),
+        })
+        s.add(row)
+        s.flush()
+        return row.id
+
+
 def submitted_batch_ids(session, record, role, finding):
     source_id = finding.data.get("batch_source") or record.id
     targets = session.scalars(
@@ -489,6 +520,7 @@ def create_workspace(factory, *, origin=ORIGIN):
                 grant.session_expires_at = pilot.now() + timedelta(days=1)
     if actor is None:
         actor = seed(factory, tokens)
+    seed_foreign_a24(factory)
     seed_pack_audits(factory, NS, CODES)
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     app.state.alert_desk_test_workspace = True
@@ -602,9 +634,6 @@ def create_workspace(factory, *, origin=ORIGIN):
         return render_case(
             request,
             case,
-            message="Participant findings are unavailable for A24."
-            if case["code"] == "A24"
-            else "",
             assets="/case-assets",
             organisation_case=True,
             back_url=f"/?case={case_id_for_alert(record)}#alert-{identifier}"

@@ -13,7 +13,7 @@
 <p><a class="audit-link" href="/workflows/alert-desk">Manage organisation invitations →</a></p>
 <section class="panel review-body">
   <h2>Live preview · {{ 'MAH' if role == 'mah' else 'End User' }}</h2>
-  {% if record.error_code in ('A2', 'A3', 'A7') %}
+  {% if record.error_code in ('A2', 'A3', 'A7') or (record.error_code == 'A24' and role == 'end_user') %}
   <iframe title="Alert Desk participant view" id="invitation-preview"
     src="/exceptions/{{ identifier }}/invitations/preview?role={{ role }}"
     width="100%" height="850" loading="lazy"></iframe>

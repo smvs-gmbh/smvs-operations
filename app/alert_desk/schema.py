@@ -64,6 +64,10 @@ class Findings(BaseModel):
             return False
         if self.batch_revision and (alert_code not in {"A2", "A7"} or self.pack_on_hold):
             return False
+        if alert_code == "A24":
+            return audience == "end_user" and not (
+                self.comparison or self.batch_uploaded or self.serial_accepted or self.other_issue
+            )
         if alert_code == "A7":
             return not (
                 self.comparison

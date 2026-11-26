@@ -27,6 +27,7 @@
     {% set mah = case.audience == "mah" %}
     {% set mah_a7 = case.investigation == "mah_a7" %}
     {% set a7 = mah_a7 or case.investigation == "end_user_a7" %}
+    {% set a24 = case.investigation == "end_user_a24" %}
     <div id="case-content">
       <div class="case-ref">{{ case.alert }}{% if case.alert_at %} · {{ case.alert_at }}{% endif %}</div>
       <div class="outcome"><span class="outcome-icon pending" aria-hidden="true">?</span><h1>{{ case.code or ("Alert" if organisation_case else "A3") }} · {{ case.label or "Pack not found" }}</h1></div>
@@ -98,7 +99,9 @@
               {% if organisation_case %}<input type="hidden" name="basis" value="{{ case.basis }}">{% endif %}
               <input type="hidden" name="publication" value="{{ case.publication }}">
               <input type="hidden" name="submission_key" value="{{ key }}">
-              {% if a7 %}
+              {% if a24 %}
+              <p>Review whether your process, scanner or software triggered the attempted operation. Report your findings and any corrective action. SMVS will review the pack history; this finding does not change the pack state.</p>
+              {% elif a7 %}
               <p>Check whether a process or software on your side triggered the request shown above.</p>
               {% elif mah %}
               {% set checks = [('batch_uploaded', 'Was this batch uploaded?')] %}

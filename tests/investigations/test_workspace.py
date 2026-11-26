@@ -34,7 +34,8 @@ def test_three_roles_and_batch_reset(tmp_path):
                 client.post("/exceptions/4/audit-trail", headers=headers).status_code
                 == 405
             )
-            assert "Your investigation" not in client.get("/cases/6/end_user").text
+            assert "Your investigation" in client.get("/cases/6/end_user").text
+            assert client.get("/cases/7/end_user").status_code == 404
             end_user = client.get("/cases/1/end_user").text
             mah = client.get("/cases/1/mah").text
             assert "Was this batch uploaded?" in mah

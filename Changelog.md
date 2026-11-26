@@ -197,3 +197,12 @@ and messages preserved. 32 focused tests and hosted access/refusal checks pass.
 CHG-022 deployed on TEST as `1198796`, schema 0055 unchanged. 589 local tests pass;
 native MySQL scope excludes foreign export-attributed A7s and retains four actual
 own-location cases. MAH retains six; existing data/passkeys/sessions unchanged.
+
+## Unreleased — End User A24 investigation
+
+- CHG-023 / URS-124: Own-location A24 supports findings, comments/templates and
+  CAPA through the existing attributed workflow. No upload/identifier questions,
+  pack-state change, batch command or automatic closure.
+- Preserve the local A24 example and add a separate foreign-requester fixture
+  with an earlier own-location action. Foreign read/write access remains denied;
+  MAH A24 input remains outside this increment.

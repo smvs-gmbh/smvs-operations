@@ -254,7 +254,8 @@ def install(app, sessions, secret):
                 "investigation": None
                 if progress["closed"]
                 else pilot.investigation_for(
-                    record, view["organisation"], view["location"], grant.role
+                    record, view["organisation"], view["location"], grant.role,
+                    requesting_location_verified=grant.role == "end_user",
                 ),
             }
 
@@ -286,7 +287,8 @@ def install(app, sessions, secret):
             if body.publication != identifier or body.basis != record.payload_hash:
                 raise HTTPException(409, "Reload the case before submitting.")
             if not pilot.investigation_for(
-                record, org, location, grant.role
+                record, org, location, grant.role,
+                requesting_location_verified=grant.role == "end_user",
             ) or not body.matches_audience(grant.role, record.error_code):
                 raise HTTPException(422, "Check your answers and try again.")
             stored = existing_case_grant(session, grant, record)

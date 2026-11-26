@@ -1,6 +1,6 @@
 # FRS-EXCEPTIONS-001 — Exceptions and Alert Desk
 
-Status **Draft v0.4**, 2026-11-26. Owner SMVS GmbH. The
+Status **Draft v0.5**, 2026-11-26. Owner SMVS GmbH. The
 [traceability matrix](../validation/RTM-001.md) records implementation and test coverage.
 
 Revision 0.2 specifies the implemented local URS-122 template behaviour and the
@@ -162,3 +162,17 @@ delivery path. [Target evidence](../deployment/ALERT-DESK-TEST-2026-11-26.md)
 records actual checks. Cross-node private TLS is not exercised by this same-node
 deployment. Approved external mail, full restore/availability/timing and formal
 protocol acceptance remain open; do not imply qualification of these controls.
+
+
+## FRS-EXC-013
+
+URS-124 / CHG-023: Eligible End User A24 cases shall provide a state-discrepancy
+investigation with progress, own-side process/technical/other or not-my-side
+findings; CAPA is required exactly for own-side findings. Support bounded optional
+comments, private templates and amendment using the existing attributed/versioned
+findings interface. Refuse identifier/upload fields, pack-on-hold and batch
+commands for A24. Retain submitted text and event history; no pack transaction or
+automatic local/Hub closure is triggered. Access is still rechecked by requesting
+Location under FRS-EXC-003. MAH A24 entry remains outside this increment. Provide
+matching NMVO participant preview and explicit pack-state guidance; missing batch
+reference shall not be presented as the A24 investigation rationale.

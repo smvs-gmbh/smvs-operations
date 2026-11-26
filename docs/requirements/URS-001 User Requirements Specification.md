@@ -7,7 +7,7 @@
 | **Document ID**    | URS-001                         |
 | **Title**          | User Requirements Specification |
 | **Status**         | Draft                           |
-| **Version**        | 0.24                            |
+| **Version**        | 0.25                            |
 | **Classification** | Internal                        |
 | **Owner**          | SMVS GmbH                       |
 | **Author**         | Reinhold Sojer                  |
@@ -22,6 +22,7 @@
 | ------- | ---------- | -------------- | ------------- |
 | 0.9     | 2026-06-27 | Reinhold Sojer | Initial draft |
 | 0.10    | 2026-11-17 | SMVS Operations project | Reconciled the intended use and added requirements for current workflows and planned Hub integration |
+| 0.25    | 2026-11-26 | SMVS Operations project | Findings, comments and CAPA for own-location End User A24 alerts; separate foreign-requester fixture |
 | 0.24    | 2026-11-26 | SMVS Operations project | End Users may access only alerts attributed to their own requesting Location IDs; remove export-cohort and organisation-only exceptions |
 | 0.23    | 2026-11-26 | SMVS Operations project | Compact template insertion and separate personal library with scoped draft/return preservation (local pilot) |
 | 0.22    | 2026-11-26 | SMVS Operations project | Durable private participant comment templates with verified scope, versioned management and audit history (local pilot) |
@@ -796,3 +797,15 @@ shall not grant End User access. Apply this to listings, direct case/evidence/
 history/template access, findings, batch selection and response/reminder routing.
 Revalidate scope on every read/write, including already-open cases and sessions.
 Retain historical evidence internally when access ceases; do not delete findings.
+
+
+## URS-124 — End User A24 findings
+
+An authorised End User shall be able to investigate its own requesting-Location
+A24 alerts, report progress or a cause on/not on its side, record required CAPA
+for an own-side cause, and retain optional comments and personal template use.
+Do not require upload or printed-identifier comparisons for this pack-state
+workflow. Findings shall remain distinct from the NMVO decision and shall not
+change pack status or automatically close the Case. Foreign-requester A24 alerts
+remain inaccessible under URS-123, even when earlier pack history mentions an own
+Location. Preserve separate own/foreign synthetic cases for acceptance testing.
