@@ -113,3 +113,23 @@ Use the [German practical guide](../validation/ALERT-DESK-TEST-ANLEITUNG.md) and
 testers, timing policy and approved email recipients before independent external
 participant testing. Select a custom DNS name later if desired; changing the
 participant origin must include links, cookies, proxy and regression checks.
+
+## Private TEST mailbox correction
+
+Runtime successor `e71fd987cedeca4ee202b80e91e9ee4ab8b8a16f` adds CHG-021 D.
+The reported End User invitation was already captured at 14:27:54 UTC; the button
+opened local development Mailpit rather than this server. TEST staff now read
+captures at `/workflows/alert-desk/mailbox` and open the participant invitation
+from the escaped message view. Refresh the inbox after requesting a code.
+Development retains its Mailpit link; external delivery remains disabled.
+
+32 focused tests pass. Actual hosted checks confirm authenticated list/detail and
+invitation action, corrected link, no-store/no-referrer, unauthenticated refusal,
+invalid-path refusal and public 404. The temporary check session was revoked.
+Only the TEST portal was restarted; schema remains 0055. All existing users,
+passkeys, contacts, alerts, findings and templates have identical before/after row
+hashes; all eleven pre-existing captured files have identical hashes. No invitation
+was reissued, no source imports triggered and VerifyIt remains available. Runtime
+`backups/mailbox-fix-before.json` and `evidence/mailbox-fix.json` retain the protected
+rollback/data verification record. To roll back code, restore the previous current
+symlink and restart only smvs-test-portal; keep the database and mail intact.

@@ -180,3 +180,7 @@ to reconstruct every earlier change retrospectively.
   escaped message/code view require TEST enablement and authorised Operations
   staff; participant/public/production access remains unavailable. Existing
   invitations and captures are preserved; no external mail or schema change.
+
+CHG-021 D deployed on TEST as `e71fd98`, schema 0055 unchanged. Captured invitation
+is available in the authenticated Operations mailbox; existing passkey/invitation
+and messages preserved. 32 focused tests and hosted access/refusal checks pass.

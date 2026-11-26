@@ -854,3 +854,11 @@ No-store/no-referrer headers protect captured capabilities. No public gateway
 route, deletion, external mail or database migration is added. The development
 Mailpit link remains unchanged. Review HTTP staff/public refusals and preserve
 existing users/passkeys, fixtures, findings, templates and captured messages.
+
+CHG-021 D rollout: committed runtime `e71fd98`, unchanged schema 0055. 32 focused
+checks pass; actual authenticated mailbox/detail/invitation UI, corrected link,
+cache/privacy headers and private/public denial verified. Existing users/passkeys,
+CRM/cases/findings/templates and eleven captures retained byte/row-identically.
+Only TEST portal restarted; temporary check session revoked. Deployment evidence
+is appended to the hosted TEST record. This corrects technical access to the inbox,
+not external email delivery or formal protocol acceptance.
