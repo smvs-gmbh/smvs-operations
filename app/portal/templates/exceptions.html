@@ -21,7 +21,7 @@
 <label>Case status<select name="work_status">{% for code,label in [('open','Open · includes to do'),('to_do','To-do list · all dates'),('resolved','Resolved'),('all','All')] %}<option value="{{ code }}" {{ 'selected' if work_status==code }}>{{ label }}</option>{% endfor %}</select></label>
 <label>Response status<select name="response_status"><option value="">All</option>{% for key, label in response_labels.items() %}<option value="{{ key }}" {{ 'selected' if response_status==key }}>{{ label }}</option>{% endfor %}</select></label>
 <label>Response party<select name="response_party"><option value="">Any participant</option><option value="end_user" {{ 'selected' if response_party=='end_user' }}>End User</option><option value="mah" {{ 'selected' if response_party=='mah' }}>MAH</option></select></label>
-<label>From (UTC)<input type="date" name="start" value="{{ start }}" required></label><label>To (UTC)<input type="date" name="end" value="{{ end }}" required></label>
+{% include 'exception_date_range.html' %}
 <label>Alert ID, product code, batch, serial no.<input name="q" value="{{ q }}" maxlength="150" placeholder="Search …"></label>
 {% if gtin14 %}<input type="hidden" name="gtin14" value="{{ gtin14 }}">{% endif %}
 {% if alert_group %}<input type="hidden" name="alert_group" value="{{ alert_group }}">{% endif %}

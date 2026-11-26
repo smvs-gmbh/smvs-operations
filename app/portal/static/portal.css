@@ -580,3 +580,9 @@ div.test-case-columns { color: var(--muted); background: #f7f9fb; font-weight: 6
 
 .multiple-select-trigger::after{content:"▾"}
 .multiple-select-choices legend{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+.exception-date-range { grid-column: 1 / -1; min-width: 0; }
+.exception-date-inputs, .exception-date-presets { display: flex; flex-wrap: wrap; gap: .5rem; }
+.exception-date-inputs > label { flex: 1 1 10rem; min-width: 0; }
+.exception-date-presets { margin-top: .6rem; }
+.exception-date-range p { margin: .6rem 0; }

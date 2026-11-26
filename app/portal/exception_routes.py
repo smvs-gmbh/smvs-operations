@@ -19,6 +19,7 @@ from app.domain.investigations import rca, responses
 from app.domain.models import ExceptionReview, ExceptionReviewEvent, NMVSException
 from app.integration.sources import ams
 from app.portal import alert_trends
+from app.portal.exception_dates import date_scope, resolve_period
 from app.portal import exception_queries as queries
 from app.portal.market_filter import selected_markets
 from app.portal.queries import paged
@@ -37,16 +38,13 @@ def exception_trends(
     alert_group: str = Query("", pattern="^(|a2-a3)$"),
     country: str = Query("", pattern="^(|CH|LI)$"),
 ):
-    today = datetime.now(UTC).date()
-    end = end or today
-    if start is None:
-        year = end.year - (end.month < 12)
-        start = date(year, end.month % 12 + 1, 1) if year else date.min
-    if end < start or (end - start).days > 366 or end > today:
-        raise HTTPException(
-            422, "Select a period of at most 367 days ending today or earlier."
-        )
     ctx = queries.context(session)
+    scope = date_scope(session, ctx["source_namespace"])
+    start, end, redirect = resolve_period(request, start, end, scope, default_days=365)
+    if redirect:
+        return redirect
+    if end < start or end == date.max:
+        raise HTTPException(422, "Choose an end date on or after the start date.")
     report = alert_trends.trends(
         session, ctx["source_namespace"], start, end, alert_group, country
     )
@@ -56,6 +54,7 @@ def exception_trends(
         context={
             **ctx,
             **report,
+            **scope,
             "title": "Alert Trends",
             "active": "exceptions",
             "start": start,
@@ -104,13 +103,15 @@ def exception_list(
     all_response_dates = bool(
         response_status or response_party
     ) or has_exception_response_conditions(request, session)
-    end = end or datetime.now(UTC).date()
-    start = start or end - timedelta(days=29)
-    if end < start or (end - start).days > 366 or end == date.max:
-        raise HTTPException(422, "Select a period of at most 367 days.")
+    ctx = queries.context(session)
+    scope = date_scope(session, ctx["source_namespace"])
+    start, end, redirect = resolve_period(request, start, end, scope)
+    if redirect:
+        return redirect
+    if end < start or end == date.max:
+        raise HTTPException(422, "Choose an end date on or after the start date.")
     if work_status == "to_do":
         date_quality = ""
-    ctx = queries.context(session)
     rows, pagination = queries.listing(
         session,
         start=start,
@@ -142,6 +143,7 @@ def exception_list(
         context={
             **ctx,
             **filter_options,
+            **scope,
             "selected_markets": market_values,
             "title": "Exceptions",
             "language_search_enabled": bool(
@@ -265,7 +267,7 @@ def exception_record_navigation(request, session, record):
         try:
             start = date.fromisoformat(params.get("nav_start", ""))
             end = date.fromisoformat(params.get("nav_end", ""))
-            if end < start or (end - start).days > 366 or end == date.max:
+            if end < start or end == date.max:
                 raise ValueError()
         except ValueError:
             raise HTTPException(422, "Select a valid exception period.") from None

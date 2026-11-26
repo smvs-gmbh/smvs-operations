@@ -7,7 +7,7 @@
 | **Document ID**    | URS-001                         |
 | **Title**          | User Requirements Specification |
 | **Status**         | Draft                           |
-| **Version**        | 0.17                            |
+| **Version**        | 0.18                            |
 | **Classification** | Internal                        |
 | **Owner**          | SMVS GmbH                       |
 | **Author**         | Reinhold Sojer                  |
@@ -22,6 +22,7 @@
 | ------- | ---------- | -------------- | ------------- |
 | 0.9     | 2026-06-27 | Reinhold Sojer | Initial draft |
 | 0.10    | 2026-11-17 | SMVS Operations project | Reconciled the intended use and added requirements for current workflows and planned Hub integration |
+| 0.18    | 2026-11-26 | SMVS Operations project | Imported Exceptions date bounds, calendar shortcuts and whole-retained-period views (local pilot) |
 | 0.17    | 2026-11-26 | SMVS Operations project | Multiple requesting-market selection in Exceptions; OR semantics, saved scope/navigation/export and explicit EU Hub/OBP meaning (local pilot) |
 | 0.16    | 2026-11-25 | SMVS Operations project | Snapshot API Access investigation: service/client/IP/User-Agent observations, fixed delivery scope and evidence limits (local pilot) |
 | 0.15    | 2026-11-25 | SMVS Operations project | CRM cutover: durable general affiliations, explicit roles, field retirement, protected reimports and consistent database backup/recovery |
@@ -667,3 +668,20 @@ provide accessible selection/clear controls and disclose that EU in this source
 field denotes Hub/OBP-origin transactions, not a destination market or worldwide
 pack-data distribution. Original market values, source records, authorisation
 boundaries and local case state shall not be changed by filtering.
+
+
+## URS-120
+
+Exceptions and Alert Trends shall constrain date selection to the outer bounds
+of successfully published query periods in the current source namespace,
+including days with no Alerts, capped at the current UTC date. An empty history
+shall disable date selection and explain its unavailability. Gaps within the
+outer bounds shall not be represented as complete coverage. Staff shall select
+the last calendar month, three months, year or all imported dates, ending on the
+latest imported date and clipped to the earliest imported date. Applied and saved
+ranges shall use explicit UTC dates, retained through pagination, record navigation
+and exports. All imported dates shall be selectable beyond one year without an
+external source query. Earlier saved/link dates shall be constrained to the
+available range; invalid editor ranges shall show an actionable in-page message.
+Other conditions, case state, authorisation and original evidence shall remain
+unchanged. All dates shall not imply all work statuses or complete scan coverage.

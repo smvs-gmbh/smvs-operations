@@ -729,3 +729,15 @@ No Jelastic deployment or production source request was performed.
 - [x] Record URS-119 and browser/server verification.
 - [ ] Owner acceptance and separately authorised production deployment.
 - [ ] Reconcile FRS/RA/RTM before the controlled validation baseline.
+
+
+### Imported Exceptions dates — CHG-018 (2026-11-26, local)
+
+- [x] Successful-import bounds including zero-alert days; namespace isolation,
+  empty history, current-UTC cap and explicit coverage-gap caveat.
+- [x] Last month / 3 months / year / All shortcuts in Exceptions and Alert Trends.
+- [x] Remove the one-year local view limit; preserve explicit dates through
+  saved views, record navigation and multi-page exports; native/editor validation.
+- [x] Record URS-120 and automated/browser verification.
+- [ ] Owner acceptance and separately authorised production deployment.
+- [ ] Reconcile FRS/RA/RTM before the controlled validation baseline.

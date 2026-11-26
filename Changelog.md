@@ -4,6 +4,14 @@ Entries distinguish deployed pilot changes from development-only increments.
 Pilot checkpoints and requirements drafts do not constitute an approved QMS
 baseline. Detailed scope/evidence: [change register](docs/validation/CHANGE-REGISTER.md).
 
+## Unreleased — imported Exceptions date ranges (local pilot)
+
+- CHG-018 / URS-120: Restrict date selection to imported query periods, add Last
+  month / 3 months / year / All, and allow views spanning the entire retained
+  history. Preserve explicit dates in saved views/navigation/exports; retain
+  coverage gaps and other filters. Also available in Alert Trends.
+- Verified locally; no schema change or production deployment.
+
 ## Unreleased — multiple requesting markets (local pilot)
 
 - CHG-017: Select several requesting markets in Exceptions with OR semantics;

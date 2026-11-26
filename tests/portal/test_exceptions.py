@@ -229,7 +229,7 @@ def test_trends_and_drill_down_share_alert_and_country_filters(exceptions_portal
     assert "A7-IN-LI" not in drill_down and "UNLINKED" not in drill_down
     assert (
         client.get("/exceptions/trends?start=2024-01-01&end=2026-10-01").status_code
-        == 422
+        == 200
     )
 
 
@@ -357,3 +357,70 @@ def test_multiple_requesting_markets_are_or_filtered_and_survive_navigation(exce
     assert 'value="ZZ" selected' in client.get(base+'&market=ZZ').text
     assert client.get(base+'&market='+','.join('X'+str(i) for i in range(65))).status_code==422
     assert client.get(base+'&market=,,,').status_code==422
+
+
+def test_imported_date_bounds_shortcuts_and_long_navigation(exceptions_portal):
+    import re
+    from datetime import UTC, date, datetime
+    from html import unescape
+    from urllib.parse import parse_qs, urlsplit
+
+    from app.integration.sources.nmvs.exceptions.acquisition import ExceptionsAcquisition
+    from app.portal.exception_dates import date_scope
+    from tests.integration.exceptions.test_exceptions import Client
+
+    client, factory = exceptions_portal
+    # Outer bounds come from successful imports, including days with no alerts.
+    # Deliberately retain a gap: bounds must not claim complete coverage.
+    for first, last, records in [
+        (datetime(2025, 1, 1, tzinfo=UTC), datetime(2025, 1, 15, tzinfo=UTC), []),
+        (datetime(2026, 10, 1, tzinfo=UTC), datetime(2026, 10, 31, tzinfo=UTC),
+         [alert('DATE-RANGE', sourceMarket='DE')]),
+    ]:
+        with factory() as session:
+            run = ExceptionsAcquisition(Client([page(records)]), NS).run(session, first, last)[1].id
+        publish_exceptions(factory, run, NS)
+    with factory() as session:
+        scope = date_scope(session, NS)
+        assert scope['date_min'] == date(2025, 1, 1)
+        assert scope['date_max'] == date(2026, 10, 31)
+        assert [p[2].isoformat() for p in scope['date_presets']] == [
+            '2026-10-01', '2026-08-01', '2025-11-01', '2025-01-01']
+        assert date_scope(session, 'other-namespace')['date_min'] is None
+    response = client.get('/exceptions?period=all&market=DE&work_status=all')
+    assert response.status_code == 200 and '1 matches' in response.text
+    assert parse_qs(response.url.query.decode())['start'] == ['2025-01-01']
+    assert 'min="2025-01-01" max="2026-10-31"' in response.text
+    assert 'Coverage may contain gaps.' in response.text
+    link = unescape(re.search(r'href="(/exceptions/\d+\?nav_start[^\"]+)"', response.text)[1])
+    assert parse_qs(urlsplit(link).query)['nav_start'] == ['2025-01-01']
+    assert client.get(link).status_code == 200
+    for route in ['/exceptions', '/exceptions/trends']:
+        for period, expected in [('1', '2026-10-01'), ('3', '2026-08-01'), ('12', '2025-11-01'), ('all', '2025-01-01')]:
+            result = client.get(route+'?period='+period+'&work_status=all')
+            assert result.status_code == 200
+            params = parse_qs(result.url.query.decode())
+            assert params['start'] == [expected] and 'period' not in params
+        clipped = client.get(route+'?start=2020-01-01&end=2099-01-01&market=DE')
+        assert clipped.status_code == 200
+        params = parse_qs(clipped.url.query.decode())
+        assert params['start'] == ['2025-01-01'] and params['end'] == ['2026-10-31']
+        assert params['market'] == ['DE']
+    assert 'No imported exception period available.' not in response.text
+
+
+def test_date_shortcuts_handle_leap_year_and_partial_history(exceptions_portal):
+    from datetime import UTC, datetime
+    from app.integration.sources.nmvs.exceptions.acquisition import ExceptionsAcquisition
+    from app.portal.exception_dates import date_scope
+    from tests.integration.exceptions.test_exceptions import Client
+
+    _, factory = exceptions_portal
+    with factory() as session:
+        run = ExceptionsAcquisition(Client([page([])]), NS).run(
+            session, datetime(2024, 2, 10, tzinfo=UTC), datetime(2024, 3, 31, tzinfo=UTC))[1].id
+    publish_exceptions(factory, run, NS)
+    with factory() as session:
+        scope = date_scope(session, NS)
+        assert str(scope['date_presets'][0][2]) == '2024-03-01'
+        assert str(scope['date_presets'][1][2]) == '2024-02-10'

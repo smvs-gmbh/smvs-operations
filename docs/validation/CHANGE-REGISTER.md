@@ -539,3 +539,31 @@ the relevant distribution market.
 - **Documentation/boundary.** URS draft v0.17 / URS-119, guide and ToDo updated.
   FRS/RA/RTM reconciliation, owner acceptance and production installation remain
   open. Runtime source on production remains the previously recorded release.
+
+
+## CHG-018 — Imported Exceptions date selection (2026-11-26, local pilot)
+
+- **Request/scope.** Prevent the raw 367-day limit response; provide Last month,
+  Last 3 months, Last year and All in Exceptions and Alert Trends.
+- **Selection.** Min/max published query periods in the current source namespace
+  supply native picker bounds, including zero-alert days. The upper date is capped
+  at UTC today. No history disables the editor. Gaps remain gaps in trend coverage.
+- **Behaviour.** Calendar shortcuts end at the latest imported date and are clipped
+  to the first imported date. Apply/Save store explicit dates; pagination, detail
+  navigation and exports retain that scope. Remove the 367-day view/navigation
+  limit, without changing external acquisition limits. Old out-of-range URLs/views
+  redirect to constrained explicit dates, preserving other conditions; invalid
+  editor dates produce an in-page message. All dates retains the current case status.
+- **Risk/boundary.** Local read-only scope/UI change; no schema, source-record,
+  production configuration or acquisition change. Existing authorisation, response
+  tracking/all-date work queues and CSV audit receipts remain in force. A stable
+  range is retained per view/export; it is not automatically extended mid-export.
+- **Verification.** 544 tests passed, including two-year retained windows with
+  zero-alert imports, namespace separation, internal gaps, month-end/leap-year
+  shortcuts, clipping and long-period record navigation. Real Chrome checks at
+  1500/650 CSS pixels verify toolbox relocation, shortcuts, Apply, native minimum,
+  invalid-date feedback and the independent Trends form. Existing multi-market
+  saved-view and multi-page export regression checked in the browser.
+- **Documentation.** URS draft v0.18 / URS-120, guide and implementation list updated.
+  FRS/RA/RTM reconciliation and owner acceptance remain pending before baseline.
+  Development only; no production deployment authorised by this change.

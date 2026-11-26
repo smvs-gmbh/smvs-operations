@@ -1,3 +1,4 @@
+import {enhanceDateRanges, validDateRanges} from './date-range.js?v=dates-1';
 import {controlValue, restoreControl, enhanceMultipleSelects} from './multiple-select.js?v=markets-1';
 import {installCsvDownload} from './table-csv.js?v=crm-cutover-1';
 import {rightToolbox} from './right-toolbox.js?v=record-actions-1';
@@ -375,6 +376,10 @@ export async function initialiseViews(form) {
         window.location.assign(`${viewPath}?${query}`);
     }
     async function post(command) {
+        if (command !== 'delete' && !validDateRanges(form)) {
+            showToolbox('conditions');
+            throw new Error('Choose dates within the imported range, with the end on or after the start.');
+        }
         const body = new URLSearchParams({
             command, name: name.value, is_default: String(makeDefault.checked),
             config: JSON.stringify(currentConfig()),
@@ -461,4 +466,5 @@ export async function initialiseViews(form) {
         status.textContent = 'Template applied. Save it as a personal view.';
     }
     enhanceMultipleSelects(form);
+    enhanceDateRanges(form);
 }

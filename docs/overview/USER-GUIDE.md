@@ -631,3 +631,25 @@ data; the corresponding batch/version context must be used when investigating
 where pack data was distributed. Incoming IMT Alerts may have an unset Intermarket
 flag. Requesting market, destination-market configuration and last pack update
 market are separate source assertions.
+
+
+## Imported date ranges in Exceptions and Alert Trends
+
+In Exceptions, open **Configure view → Conditions**. **From/To (UTC)** are bounded
+by successful imports in the current source connection, capped at UTC today.
+Days with no Alerts remain selectable. With no imported periods the fields are
+unavailable. The displayed outer range does not establish complete coverage;
+Alert Trends continues to show coverage gaps.
+
+Use **Last month**, **Last 3 months**, **Last year** or **All**, then **Apply**.
+Shortcuts end at the latest imported day, using rolling calendar months/years
+and inclusive dates, clipped to the first imported day. For example, with data
+through 2026-11-26, Last month selects 2026-10-27–2026-11-26. **All** selects the
+entire imported period, including more than a year, while retaining markets,
+case status and other filters. Choose All case statuses separately for totals.
+
+Save view stores the resulting explicit dates; it does not create a rolling
+subscription. Paging, Alert Previous/Next/return and downloads retain these dates.
+Use a shortcut again to include newly imported dates. Old saved/link dates outside
+the imported range are constrained to that range. No fresh NMVS request is made.
+Alert Trends provides the same date editor and shortcuts with its own Apply button.
