@@ -8,6 +8,13 @@ release. Dated sections further down preserve earlier decisions and milestones.
 
 ## Next
 
+- [ ] **Alert Desk — personal comment templates (CHG-020 / URS-122).** Named,
+  private templates with Insert / Save as template / Manage; durable verified-owner
+  scope across sessions/devices, editable draft insertion and unchanged published
+  comments. Review making comments available beyond Finding = Other issue.
+  No automatic sending, finding selection or Case closure. Define participant
+  ownership using existing verified CRM contact/access scope and audit mutations.
+
 - [ ] **Local CRM relation/integrity trial (CHG-011).** Review MAH → Self-declarations
   lookups (structured AND/OR conditions, Unique match/Min/Max and configured outputs), private views, export/filter/sort and the
   new Data integrity page. Requirements: URS-111–114, URS-001 draft v0.14.
@@ -755,3 +762,30 @@ No Jelastic deployment or production source request was performed.
 - [x] Owner acceptance and authorised production deployment (`9c04152`);
   [evidence](../deployment/PACK-AUDIT-WORKER-2026-11-26.md).
 - [ ] Reconcile FRS/RA/RTM before the controlled validation baseline.
+
+
+### Alert Desk continuation checkpoint — 2026-11-26
+
+- **Production:** CHG-019 installed (`9c04152`); Alert Desk Pilot remains disabled.
+- **Local operational pilot resumed:** authenticated Operations `http://localhost:8012`,
+  Alert Desk gateway `http://localhost:8014/alerts`, protected loopback API 8015,
+  existing SMTP test mailbox `http://localhost:18025` (SMTP 11025). Shared dedicated
+  pilot secret lives in local process configuration; no credentials committed.
+  No invitations, codes or reminder emails were sent by resuming the services.
+- **Local synthetic review:** `http://localhost:8021` is running with its existing
+  test cases. No Reset was invoked; fixture sessions renewed for local access.
+- **Available:** organisation/contact-scoped invitation and mailbox verification,
+  End-user/MAH views and findings, batch findings, participant updates, NMVO local
+  Resolve/Reopen and audit/event history, source evidence links and synthetic tests.
+- **Response dates:** configured feature exists, 1–30 weekdays. Current local
+  effective value = default **3**, with no explicit settings row. Due dates start
+  from the request, use Europe/Zurich and count Monday–Friday, not public holidays.
+  Reconcile with the documented two-working-day alert-based feedback target before
+  business acceptance; do not describe the current setting as an approved SLA.
+- **Reminders:** overdue party filters, recipient preview and explicit confirm/send
+  exist. Pilot delivery targets the local test mailbox; this is not an unattended
+  production reminder service. Owner acceptance of dates/reminders remains open.
+- **Next:** CHG-020 comment templates; response-calendar/SLA decisions and acceptance;
+  authorised photo upload/live evidence extensions; configured Hub closure/sync;
+  FRS/RA/RTM and audit/retention validation. AI Operations Intelligence remains a
+  documented proposal, not an enabled source-to-decision model.

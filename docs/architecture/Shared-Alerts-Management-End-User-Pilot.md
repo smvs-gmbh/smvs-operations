@@ -998,3 +998,31 @@ message per eligible Alert SPOC address. Sending is explicit and confined to
 the local test mailbox. The preview reports skipped cases, and a request
 successfully reminded today is excluded from another reminder on the same day.
 Participants need a valid Alert Desk invitation or session to open case links.
+
+
+## Personal comment templates — requested 2026-11-26
+
+The owner requests user-owned reusable comments, as experienced in NMVS Alerts.
+Recorded as CHG-020 / URS-122; not yet implemented. Beside an available free-text
+Comment field, use **My templates**, **Insert**, **Save as template** and
+**Manage templates**. Saving asks for a name. Manage permits rename/edit/delete.
+Insert copies plain text into the editable draft at the insertion point or appends
+it; existing draft text must not be silently replaced. Validate the combined text
+against the destination limit. Submission remains an explicit separate action.
+
+Persist templates server-side under a verified owner identity and authorisation
+scope, surviving case changes, renewed invitations and device/browser changes.
+Internal users can use PortalUser identity. Participant access already resolves a
+verified CRM contact within an organisation/role; define ownership using that
+context rather than accepting an owner ID in the command or owning templates by
+an expiring case/session token. A shared mailbox remains a shared authenticated
+contact identity; it does not prove an individual person. No public or organisation-
+wide template sharing is implied.
+
+Currently the participant Comment field is shown only for Other issue. The next
+iteration should review allowing an optional free-text comment for all findings,
+while retaining the structured finding, pack checks and CAPA as separate answers.
+Template text does not select an answer, make a finding or close a case. Published
+comments remain an immutable text snapshot when their source template is changed
+or deleted. Plan mutation/usage attribution under the existing audit requirements.
+Plain text is the first scope; no macros/placeholders or AI generation are required.

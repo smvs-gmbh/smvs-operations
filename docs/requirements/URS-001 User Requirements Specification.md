@@ -7,7 +7,7 @@
 | **Document ID**    | URS-001                         |
 | **Title**          | User Requirements Specification |
 | **Status**         | Draft                           |
-| **Version**        | 0.19                            |
+| **Version**        | 0.20                            |
 | **Classification** | Internal                        |
 | **Owner**          | SMVS GmbH                       |
 | **Author**         | Reinhold Sojer                  |
@@ -22,6 +22,7 @@
 | ------- | ---------- | -------------- | ------------- |
 | 0.9     | 2026-06-27 | Reinhold Sojer | Initial draft |
 | 0.10    | 2026-11-17 | SMVS Operations project | Reconciled the intended use and added requirements for current workflows and planned Hub integration |
+| 0.20    | 2026-11-26 | SMVS Operations project | Personal reusable comment templates for Alert Desk; requirement recorded, implementation pending |
 | 0.19    | 2026-11-26 | SMVS Operations project | Pack Audit worker liveness, visible queue delay/retry and environment context (local pilot) |
 | 0.18    | 2026-11-26 | SMVS Operations project | Imported Exceptions date bounds, calendar shortcuts and whole-retained-period views (local pilot) |
 | 0.17    | 2026-11-26 | SMVS Operations project | Multiple requesting-market selection in Exceptions; OR semantics, saved scope/navigation/export and explicit EU Hub/OBP meaning (local pilot) |
@@ -704,3 +705,21 @@ worker-status link shall support recovery visibility without re-submitting an
 external report request. Existing source matching, explicit-action/origin checks,
 request deduplication and retained reports shall remain unchanged. The web request
 shall not start a worker or bypass production process/authentication safeguards.
+
+
+## URS-122
+
+Authorised users shall save their own named comment templates and reuse them in
+Alert Desk free-text comments. Templates shall be stored durably for the verified
+owner identity, available across the owner’s cases/sessions/devices, and isolated
+from other users and unauthorised organisation scopes. Renaming, editing and
+removing a template shall not alter previously submitted comments. Inserting a
+template shall populate an editable draft only; it shall not publish, send, change
+structured findings/CAPA, or close a Case. Existing draft text shall not be silently
+overwritten or truncated, and the destination field’s text limit shall remain in
+force. Creation, changes and use with submitted comments shall be traceable within
+the audit design. External participant ownership shall use the server-verified
+contact/access context, not a caller-supplied owner, a case token alone or browser-
+only storage. Initial scope is plain text; organisation-wide sharing, AI generation
+and dynamic placeholders require separate decisions. This is a requested capability;
+no implemented template storage/editor or production release is implied.

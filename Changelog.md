@@ -4,6 +4,13 @@ Entries distinguish deployed pilot changes from development-only increments.
 Pilot checkpoints and requirements drafts do not constitute an approved QMS
 baseline. Detailed scope/evidence: [change register](docs/validation/CHANGE-REGISTER.md).
 
+## Planned — personal Alert Desk comment templates
+
+- CHG-020 / URS-122: Named private comment templates, reusable editable drafts,
+  durable verified-owner scope and preservation of submitted comments. Requirement
+  recorded; implementation pending. Local Alert Desk pilot/test mailbox resumed
+  for continuing review, with no messages sent and no production pilot enablement.
+
 ## 2026-11-26 — Pack Audit worker feedback (pilot server)
 
 - CHG-019 / URS-121: Show environment and recent worker heartbeat before/after a

@@ -622,3 +622,29 @@ Pack Audit/Imports checks passed; 399 hashes and existing source/CRM/request rec
 verified. [Evidence](../deployment/PACK-AUDIT-WORKER-2026-11-26.md) retains the
 rollback location and actual results. Earlier local-only statements above describe
 the preceding stage; Alert Desk Pilot and API Access remain local.
+
+
+## CHG-020 — Personal Alert Desk comment templates (2026-11-26, requested)
+
+- **Request.** Users can save their own comments as named reusable templates,
+  analogous to the NMVS Alerts workflow described by the owner.
+- **Proposed interaction.** My templates selector beside Comment; Insert copies
+  selected plain text into the editable draft, Save as template asks for a name,
+  Manage templates supports rename/edit/delete. Insertion preserves existing text;
+  actual submission remains a separate deliberate action.
+- **Identity.** Server-owned personal records: internal PortalUser identity or
+  verified participant contact + authorised organisation context. Invitations and
+  session tokens are not permanent owners. Shared mailbox/contact identities must
+  not be presented as independently verified natural persons. Persist across
+  sessions/devices; no global organisation sharing or browser-only ownership.
+- **Existing limitation.** The current participant UI exposes Comment only for
+  Finding = Other issue, despite the payload supporting an optional comment.
+  Review making the free-text comment available for all findings as part of this
+  increment, without inferring/changing the structured finding or CAPA answer.
+- **Preservation.** Insert/edit draft only; no silent replacement/truncation,
+  auto-submit, external communication or closure. Enforce destination limits;
+  retain submitted text independently of later template edits/deletion. Record
+  template mutations and submitted usage according to the audit requirements.
+- **Boundary.** Plain text first. No placeholders, global library or AI generation.
+  URS draft v0.20 / URS-122 and ToDo recorded. Implementation, schema/auth design,
+  FRS/RA/RTM and acceptance checks remain pending; nothing deployed under CHG-020.
