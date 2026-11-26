@@ -743,3 +743,14 @@ No Jelastic deployment or production source request was performed.
 - [x] Owner acceptance and authorised production deployment (`ae86621`); see the
   [deployment evidence](../deployment/EXCEPTIONS-DATES-2026-11-26.md).
 - [ ] Reconcile FRS/RA/RTM before the controlled validation baseline.
+
+
+### Pack Audit worker feedback — CHG-019 (2026-11-26, local)
+
+- [x] Show worker liveness/environment before and after requesting evidence.
+- [x] Distinguish missing/stale worker, normal queue, competing work, retry,
+  delayed pickup, running retrieval and unconfirmed processing; retain tasks.
+- [x] Reuse Imports liveness; verify read-only refresh/recovery and safe POSTs.
+- [x] Record URS-121, automated and responsive browser checks.
+- [ ] Owner acceptance and separately authorised production deployment.
+- [ ] Reconcile FRS/RA/RTM before the controlled validation baseline.

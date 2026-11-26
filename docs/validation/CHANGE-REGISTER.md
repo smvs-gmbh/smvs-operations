@@ -579,3 +579,35 @@ checks passed. [Deployment evidence](../deployment/EXCEPTIONS-DATES-2026-11-26.m
 records 398 hashes, rollback archive and actual real-data checks. Earlier local
 status statements above describe the state before this authorisation. Formal
 FRS/RA/RTM reconciliation and QMS baseline approval remain pending.
+
+
+## CHG-019 — Pack Audit background-worker feedback (2026-11-26, local)
+
+- **Trigger.** Owner observed an indefinitely Queued Pack Audit request. Diagnosis
+  found the request in development, not production: the local worker had no
+  heartbeat since 2026-11-21. Restarting manual processing completed the previously
+  requested report (7 events / 4 transactions). Production was healthy/unchanged.
+- **Scope.** Read-only Pack Audit status before and after request. Display actual
+  environment, worker heartbeat UTC, request time and attempt count, with a link
+  to Imports status. Reuse one liveness helper for Imports and Pack Audit.
+- **Rules.** Worker heartbeat every 15 seconds; accept running/manual workers up
+  to 60 seconds old (15-second future clock tolerance). Stopped/missing/stale
+  workers do not establish liveness. Recognise recorded imports/report tasks and
+  future retry deadlines. With no such explanation, warn after two minutes of
+  eligible queue wait, allowing grace after worker startup or retry eligibility.
+- **Safety.** A heartbeat establishes recent liveness, not guaranteed queue/source
+  progress. Stale running work is unconfirmed, not automatically failed. Queue
+  creation remains allowed with a visible offline warning and deduplication;
+  no new API request, process start or stored-state mutation during GET/refresh.
+  Completed source evidence stays available. No schema/configuration changes.
+- **Verification.** Local automated checks cover missing/stopped/stale/manual/
+  automatic/future heartbeats, duplicate POST preservation, busy import, delayed
+  pickup, worker restart grace, retry and running/unconfirmed transitions. Real
+  Chrome at 1500/650 CSS pixels verifies the warning and automatic transition to
+  connected/queued after a heartbeat returns. No report is submitted by that check.
+- **Result.** 553 tests passed (one existing Starlette/httpx deprecation warning);
+  targeted Pack Audit/Imports checks repeated after import/UTC-fixture lint cleanup.
+  Changed Python passes Ruff.
+- **Boundary.** URS draft v0.19 / URS-121, guide and ToDo updated. Local pilot only;
+  FRS/RA/RTM reconciliation and production rollout remain pending. Previously
+  authorised CHG-017/018 deployment does not include this increment.

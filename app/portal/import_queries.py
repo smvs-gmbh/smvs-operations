@@ -11,7 +11,6 @@ from app.domain.models import (
     ManualImportAttempt,
     ManualImportRequest,
     PackAuditRequest,
-    SchedulerHeartbeat,
     UploadReport,
     UploadRequest,
 )
@@ -19,6 +18,7 @@ from app.integration.artifacts.storage import utcnow
 from app.integration.scheduler.control import SOURCES
 from app.portal.exception_queries import namespace
 from app.portal.import_diagnostics import execution_details
+from app.portal.worker_status import worker_state
 
 REPORT_TYPES = {
     "sai": "SAIFullExport",
@@ -57,16 +57,8 @@ def window_coverage(windows, now):
 def overview(session, *, source=""):
     now, ns = utcnow(), namespace(session)
     schedules = {s.import_key: s for s in session.scalars(select(ImportSchedule))}
-    heartbeats = session.scalars(
-        select(SchedulerHeartbeat)
-        .order_by(SchedulerHeartbeat.last_seen_at.desc())
-        .limit(20)
-    ).all()
-    live = [
-        h
-        for h in heartbeats
-        if h.status in {"running", "manual"} and h.last_seen_at >= now - timedelta(seconds=60)
-    ]
+    worker = worker_state(session, now=now)
+    live = worker["workers"]
     current = session.get(CurrentPublication, "product-batch")
     coverage = {
         "sai": f"Published export: {current.sai_exported_at:%Y-%m-%d}"
@@ -219,7 +211,7 @@ def overview(session, *, source=""):
         "cards": cards,
         "workers": live,
         "automatic_workers": [h for h in live if h.status == "running"],
-        "last_heartbeat": heartbeats[0] if heartbeats else None,
+        "last_heartbeat": worker["last_heartbeat"],
         "history": history,
         "history_details": {
             execution.id: execution_details(session, execution, REPORT_TYPES.get(key))

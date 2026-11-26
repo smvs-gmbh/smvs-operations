@@ -653,3 +653,26 @@ subscription. Paging, Alert Previous/Next/return and downloads retain these date
 Use a shortcut again to include newly imported dates. Old saved/link dates outside
 the imported range are constrained to that range. No fresh NMVS request is made.
 Alert Trends provides the same date editor and shortcuts with its own Apply button.
+
+
+## Pack Audit worker status
+
+The Pack Audit page shows **Development** or **Production**, worker liveness and
+the last UTC heartbeat before you request a report. With no current worker,
+**No recent background-worker heartbeat** explains that new requests can be saved
+but must wait for a worker. Your request is retained; submitting it again does
+not add a duplicate. Use **View background-worker status →** to inspect Imports.
+
+Pending requests distinguish waiting for a worker, a normal queue, recorded
+competing import/report work, scheduled retry and retrieving the report. A fresh
+heartbeat with no pickup after two minutes (excluding restart/retry grace and
+recorded competing work) shows **Queue pickup delayed**. A running request with
+stale heartbeats shows **Processing status not confirmed**; this does not prove
+that the NMVS report failed. Request time and attempts are shown alongside status.
+
+The worker sends a heartbeat every 15 seconds; a heartbeat older than 60 seconds
+is stale. Pending Pack Audit pages refresh local status every five seconds, so
+recovery becomes visible without another report submission. These checks do not
+start a worker. Local review needs the separate `--serve-manual` process described
+above; production uses its supervised scheduler. Liveness is evidence of a recent
+worker, not a guarantee that an external report is ready.

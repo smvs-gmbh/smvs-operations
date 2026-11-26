@@ -7,7 +7,7 @@
 | **Document ID**    | URS-001                         |
 | **Title**          | User Requirements Specification |
 | **Status**         | Draft                           |
-| **Version**        | 0.18                            |
+| **Version**        | 0.19                            |
 | **Classification** | Internal                        |
 | **Owner**          | SMVS GmbH                       |
 | **Author**         | Reinhold Sojer                  |
@@ -22,6 +22,7 @@
 | ------- | ---------- | -------------- | ------------- |
 | 0.9     | 2026-06-27 | Reinhold Sojer | Initial draft |
 | 0.10    | 2026-11-17 | SMVS Operations project | Reconciled the intended use and added requirements for current workflows and planned Hub integration |
+| 0.19    | 2026-11-26 | SMVS Operations project | Pack Audit worker liveness, visible queue delay/retry and environment context (local pilot) |
 | 0.18    | 2026-11-26 | SMVS Operations project | Imported Exceptions date bounds, calendar shortcuts and whole-retained-period views (local pilot) |
 | 0.17    | 2026-11-26 | SMVS Operations project | Multiple requesting-market selection in Exceptions; OR semantics, saved scope/navigation/export and explicit EU Hub/OBP meaning (local pilot) |
 | 0.16    | 2026-11-25 | SMVS Operations project | Snapshot API Access investigation: service/client/IP/User-Agent observations, fixed delivery scope and evidence limits (local pilot) |
@@ -685,3 +686,21 @@ external source query. Earlier saved/link dates shall be constrained to the
 available range; invalid editor ranges shall show an actionable in-page message.
 Other conditions, case state, authorisation and original evidence shall remain
 unchanged. All dates shall not imply all work statuses or complete scan coverage.
+
+
+## URS-121
+
+Before and after an explicit Pack Audit report request, authorised staff shall see
+background-worker liveness for the current environment, based on recorded manual
+or automatic scheduler heartbeats. Missing, stopped or stale worker evidence
+shall be disclosed, with the latest known UTC heartbeat or its absence. Queued
+requests shall be retained and distinguish waiting for a worker from normal
+pickup, recorded competing work, scheduled retry and running retrieval. Running
+work with stale liveness shall be presented as unconfirmed, without changing its
+stored state or assuming source failure. A fresh heartbeat alone shall not imply
+that the queue is progressing; unexplained delayed pickup shall be highlighted.
+Request time and attempt count shall be visible. Local status refreshes and a
+worker-status link shall support recovery visibility without re-submitting an
+external report request. Existing source matching, explicit-action/origin checks,
+request deduplication and retained reports shall remain unchanged. The web request
+shall not start a worker or bypass production process/authentication safeguards.
