@@ -7,7 +7,7 @@
 | **Document ID**    | URS-001                         |
 | **Title**          | User Requirements Specification |
 | **Status**         | Draft                           |
-| **Version**        | 0.23                            |
+| **Version**        | 0.24                            |
 | **Classification** | Internal                        |
 | **Owner**          | SMVS GmbH                       |
 | **Author**         | Reinhold Sojer                  |
@@ -22,6 +22,7 @@
 | ------- | ---------- | -------------- | ------------- |
 | 0.9     | 2026-06-27 | Reinhold Sojer | Initial draft |
 | 0.10    | 2026-11-17 | SMVS Operations project | Reconciled the intended use and added requirements for current workflows and planned Hub integration |
+| 0.24    | 2026-11-26 | SMVS Operations project | End Users may access only alerts attributed to their own requesting Location IDs; remove export-cohort and organisation-only exceptions |
 | 0.23    | 2026-11-26 | SMVS Operations project | Compact template insertion and separate personal library with scoped draft/return preservation (local pilot) |
 | 0.22    | 2026-11-26 | SMVS Operations project | Durable private participant comment templates with verified scope, versioned management and audit history (local pilot) |
 | 0.21    | 2026-11-26 | SMVS Operations project | Optional participant comments for all findings; first local increment towards personal templates |
@@ -781,3 +782,17 @@ shall block navigation that would silently lose an editing draft. Personal templ
 remain durable server records; this tab-local draft mechanism does not promise
 cross-device draft synchronisation. Template CRUD/audit and access controls remain
 unchanged; no schema or production release is implied by the layout increment.
+
+
+## URS-123 — End User ownership through requesting locations
+
+An End User shall see and act only on alerts raised by one of its currently
+assigned Locations. Match the alert's requesting/source Location ID against the
+current, unambiguous Location assignments in the appropriate source context. A
+Location mentioned only in a previous pack action shall not grant access. Missing,
+unknown, ambiguous or no-longer-assigned requesting Locations shall deny access.
+Organisation, MAH/product ownership or a manually reviewed export cohort alone
+shall not grant End User access. Apply this to listings, direct case/evidence/
+history/template access, findings, batch selection and response/reminder routing.
+Revalidate scope on every read/write, including already-open cases and sessions.
+Retain historical evidence internally when access ceases; do not delete findings.

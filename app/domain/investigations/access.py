@@ -4,7 +4,7 @@ import hmac
 import secrets
 from datetime import timedelta
 
-from sqlalchemy import and_, case, func, or_, select
+from sqlalchemy import func, or_, select
 
 from app.domain.investigations import audience, pilot, rca
 from app.domain.models import (
@@ -120,54 +120,29 @@ def cases(session, role, crm, namespace):
             if crm.organisation_id
             else None
         )
-        attribution = AlertDeskExportAttribution
-        reviewed_exports = and_(
-            NMVSException.error_code == "A7",
-            NMVSException.evidence["attemptedOperation"].as_string() == "EXPORTED",
-            NMVSException.business_process == "National System Intermarket",
-            NMVSException.organisation_id.is_(None),
-            select(
-                case(
-                    (
-                        func.count(func.distinct(attribution.end_user_id)) == 1,
-                        func.max(attribution.end_user_id),
-                    )
-                )
-            )
-            .where(
-                attribution.source_namespace == NMVSException.source_namespace,
-                attribution.source_market == NMVSException.source_market,
-                attribution.source_location_id == NMVSException.source_location_id,
-                attribution.gtin14 == NMVSException.gtin14,
-                attribution.batch == NMVSException.provided_batch,
-                NMVSException.alert_at >= attribution.from_at,
-                NMVSException.alert_at < attribution.until_at,
-            )
-            .scalar_subquery()
-            == crm.id,
-        )
         if not org or not org.is_observed or org.source_namespace != namespace:
-            return statement.where(reviewed_exports)
-        locations = select(LocalLocation.source_location_id).where(
-            LocalLocation.source_namespace == namespace,
-            LocalLocation.organisation_id == org.id,
-            LocalLocation.is_observed == 1,
+            return statement.where(False)
+        # Only the requesting location establishes End User ownership. Earlier
+        # pack actions, product ownership and reviewed export cohorts cannot grant it.
+        locations = (
+            select(LocalLocation.source_location_id)
+            .where(
+                LocalLocation.source_namespace == namespace,
+                LocalLocation.is_observed == 1,
+                LocalLocation.source_location_id.is_not(None),
+                LocalLocation.source_location_id != "",
+            )
+            .group_by(LocalLocation.source_location_id)
+            .having(func.count() == 1, func.max(LocalLocation.organisation_id) == org.id)
         )
         return statement.where(
+            NMVSException.source_market.in_(("CH", "LI")),
+            NMVSException.source_location_id.in_(locations),
             or_(
-                reviewed_exports,
-                and_(
-                    NMVSException.source_market.in_(("CH", "LI")),
-                    NMVSException.organisation_id == org.source_organisation_id,
-                    or_(
-                        and_(
-                            NMVSException.source_market == "CH",
-                            NMVSException.source_location_id.is_(None),
-                        ),
-                        NMVSException.source_location_id.in_(locations),
-                    ),
-                ),
-            )
+                NMVSException.organisation_id.is_(None),
+                NMVSException.organisation_id == "",
+                NMVSException.organisation_id == org.source_organisation_id,
+            ),
         )
     publication = session.get(CurrentPublication, "product-batch")
     if not publication or publication.source_namespace != namespace or not crm.gln:

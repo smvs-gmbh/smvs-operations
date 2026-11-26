@@ -39,10 +39,7 @@ def test_three_roles_and_batch_reset(tmp_path):
             mah = client.get("/cases/1/mah").text
             assert "Was this batch uploaded?" in mah
             assert "Update findings for this batch (2 alerts)" in end_user
-            assert (
-                "Update findings for this batch (2 alerts)"
-                in client.get("/cases/4/end_user").text
-            )
+            assert client.get("/cases/4/end_user").status_code == 404
             basis = re.search(r'name="basis" value="([^"]+)"', end_user)[1]
             batch = re.search(r'data-batch-revision="([^"]+)"', end_user)[1]
             findings = {
@@ -209,11 +206,19 @@ def test_three_roles_and_batch_reset(tmp_path):
 def test_optional_comment_survives_all_findings_and_round_trip(tmp_path, role, finding):
     from sqlalchemy import select
 
-    from app.domain.models import AlertDeskEvent
+    from app.domain.models import AlertDeskEvent, NMVSException
 
     engine, factory = fixture_database(tmp_path / "comments.db")
     try:
         with TestClient(create_workspace(factory), base_url=ORIGIN, client=("127.0.0.1", 1234)) as client:
+            if role == "end_user":
+                with factory.begin() as session:
+                    own = session.get(NMVSException, 4)
+                    own.source_market = "CH"
+                    own.organisation_id = "1"
+                    own.source_location_id = "fixture-location"
+                    own.is_intermarket = 0
+                    own.business_process = "National System Single Pack API"
             path = f"/cases/4/{role}"
             body = client.get(path).text
             textarea = re.search(r'<textarea id="comment"[^>]*>', body)[0]

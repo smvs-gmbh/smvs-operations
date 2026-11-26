@@ -1,6 +1,6 @@
 # FRS-EXCEPTIONS-001 — Exceptions and Alert Desk
 
-Status **Draft v0.3**, 2026-11-26. Owner SMVS GmbH. The
+Status **Draft v0.4**, 2026-11-26. Owner SMVS GmbH. The
 [traceability matrix](../validation/RTM-001.md) records implementation and test coverage.
 
 Revision 0.2 specifies the implemented local URS-122 template behaviour and the
@@ -30,6 +30,16 @@ Alert Desk shall derive the scope of access from authorised invitations and
 grants. Role, organisation and Case scope shall be checked on reads and writes.
 Expired or revoked access shall be refused. Apply explicit evidence and
 message visibility rules and keep internal review evidence in Operations.
+
+URS-123 / CHG-022: End User scope requires the requesting `source_location_id`
+to match a currently observed, unambiguously assigned Location of the current
+CRM-linked organisation in the same namespace and local source-market context.
+Refuse an explicitly conflicting source Organisation ID. Missing source Location
+IDs have no organisation-only fallback. Prior pack-update Locations and reviewed
+export attributions do not grant access. Central scope selection shall apply to
+case lists, direct views/templates, findings/batches and request/reminder routing;
+current assignment changes invalidate access without deleting retained evidence.
+MAH and internal NMVO visibility use their own roles and remain separate.
 
 ## FRS-EXC-004
 

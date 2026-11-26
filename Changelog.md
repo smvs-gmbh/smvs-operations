@@ -184,3 +184,12 @@ to reconstruct every earlier change retrospectively.
 CHG-021 D deployed on TEST as `e71fd98`, schema 0055 unchanged. Captured invitation
 is available in the authenticated Operations mailbox; existing passkey/invitation
 and messages preserved. 32 focused tests and hosted access/refusal checks pass.
+
+## Unreleased — End User requesting Location ownership
+
+- CHG-022 / URS-123: End Users see only alerts from a currently assigned requesting
+  Location. Remove organisation-only and reviewed foreign-export access fallbacks.
+  Lists, direct views/templates, findings/batches and notification routing share
+  the check. Prior pack changes grant no access; MAH/NMVO scope remains separate.
+- Preserve fixtures and retained findings. The locally originated A24 demo remains
+  visible because its requesting Location belongs to Test pharmacy.

@@ -596,7 +596,7 @@ def test_organisation_invitation_and_case_scope(preview_portal, monkeypatch):
     settings_url = "/admin/alert-desk"
     assert web.get(settings_url, headers=nmvo).status_code == 403
     assert 'value="3"' in web.get(settings_url, headers=admin).text
-    for target in (identifier, attributed_id):
+    for target in (identifier,):
         route = f"/exceptions/{target}/analysis/request-response"
         assert (
             web.post(
@@ -631,8 +631,11 @@ def test_organisation_invitation_and_case_scope(preview_portal, monkeypatch):
         ).status_code
         == 303
     )
+    assert web.post(
+        f"/exceptions/{attributed_id}/analysis/request-response", headers=nmvo,
+        data={"role": "end_user", "basis": version}, follow_redirects=False,
+    ).status_code == 409
     assert [(email, due) for email, _, _, due in requested] == [
-        ("alert@example.test", date(2026, 11, 12)),
         ("alert@example.test", date(2026, 11, 12)),
         ("mah@example.test", date(2026, 11, 13)),
     ]
@@ -649,7 +652,7 @@ def test_organisation_invitation_and_case_scope(preview_portal, monkeypatch):
         "/exceptions?response_status=overdue&response_party=end_user", headers=nmvo
     ).text
     assert (
-        "CH-IMT-ATTRIBUTED" in response_list
+        "CH-IMT-ATTRIBUTED" not in response_list
         and "Review overdue reminders" in response_list
     )
     assert (
@@ -658,7 +661,7 @@ def test_organisation_invitation_and_case_scope(preview_portal, monkeypatch):
             "/exceptions?response_status=overdue&response_party=mah", headers=nmvo
         ).text
     )
-    selected = {f"target_{identifier}": "yes", f"target_{attributed_id}": "yes"}
+    selected = {f"target_{identifier}": "yes"}
     reminder_url = "/exceptions/response-reminders?response_party=end_user"
     preview = web.post(reminder_url, headers=nmvo, data=selected)
     assert (
@@ -673,7 +676,7 @@ def test_organisation_invitation_and_case_scope(preview_portal, monkeypatch):
         "1 of 1 reminders accepted"
         in web.post(reminder_url, headers=nmvo, data=confirmed).text
     )
-    assert len(reminders) == 1 and len(reminders[0][1]) == 2
+    assert len(reminders) == 1 and len(reminders[0][1]) == 1
     assert web.post(reminder_url, headers=nmvo, data=confirmed).status_code == 409
 
     def browser_client():
@@ -756,82 +759,19 @@ def test_organisation_invitation_and_case_scope(preview_portal, monkeypatch):
             == 303
         )
         assert "Closed by SMVS" in end_user.get(f"/alerts/{li_id}").text
-        assert "CH-IMT-ATTRIBUTED" in listing and "CH-IMT-OTHER-BATCH" not in listing
-        imt_page = end_user.get(f"/alerts/{attributed_id}")
-        assert imt_page.status_code == 200 and "Synthetic Pharmacy" in imt_page.text
-        assert "Your investigation" in imt_page.text
-        assert "Update findings for this batch (2 alerts)" in imt_page.text
-        batch_revision = re.search(
-            r'data-batch-revision="([^"]+)"', imt_page.text
-        ).group(1)
         with factory() as session:
-            sibling_id = session.scalar(
-                select(NMVSException.id).where(
-                    NMVSException.unique_alert_id == "CH-IMT-SAME-BATCH"
-                )
-            )
-            unrelated_id = session.scalar(
-                select(NMVSException.id).where(
-                    NMVSException.unique_alert_id == "CH-IMT-OTHER-BATCH"
-                )
-            )
-        bulk = {
-            "publication": attributed_id,
-            "basis": version,
-            "submission_key": str(uuid4()),
-            "finding": "procedural",
-            "capa": "planned",
-            "batch_revision": batch_revision,
-        }
-        endpoint = f"/alerts/{attributed_id}/findings"
-        assert (
-            end_user.post(
-                endpoint, json={**bulk, "batch_revision": "0" * 64}, headers=browser
-            ).status_code
-            == 409
-        )
-        interim = {
-            **bulk,
-            "submission_key": str(uuid4()),
-            "finding": "investigating",
-            "capa": None,
-        }
-        for _ in range(2):
-            assert end_user.post(endpoint, json=interim, headers=browser).json() == {
-                "received": True,
-                "batch_count": 2,
-            }
-        open_cases = end_user.get("/alerts?view=my_cases&finding=investigating").text
-        assert "CH-IMT-ATTRIBUTED" in open_cases and "CH-IMT-SAME-BATCH" in open_cases
-        assert (
-            "CH-IMT-ATTRIBUTED"
-            not in web.get(
-                "/exceptions?response_status=overdue&response_party=end_user",
-                headers=nmvo,
-            ).text
-        )
-        assert (
-            "Update findings for this batch (2 alerts)"
-            in end_user.get(f"/alerts/{attributed_id}").text
-        )
-        for _ in range(2):
-            assert end_user.post(endpoint, json=bulk, headers=browser).json() == {
-                "received": True,
-                "batch_count": 2,
-            }
-        assert "Awaiting SMVS review" in end_user.get(f"/alerts/{sibling_id}").text
-        summary = web.get(f"/exceptions/{attributed_id}/analysis", headers=nmvo).text
-        assert (
-            "CAPA · Planned" in summary
-            and "Process or handling error on my side" in summary
-        )
-        assert end_user.get(f"/alerts/{unrelated_id}").status_code == 404
-        assert (
-            end_user.post(
-                endpoint, json={**bulk, "submission_key": str(uuid4())}, headers=browser
-            ).status_code
-            == 409
-        )
+            sibling_id = session.scalar(select(NMVSException.id).where(NMVSException.unique_alert_id == "CH-IMT-SAME-BATCH"))
+            unrelated_id = session.scalar(select(NMVSException.id).where(NMVSException.unique_alert_id == "CH-IMT-OTHER-BATCH"))
+        # A reviewed export attribution must not expose somebody else's request.
+        assert "CH-IMT-ATTRIBUTED" not in listing
+        assert end_user.get(f"/alerts/{attributed_id}").status_code == 404
+        assert end_user.post(
+            f"/alerts/{attributed_id}/findings",
+            json={"publication": attributed_id, "basis": version,
+                  "submission_key": str(uuid4()), "finding": "investigating"},
+            headers=browser,
+        ).status_code == 404
+        assert end_user.get(f"/alerts/{attributed_id}/comment-templates").status_code == 404
         assert "PRIVATE-SERIAL" not in listing
         assert end_user.get(f"/alerts/{foreign_id}").status_code == 404
         assert "Your investigation" not in end_user.get(f"/alerts/{other_id}").text
@@ -1025,7 +965,7 @@ def test_organisation_invitation_and_case_scope(preview_portal, monkeypatch):
                 select(AlertDeskAccess).where(AlertDeskAccess.role == "end_user")
             )
             grant_id = grant.id
-            assert session.scalar(select(func.count()).select_from(AlertDeskEvent)) == 7
+            assert session.scalar(select(func.count()).select_from(AlertDeskEvent)) == 3
         with factory.begin() as session:
             source_case = session.get(NMVSException, identifier)
             fields = {

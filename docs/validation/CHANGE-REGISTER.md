@@ -862,3 +862,24 @@ CRM/cases/findings/templates and eleven captures retained byte/row-identically.
 Only TEST portal restarted; temporary check session revoked. Deployment evidence
 is appended to the hosted TEST record. This corrects technical access to the inbox,
 not external email delivery or formal protocol acceptance.
+
+## CHG-022 — End User visibility restricted to requesting Location
+
+Owner decision 2026-11-26: End Users may see only alerts they raised, identified
+by one of their own requesting Location IDs. URS-123 (URS draft 0.24),
+FRS-EXC-003 and RA-01/04/09 apply. Source/market namespace and current observed,
+unambiguous Location assignments are required; conflicting Organisation IDs
+refuse access. A missing requesting Location has no organisation-only fallback.
+Earlier pack-update locations and manually reviewed export cohorts cannot grant
+visibility. Remove the export exception from the shared scope predicate; apply
+it to lists, direct reads/templates, findings/batches and notification routing.
+MAH and internal NMVO views remain separate. Retain historical records.
+
+Test changes remove the former foreign-export End User expectation; MAH cohort
+behaviour remains tested. New scope cases cover second own Location, local IMT,
+missing/empty/unknown/foreign Location/context, prior own-location action, explicit
+Organisation mismatch and revoked Location assignments. Existing A24 synthetic
+record is locally originated at the End User's own Location and therefore remains
+visible under this rule; no fixture is silently rewritten or deleted. A24 input
+workflow support is a separate issue. Deploy only the committed/tested candidate
+to TEST; production remains unchanged.
