@@ -908,3 +908,11 @@ rewriting or deleting prior records. It must be denied to the End User for reads
 templates and findings. New seeds/local workspace include both; hosted TEST addition
 requires confirmed TEST identity and preservation of existing data/access. No PROD
 rollout, real NMVS call, external mail or automatic closure is authorised here.
+
+CHG-023 installed on TEST as 3df4191, schema 0055 unchanged, 641 hashes verified.
+Seven synthetic cases now include own A24 ID 6 (editable) and foreign A24 ID 7
+(denied to End User even with earlier own Location). Native MySQL save/reload/CAPA
+and foreign read/template/write checks passed in a rolled-back transaction, leaving
+user sessions/findings unchanged. Prior rows/passkeys preserved. Full local suite
+and focused scope/template regressions support technical acceptance; formal review
+remains open. Runtime evidence and rollback are in the TEST deployment record.

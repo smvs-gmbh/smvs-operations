@@ -206,3 +206,7 @@ own-location cases. MAH retains six; existing data/passkeys/sessions unchanged.
 - Preserve the local A24 example and add a separate foreign-requester fixture
   with an earlier own-location action. Foreign read/write access remains denied;
   MAH A24 input remains outside this increment.
+
+CHG-023 deployed on TEST as `3df4191`, schema 0055 unchanged. Own A24 is editable;
+separate foreign A24 is inaccessible to End User. Native transactional checks pass;
+existing records/sessions preserved and no real mail/pack operation performed.

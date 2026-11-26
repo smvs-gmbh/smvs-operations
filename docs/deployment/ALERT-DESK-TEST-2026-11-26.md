@@ -154,3 +154,31 @@ source-only (previous current e71fd98) and requires restarting TEST API and port
 keep all data. Earlier remote SQLite downgrade limitations remain open; this
 increment records local automated scope tests and actual MySQL scope verification,
 not a fresh full hosted regression or formal protocol completion.
+
+## CHG-023 — A24 End User findings and separate foreign fixture
+
+Runtime `3df41915dbebc75c8df3b533bb19aeb1abe4c875`, unchanged schema 0055,
+641 source/support files verified. TEST API/gateway/portal and local development
+services reloaded. The existing own-location A24 now renders findings, comment,
+templates and own-side CAPA without printed-identifier/upload questions. Server
+validation rejects pack-on-hold, batch and inappropriate identifier/upload fields;
+MAH A24 remains read-only. No pack transaction or automatic closure occurs.
+
+Add only `DEMO-A24-FOREIGN` (ID 7) with DE requesting Location
+`fixture-foreign-requester` and earlier update Location `fixture-location`.
+The existing local `DEMO-A24-1` (ID 6), its identities/context and all existing
+users/passkeys/access sessions/contacts/findings/templates are unchanged by row
+hashes. Seven total cases, four End User cases and seven MAH cases; the foreign
+A24 is excluded from End User scope. No fixture reset or original-record rewrite.
+Protected `backups/a24-before.json` and `evidence/a24.json` retain source/data
+verification and rollback information.
+
+Native TEST MySQL transaction checks used the committed private/public application
+factories, an isolated nested transaction and temporary test capability. They
+verified A24 form rendering, save/reload of progress/comment, CAPA requirement
+and foreign read/template/write refusal. The entire transaction was rolled back;
+assertions confirm original findings count and the user's original session hash
+are unchanged. Results: `evidence/a24-checks.json`. These are technical checks,
+not completed business acceptance or a real pack transaction. Keep the additional
+synthetic fixture and any later user evidence on code rollback; do not restore
+an older database snapshot over new participant work. PROD unchanged.

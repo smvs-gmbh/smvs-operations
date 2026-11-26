@@ -68,6 +68,11 @@ keine zustellbaren Internetpostfächer.
    Hinweise mit dem synthetischen Ausgangsfall vergleichen. Eigene Ursache mit
    CAPA und Kommentar melden; in einem anderen Fall „Still investigating“ oder
    „Root cause not on my side“ wählen. Ergebnis neu laden und vergleichen.
+   Für A24 „DEMO-A24-1“ den eigenen Versuch untersuchen und Ursache/Fortschritt,
+   CAPA und Kommentar erfassen. Eine Rückmeldung ändert keinen Packungsstatus.
+   „DEMO-A24-FOREIGN“ ist ein zusätzlicher Negativfall: Er darf auch dann nicht
+   sichtbar oder bearbeitbar sein, wenn eine frühere Aktion die eigene Location
+   erwähnt. Bestehende Beispiele wurden dafür nicht umgeschrieben.
 2. **Vorlagen:** Über „Templates“ einen Kommentar einfügen; Text ergänzen.
    Den aktuellen Kommentar als Vorlage speichern. Auf „My templates“ bearbeiten
    und zum gleichen Fall zurückkehren. Ungesendete Eingaben dürfen nicht verloren
