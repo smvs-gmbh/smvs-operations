@@ -5,7 +5,7 @@ import secrets
 from sqlalchemy import func, select, text
 
 from app.core.config import get_settings
-from app.core.db.session import SessionFactory
+from app.core.db.session import SessionFactory, get_session_factory
 
 
 def main():
@@ -40,7 +40,7 @@ def main():
 
     # Reuse reviewed synthetic content, but retain no pre-authenticated fixture
     # sessions. Hosted users must follow the real invitation/mailbox flow.
-    seed(SessionFactory, {r: secrets.token_urlsafe(32) for r in ("end_user", "mah")})
+    seed(get_session_factory(), {r: secrets.token_urlsafe(32) for r in ("end_user", "mah")})
     with SessionFactory() as session, session.begin():
         for grant in session.scalars(select(AlertDeskAccess)):
             grant.session_hash = None
