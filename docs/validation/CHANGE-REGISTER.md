@@ -724,3 +724,50 @@ records the insertion request, not confirmation of the browser’s eventual edit
 Existing local End-user/MAH test-case URLs serve their separate libraries without
 resetting source cases. Main portal reloaded the new model metadata; manual report
 worker, production runtime/schema and production data were not changed.
+
+
+### CHG-020 increment C — Compact picker and separate library (2026-11-26, local)
+
+- **Owner approval.** Accepted the interactive proposal: one Templates picker at
+  Comment; all create/rename/edit/remove configuration on My templates. Save current
+  comment as template opens that editor prefilled; navigation returns to the same
+  Alert. The editor is absent from the investigation DOM, not merely collapsed.
+- **Routes.** Authenticated library at `/alerts/{id}/templates`, with a personal
+  entry from the case list. Existing case-scoped template API/audit is reused;
+  generic entry chooses an authorised case context. With no accessible case, show
+  an unavailable-context message. Return destinations are internally constructed
+  and retain only the existing view/finding/query/before filters. The standalone
+  synthetic workspace provides equivalent role/case routes.
+- **Draft integrity/privacy.** Only explicit library navigation stores a snapshot
+  in tab-local sessionStorage. Key uses private-API HMAC context tied to the verified
+  grant/session and case, not a caller-supplied identity. Restoration within 30 min
+  preserves comment and supported unsubmitted answers if the current source/latest
+  finding/progress/batch revision matches. A changed case restores only the comment,
+  shows a review message and uses current structured answers. Source basis/publication
+  are never taken from storage; submission gets a fresh UUID. Completed submissions
+  clear the saved snapshot. Storage failure blocks navigation from an editing form
+  with an actionable message instead of silently losing work. No drafts enter URLs.
+- **UI boundaries.** Picker loads only on opening; keyboard Escape closes it and
+  restores trigger focus. Configuration is on the separate page, with dirty-editor
+  protection, existing versions/conflict rejection and unchanged ownership/audit.
+  Controls stay unavailable until their controller/data is ready. Template storage
+  remains server-side; tab-local drafts are not cross-device draft synchronisation.
+- **Verification.** Server tests cover separate page, absent inline editor,
+  current/foreign access, internally scoped return and query preservation, distinct
+  owner draft keys, and read-only rendering. Real Chrome checks full create-from-
+  comment/return flow, draft Finding/CAPA, insertion, cross-page edit, preservation
+  of the case draft, changed-case protection, role isolation and 1500/650 layouts.
+- **Delivery.** Local only, schema remains 0055. No production/configuration changes,
+  external communication or source report request. URS v0.23, guide and ToDo updated;
+  FRS/RA/RTM reconciliation remains pending before the controlled baseline.
+
+
+CHG-020 C result: **572 tests passed**, one existing Starlette/httpx deprecation
+warning; Ruff and both JavaScript syntax checks pass. Chrome checks additionally
+confirm that unavailable session storage blocks navigation from an editing draft
+and role changes do not restore another context’s draft. Management from the case
+list returns to the list; management opened from an Alert returns to that Alert.
+Completed submissions and browser-cache restoration clear obsolete saved snapshots.
+Local pilot services reloaded the implementation without resetting review cases or
+sending invitations/messages. Production remains at `9c04152`, schema 0054; local
+schema remains 0055. Personal template storage/audit rows were not migrated.

@@ -242,6 +242,11 @@ def install(app, sessions, secret):
                 else case["organisation"],
                 "publication": record.id,
                 "basis": record.payload_hash,
+                "draft_context": hmac.digest(
+                    secret.encode(),
+                    f"comment-draft:{grant.id}:{grant.contact_version}:{grant.session_hash}".encode(),
+                    "sha256",
+                ).hex(),
                 "latest": latest.data if latest else None,
                 "progress": progress,
                 "code": record.error_code,

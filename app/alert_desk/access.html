@@ -22,6 +22,7 @@
     {% for key, label in [('my_cases','My cases'), ('completed','Completed by us'), ('on_hold','Packs on hold'), ('all','All cases')] %}
     <a href="{{ request.url.include_query_params(view=key).remove_query_params('before') }}" {% if filters.view == key %}aria-current="page"{% endif %}>{{ label }}{% if key == "on_hold" and listing.hold_count %} ({{ listing.hold_count }}){% endif %}</a>
     {% endfor %}
+    <a href="/alerts/templates?{{ list_query }}">My templates</a>
   </nav>
   <div class="heading"><div>
     <h1>My cases</h1><p>{{ listing.organisation }} · {{ 'MAH' if listing.role == 'mah' else 'End User' }}</p>

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My comment templates · SMVS Alert Desk</title>
+  <link rel="stylesheet" href="{{ assets }}/design/focused.css">
+  <link rel="stylesheet" href="{{ assets }}/design/compact.css">
+  <link rel="stylesheet" href="{{ assets }}/design/columns.css">
+  <link rel="stylesheet" href="{{ assets }}/case.css?v=templates-page-1">
+  <script defer src="{{ assets }}/comment-templates.js?v=templates-page-1"></script>
+</head>
+<body>
+<header><div class="logo" aria-label="SMVS Alert Desk"><span>SMV<b>S</b></span><small>Alert Desk</small></div>
+{% if case %}<div><strong>{{ case.organisation }}</strong><span>{{ 'MAH' if case.audience == 'mah' else 'End User' }}</span></div>{% endif %}</header>
+<main>
+  {% include 'participant_navigation.html' %}
+  {% if case %}<a class="alert-list-link" href="{{ my_cases_url if from_case_list else case_url }}" id="template-return">← {{ "My cases" if from_case_list else "Back to " ~ case.alert }}</a>{% endif %}
+  <div class="template-page-heading"><div><h1>My comment templates</h1><p class="investigation-hint">Private to your verified contact and organisation context.</p></div>
+  {% if case %}<button class="button" type="button" id="template-new" disabled>New template</button>{% endif %}</div>
+  {% if case %}
+  <section class="template-library" data-template-library data-template-url="{{ template_api }}" data-draft-key="{{ draft_key }}" data-create="{{ 'true' if create_from_draft else 'false' }}">
+    <div><label for="template-list">My templates</label><select id="template-list" disabled size="6" aria-label="My templates"></select><button type="button" class="button" id="template-reload">Reload list</button></div>
+    <form class="template-editor" id="template-editor">
+      <div><label for="template-name">Template name</label><input id="template-name" maxlength="80" required autocomplete="off"></div>
+      <div><label for="template-text">Template text</label><textarea id="template-text" rows="6" maxlength="1000" required></textarea></div>
+      <div class="template-buttons"><button class="button primary" type="submit" id="template-save" disabled>Save new template</button><button class="button" type="button" id="template-delete" disabled>Delete template</button><button class="button" type="button" id="template-cancel">Cancel</button></div>
+      <p class="investigation-hint">Up to 1,000 characters. Editing templates does not change your comment draft or earlier findings.</p>
+    </form>
+    <p class="template-library-status" id="template-status" role="status" aria-live="polite"></p>
+  </section>
+  {% else %}<p>No authorised alerts are currently available. Open a case to manage your personal templates.</p>{% endif %}
+</main>
+</body>
+</html>

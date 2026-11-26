@@ -814,3 +814,13 @@ No Jelastic deployment or production source request was performed.
 - [x] Restart local gateway/API/test workspace with existing configuration and cases.
 - [ ] Owner acceptance and controlled FRS/RA/RTM/CHG-003 reconciliation.
 - [ ] Separately decide NMVO closing-note integration; no production rollout.
+
+
+### CHG-020 increment C — Compact investigation (2026-11-26, local)
+
+- [x] One Templates picker beside Comment, configuration moved to My templates.
+- [x] Separate library with exact Alert return; prefill from current comment.
+- [x] Same-tab draft preservation with verified owner/session/case scope; retain
+  current structured answers when a source/finding revision changes.
+- [x] Existing template access/CRUD/audit API unchanged; no schema change.
+- [ ] Owner acceptance of implemented layout; FRS/RA/RTM reconciliation.

@@ -4,6 +4,14 @@ Entries distinguish deployed pilot changes from development-only increments.
 Pilot checkpoints and requirements drafts do not constitute an approved QMS
 baseline. Detailed scope/evidence: [change register](docs/validation/CHANGE-REGISTER.md).
 
+## Unreleased — compact participant template navigation (local)
+
+- CHG-020 C / URS-122: Templates picker beside Comment; create/edit/delete move to
+  My templates with exact case return and prefill from the current comment.
+- Preserve unsent same-tab answers; scope snapshots to verified session/case, retain
+  only the comment if the case changed. Existing template API/audit and schema 0055
+  unchanged. No production rollout.
+
 ## Unreleased — optional general Alert Desk comments (local)
 
 - CHG-020 A / URS-122: Optional Comment for all supported End-user/MAH findings,

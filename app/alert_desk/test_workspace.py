@@ -28,7 +28,12 @@ from starlette.concurrency import run_in_threadpool
 
 from app.alert_desk.schema import FINDINGS, Findings
 from app.alert_desk.test_pack_audits import seed_pack_audits
-from app.alert_desk.web import ASSETS, DESIGN_ASSETS, render_case
+from app.alert_desk.web import (
+    ASSETS,
+    DESIGN_ASSETS,
+    render_case,
+    render_template_library,
+)
 from app.connect.protocol import PRIVATE_HEADERS, bounded_json, json_object
 from app.core.db.models import (
     AcquiredArtifact,
@@ -608,6 +613,11 @@ def create_workspace(factory, *, origin=ORIGIN):
             back_label="Test workspace",
             findings_url=f"/cases/{identifier}/{role}/findings",
         )
+
+    @app.get("/cases/{identifier}/{role}/templates")
+    def template_library(request: Request, identifier: int, role: ROLE):
+        case = read_case(identifier, tokens[role])
+        return render_template_library(request, case, assets="/case-assets", my_cases_url="/")
 
     @app.get("/cases/{identifier}/{role}/comment-templates")
     def comment_template_list(identifier: int, role: ROLE):

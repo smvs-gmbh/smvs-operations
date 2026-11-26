@@ -116,6 +116,7 @@ if (form) {
       if (!caseStatus.hasAttribute("data-smvs-status")) {
         caseStatus.textContent = answers.finding === "investigating" ? "Still investigating" : "Awaiting SMVS review";
       }
+      form.dispatchEvent(new Event("alert-desk:findings-saved"));
       status.textContent = "";
       reviewCommentText.textContent = comment.value.trim();
       reviewComment.hidden = !reviewCommentText.textContent;

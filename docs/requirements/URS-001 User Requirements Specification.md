@@ -7,7 +7,7 @@
 | **Document ID**    | URS-001                         |
 | **Title**          | User Requirements Specification |
 | **Status**         | Draft                           |
-| **Version**        | 0.22                            |
+| **Version**        | 0.23                            |
 | **Classification** | Internal                        |
 | **Owner**          | SMVS GmbH                       |
 | **Author**         | Reinhold Sojer                  |
@@ -22,6 +22,7 @@
 | ------- | ---------- | -------------- | ------------- |
 | 0.9     | 2026-06-27 | Reinhold Sojer | Initial draft |
 | 0.10    | 2026-11-17 | SMVS Operations project | Reconciled the intended use and added requirements for current workflows and planned Hub integration |
+| 0.23    | 2026-11-26 | SMVS Operations project | Compact template insertion and separate personal library with scoped draft/return preservation (local pilot) |
 | 0.22    | 2026-11-26 | SMVS Operations project | Durable private participant comment templates with verified scope, versioned management and audit history (local pilot) |
 | 0.21    | 2026-11-26 | SMVS Operations project | Optional participant comments for all findings; first local increment towards personal templates |
 | 0.20    | 2026-11-26 | SMVS Operations project | Personal reusable comment templates for Alert Desk; requirement recorded, implementation pending |
@@ -759,3 +760,24 @@ implicit submission. Template-service failure shall leave manual comments usable
 Case-token-only legacy access shall not acquire template ownership. This increment
 covers verified participant comments; NMVO closing notes are a separate future
 integration. Audit retention/protection remains subject to CHG-003 acceptance.
+
+
+### URS-122 — Compact investigation and separate management
+
+The investigation shall expose a compact Templates picker beside Comment; template
+configuration shall be on a separate My templates page. Case navigation and the
+case list shall provide a personal-library entry. Inserting an item changes only
+the editable comment. Save current comment as template shall open the separate
+editor prefilled without putting comment text into a URL. Management shall retain
+an internal link back to the originating authorised Alert and its allowed filters.
+
+For this local increment, preserve unsubmitted comment/answers across that page
+transition in the same browser tab, with a verified-session/case-bound opaque key
+and a thirty-minute restoration limit. Protected source identifiers and submission
+keys shall never be restored from browser storage. If the case revision changes,
+restore only the comment and require review of current structured answers. Another
+contact/role/session must not inherit this restoration. Unavailable browser storage
+shall block navigation that would silently lose an editing draft. Personal templates
+remain durable server records; this tab-local draft mechanism does not promise
+cross-device draft synchronisation. Template CRUD/audit and access controls remain
+unchanged; no schema or production release is implied by the layout increment.

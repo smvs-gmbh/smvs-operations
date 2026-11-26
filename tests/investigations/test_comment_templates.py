@@ -396,3 +396,45 @@ def test_template_actions_respect_current_access_not_just_an_old_cookie(
     )
     with factory() as session:
         assert session.get(AlertDeskCommentTemplate, item["id"]).deleted_at is None
+
+
+def test_template_configuration_is_separate_and_keeps_authorised_case_return(templates):
+    import re
+    from html import unescape
+
+    _, factory, private = templates
+    with TestClient(public_app(SECRET,transport=httpx.ASGITransport(app=private)),base_url=PUBLIC_ORIGIN,client=('127.0.0.1',1234)) as web:
+        assert web.get('/alerts/1/templates').status_code==404
+        web.cookies.set(ACCESS_COOKIE,TOKENS['end_user'],path='/alerts')
+        response=web.get('/alerts/1?view=all&q=Lot')
+        assert response.status_code==200
+        assert 'id="template-toggle"' in response.text
+        assert 'id="template-editor"' not in response.text
+        assert 'id="template-manage"' not in response.text
+        assert 'id="template-reload"' not in response.text
+        assert '/alerts/1/templates?view=all&amp;q=Lot' in response.text
+        library=web.get('/alerts/1/templates?view=all&q=Lot&back=https://evil.test')
+        assert library.status_code==200 and 'My comment templates' in library.text
+        assert 'id="template-editor"' in library.text and 'id="guided-form"' not in library.text
+        assert 'https://evil.test' not in library.text
+        assert 'href="/alerts/1?view=all&amp;q=Lot"' in library.text
+        key=re.search(r'data-draft-key="([^"]+)"',response.text)[1]
+        assert key==re.search(r'data-draft-key="([^"]+)"',library.text)[1]
+        assert 'comment-draft:' not in unescape(key) # only an opaque session-bound digest
+        web.cookies.set(ACCESS_COOKIE,TOKENS['mah'],path='/alerts')
+        other=web.get('/alerts/1/templates')
+        assert other.status_code==200
+        assert re.search(r'data-draft-key="([^"]+)"',other.text)[1]!=key
+        assert web.get('/alerts/99999/templates').status_code==404
+    with factory() as session:
+        assert session.scalar(select(func.count()).select_from(AlertDeskCommentTemplateEvent))==0
+
+
+def test_template_navigation_entry_uses_only_current_verified_access(templates):
+    _,_,private=templates
+    with TestClient(public_app(SECRET,transport=httpx.ASGITransport(app=private)),base_url=PUBLIC_ORIGIN,client=('127.0.0.1',1234)) as web:
+        assert web.get('/alerts/templates').status_code==404
+        web.cookies.set(ACCESS_COOKIE,TOKENS['end_user'],path='/alerts')
+        response=web.get('/alerts/templates')
+        assert response.status_code==200 and '/templates' in str(response.url)
+        assert 'My comment templates' in response.text

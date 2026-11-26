@@ -719,3 +719,28 @@ text version. Removed library entries are retained in audit history; this is not
 personal-data erasure action. These controls do not appear in a case-token-only
 legacy view or the internal NMVO closing-note editor. Template failures do not
 prevent typing and submitting a normal comment. The [local synthetic workspace](http://localhost:8021/) provides separate End-user and MAH libraries for testing.
+
+
+## Compact Templates menu and separate management (local)
+
+In an Alert investigation, use **Templates ▾** beside Comment, then select a named
+item to insert it into the editable draft. The editor and configuration buttons
+now live on **My templates**, available from the participant navigation. Select an
+item there to rename/edit, use **New template**, or delete it. **Save current comment
+as template…** in the compact picker opens that separate page with the comment
+prefilled. Supply a name and save; no finding is sent by template management.
+
+Use **← Back to [Alert ID]** to return. Unsubmitted comment, finding and applicable
+checks/CAPA are preserved for this explicit transition in the same tab, for up to
+30 minutes. If the Alert or its latest finding/progress changed while away, only
+the comment is restored and a message asks you to review current answers. Published
+source identifiers are always current; the old draft cannot restore stale source
+IDs or a submission key. Different verified sessions/contact/role contexts do not
+inherit the snapshot. If this browser blocks session storage, navigation warns
+before leaving an editing draft. Draft text is not put into links.
+
+This temporary browser draft differs from your durable personal template library:
+templates remain on the server across cases and renewed access, while unsent draft
+restoration is limited to the same tab/session. Library access still requires an
+authorised Alert context; with no accessible Alerts the entry explains that limit.
+The existing API, ownership, version checks, limits and audit receipts are unchanged.

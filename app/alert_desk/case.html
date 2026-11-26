@@ -7,9 +7,9 @@
   <link rel="stylesheet" href="{{ assets }}/design/focused.css">
   <link rel="stylesheet" href="{{ assets }}/design/compact.css">
   <link rel="stylesheet" href="{{ assets }}/design/columns.css">
-  <link rel="stylesheet" href="{{ assets }}/case.css?v=templates-1">
-  <script defer src="{{ assets }}/case.js?v=templates-1"></script>
-  {% if organisation_case and not preview %}<script defer src="{{ assets }}/comment-templates.js?v=templates-1"></script>{% endif %}
+  <link rel="stylesheet" href="{{ assets }}/case.css?v=templates-page-1">
+  <script defer src="{{ assets }}/case.js?v=templates-page-1"></script>
+  {% if organisation_case and not preview %}<script defer src="{{ assets }}/comment-templates.js?v=templates-page-1"></script>{% endif %}
 </head>
 <body>
   <header>
@@ -17,6 +17,7 @@
     {% if case %}<div><strong>{{ case.organisation }}</strong><span>{{ "MAH" if case.audience == "mah" else "End User" }}{% if case.location %} · {{ case.location }}{% endif %}</span></div>{% endif %}
   </header>
   <main>
+    {% if organisation_case and not preview and case %}{% include "participant_navigation.html" %}{% endif %}
     {% if organisation_case %}<a class="alert-list-link" href="{{ back_url }}">← {{ back_label }}</a>{% endif %}
     <p id="access-status" role="status" {% if case and not message %}hidden{% endif %}>{{ message or 'Open your invitation link to view the case.' }}</p>
     {% if case %}
@@ -148,34 +149,20 @@
                 </div>
               </fieldset>
               <div id="comment-field">
-                <label for="comment">Comment (optional)</label>
-                <p class="investigation-hint" id="comment-hint">Add details or a progress update. Maximum 1,000 characters.</p>
-                {% if organisation_case and not preview %}
-                <div class="comment-templates" data-template-url="{{ request.url.path }}/comment-templates">
-                  <label for="comment-template">My templates</label>
-                  <select id="comment-template" aria-describedby="template-status"><option value="">Loading templates …</option></select>
-                  <div class="template-buttons">
-                    <button class="button" type="button" id="template-insert" disabled>Insert</button>
-                    <button class="button" type="button" id="template-create">Save as template</button>
-                    <button class="button" type="button" id="template-manage">Manage templates</button>
-                    <button class="button" type="button" id="template-reload">Reload list</button>
-                  </div>
-                  <p class="investigation-hint" id="template-status" role="status" aria-live="polite">Templates are private to your verified contact and organisation context.</p>
-                  <details id="template-editor">
-                    <summary>Template editor</summary>
-                    <label for="template-name">Template name</label>
-                    <input id="template-name" maxlength="80" autocomplete="off">
-                    <label for="template-text">Template text</label>
-                    <textarea id="template-text" rows="4" maxlength="1000"></textarea>
-                    <p class="investigation-hint">Plain text, up to 1,000 characters. Saving here does not submit a finding.</p>
-                    <div class="template-buttons">
-                      <button class="button" type="button" id="template-save">Save new template</button>
-                      <button class="button" type="button" id="template-delete" disabled>Delete template</button>
-                      <button class="button" type="button" id="template-cancel">Cancel</button>
+                <div class="comment-heading">
+                  <label for="comment">Comment (optional)</label>
+                  {% if organisation_case and not preview %}
+                  <div data-template-url="{{ template_api }}" data-library-url="{{ library_url }}" data-draft-key="{{ draft_key }}" data-draft-revision="{{ draft_revision }}">
+                    <button class="button" type="button" id="template-toggle" disabled aria-expanded="false" aria-controls="template-menu">Templates ▾</button>
+                    <div class="template-menu" id="template-menu" hidden>
+                      <div id="template-choices"></div>
+                      <a class="template-create-link" href="{{ library_url ~ ('&' if '?' in library_url else '?') }}create=1" data-template-navigation>Save current comment as template…</a>
                     </div>
-                  </details>
+                  </div>
+                  {% endif %}
                 </div>
-                {% endif %}
+                <p class="investigation-hint" id="comment-hint">Add details or a progress update. Maximum 1,000 characters.</p>
+                {% if organisation_case and not preview %}<p id="template-status" class="investigation-hint" role="status" aria-live="polite"></p>{% endif %}
                 <textarea id="comment" name="comment" aria-describedby="comment-hint" rows="3" maxlength="1000">{{ latest.comment or "" }}</textarea>
               </div>
               <p class="investigation-hint" id="finding-hint">SMVS will review your finding.</p>

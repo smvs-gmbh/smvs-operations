@@ -1,6 +1,8 @@
 """Stateless local browser gateway for SMVS Alert Desk."""
 
+import json
 import os
+from hashlib import sha256
 from pathlib import Path
 from urllib.parse import urlencode
 from uuid import uuid4
@@ -34,6 +36,33 @@ DESIGN_STYLES = {"focused.css", "compact.css", "columns.css"}
 templates = Jinja2Templates(directory=str(ASSETS))
 
 
+def template_context(request, case, *, my_cases_url="/alerts"):
+    # Build internal destinations; never accept a caller-supplied return URL.
+    context = case.get("draft_context", "")
+    if len(context) != 64 or any(c not in "0123456789abcdef" for c in context):
+        raise HTTPException(503, "Verified draft context is unavailable. Reload the case.")
+    path = request.url.path.removesuffix("/templates")
+    query = urlencode({k: request.query_params[k][:100] for k in ("view", "finding", "q", "before") if k in request.query_params})
+    suffix = "?" + query if query else ""
+    return {
+        "library_url": path + "/templates" + suffix,
+        "case_url": path + suffix,
+        "my_cases_url": my_cases_url + suffix if my_cases_url == "/alerts" else my_cases_url,
+        "template_api": path + "/comment-templates",
+        "draft_key": "alert-desk-template-draft:" + context + ":" + str(case["publication"]),
+        "draft_revision": sha256(json.dumps({k: case.get(k) for k in ("basis", "latest", "progress", "batch_revision")}, sort_keys=True).encode()).hexdigest(),
+    }
+
+
+def render_template_library(request, case, *, assets="/alerts", my_cases_url="/alerts"):
+    return templates.TemplateResponse(request=request, name="comment_templates.html", context={
+        "case": case, "assets": assets, "library_active": True,
+        "create_from_draft": request.query_params.get("create") == "1",
+        "from_case_list": request.query_params.get("return") == "cases",
+        **template_context(request, case, my_cases_url=my_cases_url),
+    })
+
+
 def render_case(
     request,
     case,
@@ -53,6 +82,8 @@ def render_case(
         status_code=status_code,
         context={
             "case": case,
+            **(template_context(request, case, my_cases_url=back_url)
+               if case and organisation_case and not preview else {}),
             "message": message,
             "key": uuid4(),
             "comparison": COMPARISON,
@@ -354,6 +385,24 @@ def create_app(secret, *, transport=None):
                 503, "Alert Desk is temporarily unavailable. Try again."
             )
         return result
+
+    @app.get("/alerts/{identifier:int}/templates")
+    async def template_library(request: Request, identifier: int):
+        case = await forward("GET", f"/access/alerts/{identifier}", session=template_session(request))
+        return render_template_library(request, case)
+
+    @app.get("/alerts/templates")
+    async def template_library_entry(request: Request):
+        listing = await forward("GET", "/access/alerts", session=template_session(request), params={"view": "all"})
+        if not listing["rows"]:
+            return templates.TemplateResponse(request=request, name="comment_templates.html", context={
+                "case": None, "assets": "/alerts", "my_cases_url": "/alerts", "library_active": True,
+            })
+        case = await forward("GET", f"/access/alerts/{listing['rows'][0]['id']}", session=template_session(request))
+        # Choose an authorised context for the unchanged, case-scoped audit API.
+        from starlette.responses import RedirectResponse
+        query = urlencode({"return": "cases", **{k: request.query_params[k][:100] for k in ("view", "finding", "q", "before") if k in request.query_params}})
+        return RedirectResponse(f"/alerts/{case['publication']}/templates?{query}", status_code=303)
 
     @app.get("/alerts/{identifier:int}/comment-templates")
     async def list_templates(request: Request, identifier: int):
