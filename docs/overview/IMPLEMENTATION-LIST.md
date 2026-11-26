@@ -727,7 +727,8 @@ No Jelastic deployment or production source request was performed.
 - [x] Label EU as Hub/OBP context and distinguish it from destination markets.
 - [x] Keep the page-selection counter when moving Actions into its toolbox.
 - [x] Record URS-119 and browser/server verification.
-- [ ] Owner acceptance and separately authorised production deployment.
+- [x] Owner acceptance and authorised production deployment (`ae86621`); see the
+  [deployment evidence](../deployment/EXCEPTIONS-DATES-2026-11-26.md).
 - [ ] Reconcile FRS/RA/RTM before the controlled validation baseline.
 
 
@@ -739,5 +740,6 @@ No Jelastic deployment or production source request was performed.
 - [x] Remove the one-year local view limit; preserve explicit dates through
   saved views, record navigation and multi-page exports; native/editor validation.
 - [x] Record URS-120 and automated/browser verification.
-- [ ] Owner acceptance and separately authorised production deployment.
+- [x] Owner acceptance and authorised production deployment (`ae86621`); see the
+  [deployment evidence](../deployment/EXCEPTIONS-DATES-2026-11-26.md).
 - [ ] Reconcile FRS/RA/RTM before the controlled validation baseline.

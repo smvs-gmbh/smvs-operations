@@ -165,9 +165,8 @@ partial UTC day: **694/694 complete UTC days**, 22,235 unique source Alerts
 (5,644 in 2025; 16,591 in 2026 year-to-date), 15,716 added to the original 6,519.
 Native bounded queries and gap filling were used; no runtime/schema deployment.
 See [execution and source limits](../validation/evidence/2026-11-26-exceptions-backfill.md).
-The deployed portal still requires separate 2025/2026 views because of its
-one-year query limit. CHG-018 removes that local view limit in development and
-adds imported-range date shortcuts; production deployment is pending. Use All
+CHG-018 is installed in production (`ae86621`): imported-range date shortcuts
+and whole-retained-history views replace the earlier one-year UI limit. Use All
 work statuses for analytical totals. Requesting market/source process and SAI
 product matching must be distinguished from the Intermarket flag and from the
 last pack update market. Successful scans require complementary reports: the

@@ -4,21 +4,16 @@ Entries distinguish deployed pilot changes from development-only increments.
 Pilot checkpoints and requirements drafts do not constitute an approved QMS
 baseline. Detailed scope/evidence: [change register](docs/validation/CHANGE-REGISTER.md).
 
-## Unreleased — imported Exceptions date ranges (local pilot)
+## 2026-11-26 — Exceptions markets and dates (pilot server)
 
-- CHG-018 / URS-120: Restrict date selection to imported query periods, add Last
-  month / 3 months / year / All, and allow views spanning the entire retained
-  history. Preserve explicit dates in saved views/navigation/exports; retain
-  coverage gaps and other filters. Also available in Alert Trends.
-- Verified locally; no schema change or production deployment.
-
-## Unreleased — multiple requesting markets (local pilot)
-
-- CHG-017: Select several requesting markets in Exceptions with OR semantics;
-  retain the selection in saved views, navigation and exports. Existing single
-  market URLs/views remain compatible. EU is labelled Hub/OBP source context.
-- Preserve the selection counter when Actions moves into its toolbox. URS-119,
-  user guidance and validation follow-ups recorded; no production deployment.
+- CHG-017/018, URS-119/120: Multiple requesting markets and imported-period date
+  bounds with Last month / 3 months / year / All. Whole retained history works
+  across views, Alert navigation and exports; other conditions remain applied.
+- Targeted runtime `ae86621`, based on previous CRM baseline `8e9748d`; unchanged
+  schema 0054. API Access and Alert Desk Pilot remain local.
+- 538 candidate tests passed; production verification confirms 398 source hashes,
+  login protection, 2025-01-01–2026-11-26 date bounds and unchanged 22,235 Alerts
+  and existing CRM records. [Deployment evidence](docs/deployment/EXCEPTIONS-DATES-2026-11-26.md).
 
 ## Unreleased — API Access (local pilot)
 

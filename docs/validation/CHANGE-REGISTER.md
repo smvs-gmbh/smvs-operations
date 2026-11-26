@@ -567,3 +567,15 @@ the relevant distribution market.
 - **Documentation.** URS draft v0.18 / URS-120, guide and implementation list updated.
   FRS/RA/RTM reconciliation and owner acceptance remain pending before baseline.
   Development only; no production deployment authorised by this change.
+
+
+### CHG-017/018 deployment acceptance — 2026-11-26
+
+Owner accepted and authorised production installation. Targeted, committed/pushed
+runtime `ae866214c23e002140f95877a77ea411a017a420` installed from the CRM baseline;
+API Access and Alert Desk Pilot excluded. Schema/configuration unchanged. 538
+candidate tests and production scope/health/authentication/source-preservation
+checks passed. [Deployment evidence](../deployment/EXCEPTIONS-DATES-2026-11-26.md)
+records 398 hashes, rollback archive and actual real-data checks. Earlier local
+status statements above describe the state before this authorisation. Formal
+FRS/RA/RTM reconciliation and QMS baseline approval remain pending.
