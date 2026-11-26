@@ -156,3 +156,17 @@ supplier; no new L3/L4 endpoint or schema adapter has been implemented. Current
 imports use the existing Alert contract and cannot claim coverage of all L3/L4
 exceptions. A failed retrieval is retried using a new source query; accepted local
 evidence is not removed when a server-side request/result expires.
+
+
+## Production historical extension — 2026-11-26
+
+Owner-requested backfill now covers 2025-01-01 through the current 2026-11-26
+partial UTC day: **694/694 complete UTC days**, 22,235 unique source Alerts
+(5,644 in 2025; 16,591 in 2026 year-to-date), 15,716 added to the original 6,519.
+Native bounded queries and gap filling were used; no runtime/schema deployment.
+See [execution and source limits](../validation/evidence/2026-11-26-exceptions-backfill.md).
+The portal's one-year query limit requires separate 2025/2026 views, with All
+work statuses for analytical totals. Requesting market/source process and SAI
+product matching must be distinguished from the Intermarket flag and from the
+last pack update market. Successful scans require complementary reports: the
+Alert API is not a complete scan inventory.

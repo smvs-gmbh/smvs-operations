@@ -12,6 +12,15 @@ baseline. Detailed scope/evidence: [change register](docs/validation/CHANGE-REGI
   source-row evidence, fixed snapshot scope and explicit WAF evidence limits.
   URS draft v0.16 / URS-118; no database migration or production deployment.
 
+## 2026-11-26 — production Exceptions history (operational data)
+
+- Extend accepted history to 2025-01-01 through the current UTC day using native
+  chunked backfill/gap recovery. Verified 694/694 complete days, 22,235 distinct
+  Alerts, original 6,519 retained and no duplicate source Alert IDs. No application
+  deployment, schema or schedule change.
+- Record source-market/SAI interpretation and complementary report limitations in
+  [the operation evidence](docs/validation/evidence/2026-11-26-exceptions-backfill.md).
+
 ## 2026-11-25 — deployed CRM pilot cutover
 
 - CHG-015: Clean CRM column labels/catalogues; unify durable general Contact
