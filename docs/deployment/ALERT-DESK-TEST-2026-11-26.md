@@ -182,3 +182,39 @@ are unchanged. Results: `evidence/a24-checks.json`. These are technical checks,
 not completed business acceptance or a real pack transaction. Keep the additional
 synthetic fixture and any later user evidence on code rollback; do not restore
 an older database snapshot over new participant work. PROD unchanged.
+
+
+## CHG-025 — Real recipient preparation, capture still active
+
+2026-11-26: installed committed runtime
+`614524d2579183258831a0d6446dc4165418a765`, 651 archive files checked by hash.
+Native TEST MySQL upgraded 0055 → 0056. A consistent protected SQL/gzip snapshot
+of all 73 existing tables was made and read back before migration (SHA-256
+`17977bf4b536b6b2c21feab7eb7a76ceec9938f5fae3dc527082df444179afdc`).
+Protected remote evidence: `mail-preflight.json`, `sendgrid-preparation.json`
+and `mail-smoke.json`; backup path is retained privately. Never restore this
+old snapshot over later participant findings. Prefer capture/code rollback with
+the additive schema retained; schema downgrade refuses nonempty delivery history.
+
+Updated existing synthetic contact IDs 1/2 to Nicolas Florin
+(`nicolas.florin@smvo.ch`, End User) and Reinhold Sojer
+(`reinhold.sojer@smvo.ch`, MAH), respectively. Organisation assignments and IDs
+are unchanged. ORM contact versions incremented 1 → 2; old grants fail current
+membership checks. Fresh invitations are required. Original source records,
+findings/comments, personal templates, users/passkeys and all other existing
+tables match preflight fingerprints. No fixture reset and no automatic invitations.
+
+Sender `alerts@smvs-gmbh.ch`, approved two-recipient list and explicit capture mode
+are installed in protected runtime configuration. API key/template ID remain
+unconfigured. External delivery count is zero. All four supervised services run;
+private delivery UI requires staff sign-in at its configured Host. Public Alert
+Desk responds 200, private mailbox/delivery URLs return 404 publicly, and the
+separate VerifyIt TEST homepage responds 200. A direct loopback request using
+the wrong Host was correctly refused with 403; the configured staff Host redirects
+to sign-in (303). No authentication control was relaxed.
+
+Local suite: 602 passed; targeted mail/migration/private-UI checks on hosted
+Python 3.15: 14 passed. One existing Starlette/httpx deprecation warning remains.
+Development database also upgraded to 0056 and local services reloaded, preserving
+configuration. These are supporting checks, not actual delivery/business acceptance.
+Production is unchanged. See [SendGrid setup](ALERT-DESK-SENDGRID-TEST.md).

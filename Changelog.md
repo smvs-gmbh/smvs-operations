@@ -225,3 +225,8 @@ Add controlled SendGrid transport, shared dynamic template assets, protected
 configuration example and private delivery history (schema 0056). Capture stays
 the default; real external delivery requires private key/template activation.
 No production change or completed end-user delivery validation is claimed.
+
+CHG-025 installed on shared synthetic TEST as runtime `614524d`, schema 0056.
+Both approved contact addresses updated with version-based access invalidation;
+findings/templates/passkeys preserved. Capture remains active, key/template ID
+and real external delivery acceptance pending. PROD unchanged.

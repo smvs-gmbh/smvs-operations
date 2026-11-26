@@ -11,7 +11,8 @@ release. Dated sections further down preserve earlier decisions and milestones.
 - [ ] **CHG-025 — Activate and validate TEST email.** Controlled SendGrid transport,
   shared template and private receipts are implemented; configure the private
   Mail Send key and active template ID, then verify approved participant delivery.
-  Capture remains active during preparation.
+  TEST runtime `614524d`, schema 0056 and both real contact addresses are installed.
+  Capture remains active; fresh invitations are required after contact-version changes.
   [Setup](../deployment/ALERT-DESK-SENDGRID-TEST.md).
 
 - [ ] **CHG-024 — Combined Exception audit/history.** Current Audit trail shows

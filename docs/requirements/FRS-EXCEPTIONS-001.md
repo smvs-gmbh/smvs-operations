@@ -1,6 +1,6 @@
 # FRS-EXCEPTIONS-001 — Exceptions and Alert Desk
 
-Status **Draft v0.5**, 2026-11-26. Owner SMVS GmbH. The
+Status **Draft v0.6**, 2026-11-26. Owner SMVS GmbH. The
 [traceability matrix](../validation/RTM-001.md) records implementation and test coverage.
 
 Revision 0.2 specifies the implemented local URS-122 template behaviour and the
