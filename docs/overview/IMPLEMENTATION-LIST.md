@@ -8,6 +8,13 @@ release. Dated sections further down preserve earlier decisions and milestones.
 
 ## Next
 
+- [ ] **CHG-024 — Combined Exception audit/history.** Current Audit trail shows
+  only NMVO/local review events. Include retained End User/MAH submitted findings,
+  CAPA/comments and amendments with source attribution. Design retained Hub event
+  observations before adding them to durable history; no silent remote lookup on
+  opening the audit view. Keep Pack Audit Trail and private template drafts separate.
+  [Recorded scope](../validation/CHANGE-REGISTER.md#chg-024--combined-exception-investigation-history-recorded-not-implemented).
+
 - [x] **CHG-021 — Install Alert Desk on shared synthetic TEST.** Runtime `42f85d6`,
   schema 0055, dedicated public participant HTTPS, private staff tunnel and captured
   mail. VerifyIt data/configuration and PROD unchanged.

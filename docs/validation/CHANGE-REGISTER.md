@@ -916,3 +916,31 @@ and foreign read/template/write checks passed in a rolled-back transaction, leav
 user sessions/findings unchanged. Prior rows/passkeys preserved. Full local suite
 and focused scope/template regressions support technical acceptance; formal review
 remains open. Runtime evidence and rollback are in the TEST deployment record.
+
+## CHG-024 — Combined Exception investigation history (recorded, not implemented)
+
+Owner expectation 2026-11-26: the Exception Audit trail should show participant
+and Hub investigation events as well as NMVO decisions. Inspection confirms the
+current route selects only ExceptionReviewEvent. Submitted End User/MAH findings
+and comments are retained separately in AlertDeskEvent and are not lost; the view
+omits them. AMS Hub history is currently requested live and is not retained as a
+local observation/event stream. No combined audit completeness can be claimed.
+
+Target: a chronological, source-labelled Case history of local decisions,
+submitted participant progress/findings/CAPA/comments and amendments, published
+SMVS updates/requests/reminders where retained, and retained Hub observations.
+Distinguish local Case decisions, participant findings and external Hub actions;
+keep source actor/organisation/event time and local observation time separate.
+Do not invent a local decision from a Hub event, infer a missing actor or deduplicate
+local and Hub actions without source identity. Retain immutable Hub evidence and
+stable source identities/retry behaviour before representing it as durable audit.
+Opening the audit view must not silently trigger remote Hub traffic. The Pack
+Audit Trail remains a separate technical pack chronology. Personal template
+libraries/drafts are not published Case feedback. Existing system-wide audit and
+retention gaps remain open under CHG-003.
+
+Requirements basis: URS-003/053/057/090–094, FRS-CORE-007,
+FRS-EXC-004/005/009/010; risks RA-01/04/07/11/14. Plan synthetic Hub fixtures and
+source/actor/order/amendment/pagination/failure tests on TEST; no real Hub writes,
+new credentials, automatic closure or production deployment is implied. Scope,
+FRS/RTM reconciliation, implementation and actual acceptance remain pending.

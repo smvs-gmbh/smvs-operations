@@ -210,3 +210,10 @@ own-location cases. MAH retains six; existing data/passkeys/sessions unchanged.
 CHG-023 deployed on TEST as `3df4191`, schema 0055 unchanged. Own A24 is editable;
 separate foreign A24 is inaccessible to End User. Native transactional checks pass;
 existing records/sessions preserved and no real mail/pack operation performed.
+
+## Planned — combined investigation history
+
+- CHG-024: Record the gap between the local-decision Audit trail and expected
+  participant/Hub Case history. Participant findings already persist separately;
+  Hub history remains live-only and needs retained source observations. No
+  implementation/deployment or audit-completeness claim in this planning entry.
