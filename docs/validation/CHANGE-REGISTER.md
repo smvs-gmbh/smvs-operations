@@ -1,5 +1,30 @@
 # SMVS Operations change register
 
+## CHG-021 — Hosted Alert Desk TEST pilot and validation preparation
+
+- **Request/date:** 2026-11-26. Owner authorises transfer to a synthetic TEST
+  installation, requests validation instructions and comparison of VPN versus
+  public TEST Connect access. This does not authorise production rollout.
+- **Preparation:** [Deployment/access plan](../deployment/ALERT-DESK-TEST-PREPARATION.md)
+  identifies localhost-only origins, development gates, capturing SMTP and missing
+  public gateway packaging. Do not bypass these by exposing a development runtime.
+- **Validation:** [20-case execution guide](ALERT-DESK-TEST-VALIDATION.md) with
+  installation/data prerequisites, roles, expected outcomes, timing-policy gate,
+  evidence/deviation record and acceptance decision. All TEST cases unexecuted.
+  FRS-EXC-011 specifies existing URS-122 behaviour; FRS-EXC-012 specifies planned
+  hosted controls. RA/RTM addenda retain open controls and residual acceptance.
+- **Target:** Owner supplied `env-1900268.jcloud.ik-server.com`. Read-only HTTPS
+  inspection identifies VerifyIt and `x-verifyit-environment: test`; separate
+  VerifyIt deployment records identify that application's validation environment.
+  Clarify Operations coexistence/target before mutations. No service/data changed.
+- **Access proposal:** Operations staff remain on VPN; external participants use
+  a dedicated HTTPS TEST Connect hostname with scoped invitation/mailbox access.
+  VPN-only is an alternative for initial internal testing. Public-mode choice and
+  approved test mail recipients remain pending.
+- **State:** Documentation/preflight only. Candidate local participant functions
+  at `f9245ba`, schema 0055; hosted portability and actual deployment pending.
+  Existing PROD Operations/Connect and local services remain unchanged.
+
 Use one entry per change or independently reviewable increment. Record
 scope, requirement and risk references, and the evidence and decision for
 the release. The pre-release baseline for comparison is `d446f5d`.

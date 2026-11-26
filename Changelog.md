@@ -4,6 +4,14 @@ Entries distinguish deployed pilot changes from development-only increments.
 Pilot checkpoints and requirements drafts do not constitute an approved QMS
 baseline. Detailed scope/evidence: [change register](docs/validation/CHANGE-REGISTER.md).
 
+## Unreleased — Alert Desk TEST preparation
+
+- CHG-021: Prepared deployment/access comparison and a 20-case validation protocol
+  with traceability, expected outcomes, evidence and open timing-policy decision.
+  Reconcile local templates and planned hosted controls in draft FRS/RA/RTM.
+- Owner-supplied TEST hostname currently serves VerifyIt; Operations target or
+  coexistence requires clarification. No server, data or public routing change.
+
 ## Unreleased — compact participant template navigation (local)
 
 - CHG-020 C / URS-122: Templates picker beside Comment; create/edit/delete move to

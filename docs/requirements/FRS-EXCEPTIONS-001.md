@@ -1,7 +1,11 @@
 # FRS-EXCEPTIONS-001 — Exceptions and Alert Desk
 
-Status **Draft v0.1**, 2026-11-17. Owner SMVS GmbH. The
+Status **Draft v0.2**, 2026-11-26. Owner SMVS GmbH. The
 [traceability matrix](../validation/RTM-001.md) records implementation and test coverage.
+
+Revision 0.2 specifies the implemented local URS-122 template behaviour and the
+planned hosted TEST boundary under CHG-021. It does not approve the existing draft
+or mark the TEST portability requirements implemented.
 
 ## FRS-EXC-001
 
@@ -93,3 +97,45 @@ the last successful check and any failure or incomplete coverage.
 Verify the API's time-window, archive and pagination limits and exercise
 backlog recovery with 1,000 Exceptions. Confirm polling interval, initial
 loading, cache freshness and reopening behaviour before implementation.
+
+## FRS-EXC-011
+
+Verified participants shall be able to retain optional plain-text comments for
+all supported findings within the 1,000-character bound and retain private named
+comment templates. Template ownership shall derive from current verified contact,
+role and CRM organisation membership; reads/writes shall recheck current access.
+Templates shall persist across authorised sessions, support versioned create,
+edit, rename and soft deletion, enforce name/length/quota constraints, and retain
+mutation/insertion events transactionally. Failed audit persistence shall not
+leave a partial template mutation. Published comments shall be independent snapshots.
+
+The investigation shall offer a compact Templates picker. Insertion shall preserve
+the existing draft text and not submit a finding. Configuration shall be on a
+separate My templates page with an internally constructed return to the exact
+case or list context. Explicit same-tab navigation shall preserve the unsent draft
+for up to 30 minutes in verified session/case scope. Restore supported answers only
+when the case revision matches; otherwise restore only the comment with a review
+message. Never restore authority-bearing publication/basis/submission values from
+browser storage. If storing the draft fails, prevent silent draft-loss navigation.
+Clear obsolete snapshots after submission and cached-page restoration.
+
+This specifies the local verified-participant implementation under CHG-020;
+NMVO closing-note templates and legacy case-only access are outside this increment.
+
+## FRS-EXC-012
+
+For the planned hosted TEST pilot, use a distinct store containing synthetic data,
+explicit feature enablement, authenticated staff access and isolated service/source
+credentials. Non-development execution shall not require disabling production
+authentication or setting the environment to development. All invitation/update/
+reminder links shall use the validated TEST participant origin. Validate gateway
+Host/Origin, HTTPS cookies and narrowly trusted proxy peers; when crossing nodes,
+verify private TLS and authenticate the private API. Public participant routes
+shall not expose Operations administration, database access or fixture reset tools.
+
+Keep capturing mail initially and enforce an approved-recipient boundary before
+activating external test delivery. Record installed commit/manifest, schema,
+configuration, retained fixture identity, supervised services, backup and rollback.
+Verify the selected VPN/public mode from an external client. Existing production
+Operations/Connect shall remain unchanged. These hosted controls remain planned
+until implementation and target evidence are recorded under CHG-021.

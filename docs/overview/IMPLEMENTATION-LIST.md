@@ -8,6 +8,15 @@ release. Dated sections further down preserve earlier decisions and milestones.
 
 ## Next
 
+- [ ] **CHG-021 — Alert Desk on synthetic TEST.** Resolve the supplied VerifyIt
+  TEST hostname versus intended Operations installation, then implement hosted
+  origins/feature gate/mail/private gateway safeguards locally and deploy a
+  committed candidate to the confirmed TEST target. Keep PROD unchanged.
+  Select VPN-only or dedicated public TEST Connect; restrict real test delivery.
+  Execute the [prepared 20-case validation guide](../validation/ALERT-DESK-TEST-VALIDATION.md)
+  with retained evidence, timing-policy decision and named review. Preparation is
+  documented; no hosted TEST deployment/acceptance has occurred.
+
 - [x] **Alert Desk — personal comment templates (CHG-020 / URS-122), local participants.** Named,
   private templates with Insert / Save as template / Manage; durable verified-owner
   scope across sessions/devices, editable draft insertion and unchanged published
