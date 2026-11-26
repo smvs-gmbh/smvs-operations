@@ -230,3 +230,8 @@ CHG-025 installed on shared synthetic TEST as runtime `614524d`, schema 0056.
 Both approved contact addresses updated with version-based access invalidation;
 findings/templates/passkeys preserved. Capture remains active, key/template ID
 and real external delivery acceptance pending. PROD unchanged.
+
+2026-11-26 17:18 UTC: configured TEST SendGrid with the owner's protected key/template
+and activated the two-recipient allowlist; API/portal restarted. Source/schema
+unchanged. No invitation was sent by activation; first inbox/code validation pending.
+Development stays in capture mode; PROD unchanged. Email languages are deferred.

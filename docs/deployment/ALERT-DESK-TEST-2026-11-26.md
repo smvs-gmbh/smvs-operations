@@ -218,3 +218,27 @@ Python 3.15: 14 passed. One existing Starlette/httpx deprecation warning remains
 Development database also upgraded to 0056 and local services reloaded, preserving
 configuration. These are supporting checks, not actual delivery/business acceptance.
 Production is unchanged. See [SendGrid setup](ALERT-DESK-SENDGRID-TEST.md).
+
+
+## CHG-025 — TEST SendGrid activated
+
+2026-11-26 17:18 UTC: following owner confirmation that the API key and dynamic
+template were supplied in the protected local file, transferred only the five
+allowlisted mail settings over the verified SSH channel. Kept source runtime
+`614524d`, schema 0056, recipient allowlist Nicolas Florin/Reinhold Sojer and
+sender `alerts@smvs-gmbh.ch`. Atomically updated the owner-only TEST runtime JSON,
+retained a private configuration backup and restarted only API/portal services.
+All other settings, development capture mode and PROD are unchanged. No source
+redeployment or data migration was required. Secrets are absent from this record.
+
+Supporting checks: complete TEST configuration accepted by the local/runtime
+validator, four supervised services running, configured staff Host redirects
+unauthenticated delivery-history access to sign-in, and approved contact addresses
+match CRM assignments. Delivery count at activation was zero; activation sent no
+messages. Private evidence: `sendgrid-activation.json` and
+`sendgrid-activation-check.json`. Provider authentication, active template rendering
+and actual inbox/code delivery remain to be verified by the first individual
+invitations. Test the owner's MAH invitation first, then the End User invitation
+using separate browser profiles. Acceptance by SendGrid is not inbox confirmation.
+Rollback: switch TEST mail mode to capture and restart API/portal, preserving
+receipt and participant data. Do not restore the database for a mail-mode rollback.

@@ -8,11 +8,16 @@ release. Dated sections further down preserve earlier decisions and milestones.
 
 ## Next
 
+- [ ] **Alert Desk email languages (deferred by owner).** Add preferred language
+  to the CRM contact and allow the participant to change it in Alert Desk. Define
+  supported languages, fallback and template selection before implementation.
+
 - [ ] **CHG-025 — Activate and validate TEST email.** Controlled SendGrid transport,
   shared template and private receipts are implemented; configure the private
   Mail Send key and active template ID, then verify approved participant delivery.
   TEST runtime `614524d`, schema 0056 and both real contact addresses are installed.
-  Capture remains active; fresh invitations are required after contact-version changes.
+  SendGrid is now activated on TEST; first invitation/code/inbox checks remain pending.
+  Fresh invitations are required after contact-version changes.
   [Setup](../deployment/ALERT-DESK-SENDGRID-TEST.md).
 
 - [ ] **CHG-024 — Combined Exception audit/history.** Current Audit trail shows
