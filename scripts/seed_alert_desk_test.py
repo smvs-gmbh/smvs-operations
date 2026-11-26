@@ -20,6 +20,16 @@ def main():
         for table in tables:
             if table == "alembic_version":
                 continue
+            if table == "import_mutexes":
+                expected = {
+                    "mapping:product-batch", "mapping:participants", "mapping:activity",
+                    "mapping:exceptions", "queue:pack-audit", "worker:pack-audit",
+                    "queue:uploads", "worker:uploads", "queue:imports-ui",
+                }
+                actual = set(session.execute(text("SELECT import_key FROM import_mutexes")).scalars())
+                if actual != expected:
+                    raise RuntimeError("Unexpected TEST migration lock records.")
+                continue
             if not table.replace("_", "").isalnum():
                 raise RuntimeError("Unexpected table identifier.")
             if session.execute(text("SELECT COUNT(*) FROM `" + table + "`")).scalar():
