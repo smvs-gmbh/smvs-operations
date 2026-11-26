@@ -883,3 +883,11 @@ record is locally originated at the End User's own Location and therefore remain
 visible under this rule; no fixture is silently rewritten or deleted. A24 input
 workflow support is a separate issue. Deploy only the committed/tested candidate
 to TEST; production remains unchanged.
+
+CHG-022 result: 589 local tests pass; runtime 1198796 installed on TEST with schema
+0055 unchanged and 640 hashes verified. Native TEST scope: four own-location
+alerts for End User versus six for MAH; reviewed foreign A7s excluded. Existing
+users/passkeys/sessions/grants/fixtures/findings/templates unchanged by row hashes.
+Development services reloaded; no resets, invitations or external messages. Keep
+A24 input support separate: the retained A24 fixture has an own requesting Location
+and remains visible. Rollback/evidence recorded in the TEST deployment document.

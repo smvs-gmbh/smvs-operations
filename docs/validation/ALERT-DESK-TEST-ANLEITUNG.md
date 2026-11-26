@@ -9,6 +9,8 @@ Soll-Ergebnisse, Risiken und Anforderungen an die Nachweise.
 
 **End User und MAH:**
 `https://node221862-env-1900268.jcloud.ik-server.com/alerts`.
+End User sehen ausschliesslich Alerts ihrer eigenen anfragenden Location-IDs.
+Frühere Packungsaktionen und Export-Zuordnungen geben keinen Zugriff.
 Dieser Zugang ist öffentlich per HTTPS erreichbar. Testpersonen brauchen dafür
 keinen OpenVPN-Client. Sie benötigen trotzdem eine gültige Einladung und den
 Bestätigungscode für den zugeordneten Kontakt. Die Startseite allein gibt keine

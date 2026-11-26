@@ -133,3 +133,24 @@ was reissued, no source imports triggered and VerifyIt remains available. Runtim
 `backups/mailbox-fix-before.json` and `evidence/mailbox-fix.json` retain the protected
 rollback/data verification record. To roll back code, restore the previous current
 symlink and restart only smvs-test-portal; keep the database and mail intact.
+
+## CHG-022 — Requesting Location ownership
+
+TEST runtime `11987967bfa8081fd56ced5497345c149af5874b`, unchanged schema 0055;
+640 source/support hashes verified. 589 local tests pass. Restarted only TEST API
+and portal; local development services also reloaded without fixture reset or
+mail delivery. Current TEST MySQL query returns four End User alerts, all at
+`fixture-location`: DEMO-A2-1/2, DEMO-A3-1, DEMO-A24-1. The two foreign A7 export
+alerts are excluded despite the reviewed export attribution. MAH retains six.
+A24 remains because the retained fixture is explicitly a local requesting-location
+case, not an IMT; no source record is rewritten to force a desired UI result.
+
+Before/after hashes confirm unchanged users/passkeys, access grants/sessions,
+contacts, alerts, findings and templates. No DB write/migration or source call is
+part of this rollout. VerifyIt and the public/private TEST entry points remain
+reachable; PROD unchanged. Protected runtime `backups/requesting-location-before.json`
+and `evidence/requesting-location.json` retain the full verification. Rollback is
+source-only (previous current e71fd98) and requires restarting TEST API and portal;
+keep all data. Earlier remote SQLite downgrade limitations remain open; this
+increment records local automated scope tests and actual MySQL scope verification,
+not a fresh full hosted regression or formal protocol completion.

@@ -193,3 +193,7 @@ and messages preserved. 32 focused tests and hosted access/refusal checks pass.
   the check. Prior pack changes grant no access; MAH/NMVO scope remains separate.
 - Preserve fixtures and retained findings. The locally originated A24 demo remains
   visible because its requesting Location belongs to Test pharmacy.
+
+CHG-022 deployed on TEST as `1198796`, schema 0055 unchanged. 589 local tests pass;
+native MySQL scope excludes foreign export-attributed A7s and retains four actual
+own-location cases. MAH retains six; existing data/passkeys/sessions unchanged.
