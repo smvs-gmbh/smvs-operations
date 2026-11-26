@@ -29,8 +29,9 @@ if (fragment.startsWith("access=")) {
 const form = document.querySelector("#guided-form");
 if (form) {
   const capa = document.querySelector("#own-measures");
-  const commentField = document.querySelector("#other-comment-field");
-  const comment = document.querySelector("#other-comment");
+  const comment = document.querySelector("#comment");
+  const reviewComment = document.querySelector("#review-comment");
+  const reviewCommentText = document.querySelector("#review-comment-text");
   const hint = document.querySelector("#next-check");
   const status = document.querySelector("#findings-status");
   const review = document.querySelector("#review-state");
@@ -73,7 +74,6 @@ if (form) {
     const ownSide = finding?.hasAttribute("data-own-side");
     capa.hidden = capa.disabled = !ownSide;
     if (!ownSide) capa.querySelectorAll("input").forEach(input => { input.checked = false; });
-    commentField.hidden = comment.disabled = finding?.value !== "other";
     if (hint) {
       hint.textContent = guidance[form.elements.comparison.value]
         || "Check the scanner, software and any manual entry used for this verification.";
@@ -113,6 +113,8 @@ if (form) {
         caseStatus.textContent = answers.finding === "investigating" ? "Still investigating" : "Awaiting SMVS review";
       }
       status.textContent = "";
+      reviewCommentText.textContent = comment.value.trim();
+      reviewComment.hidden = !reviewCommentText.textContent;
       form.hidden = true;
       review.hidden = false;
       amend.focus();

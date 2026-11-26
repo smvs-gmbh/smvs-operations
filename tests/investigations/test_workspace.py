@@ -2,6 +2,7 @@ import re
 from html import unescape
 from uuid import uuid4
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.alert_desk.test_workspace import ORIGIN, create_workspace, fixture_database
@@ -196,5 +197,49 @@ def test_three_roles_and_batch_reset(tmp_path):
         ) as restarted:
             assert "Your investigation" in restarted.get("/cases/1/mah").text
             assert download in restarted.get("/exceptions/4/audit-trail").text
+    finally:
+        engine.dispose()
+
+
+@pytest.mark.parametrize("role,finding", [
+    ("end_user", "procedural"), ("end_user", "technical"), ("end_user", "other"),
+    ("end_user", "not_my_side"), ("end_user", "investigating"),
+    ("mah", "other"), ("mah", "not_my_side"), ("mah", "investigating"),
+])
+def test_optional_comment_survives_all_findings_and_round_trip(tmp_path, role, finding):
+    from sqlalchemy import select
+
+    from app.domain.models import AlertDeskEvent
+
+    engine, factory = fixture_database(tmp_path / "comments.db")
+    try:
+        with TestClient(create_workspace(factory), base_url=ORIGIN, client=("127.0.0.1", 1234)) as client:
+            path = f"/cases/4/{role}"
+            body = client.get(path).text
+            textarea = re.search(r'<textarea id="comment"[^>]*>', body)[0]
+            assert 'disabled' not in textarea and 'maxlength="1000"' in textarea
+            assert '<div id="comment-field">' in body
+            basis = re.search(r'name="basis" value="([^"]+)"', body)[1]
+            payload = {
+                "publication": int(re.search(r'name="publication" value="([0-9]+)"', body)[1]),
+                "basis": basis, "finding": finding,
+                "submission_key": str(uuid4()),
+                "comment": 'Scanner geprüft.\n<script>alert("source text")</script>',
+                **({"capa": "planned"} if finding in {"procedural", "technical", "other"} else {}),
+            }
+            headers = {"Origin": ORIGIN}
+            assert client.post(path+"/findings", headers=headers, json=payload).status_code == 200
+            rendered = client.get(path).text
+            assert 'Scanner geprüft.\n&lt;script&gt;' in rendered
+            assert '<div id="review-comment" >' in rendered
+            assert '<script>alert("source text")</script>' not in rendered
+            with factory() as session:
+                event = session.scalars(select(AlertDeskEvent).where(AlertDeskEvent.kind == "Findings submitted").order_by(AlertDeskEvent.id.desc())).first()
+                assert event.data["comment"] == payload["comment"]
+                assert event.data["finding"] == finding
+            too_long = {**payload, "submission_key": str(uuid4()), "comment": "x"*1001}
+            assert client.post(path+"/findings", headers=headers, json=too_long).status_code == 422
+            empty = {**payload, "submission_key": str(uuid4()), "comment": ""}
+            assert client.post(path+"/findings", headers=headers, json=empty).status_code == 200
     finally:
         engine.dispose()

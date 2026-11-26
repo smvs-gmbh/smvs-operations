@@ -648,3 +648,32 @@ the preceding stage; Alert Desk Pilot and API Access remain local.
 - **Boundary.** Plain text first. No placeholders, global library or AI generation.
   URS draft v0.20 / URS-122 and ToDo recorded. Implementation, schema/auth design,
   FRS/RA/RTM and acceptance checks remain pending; nothing deployed under CHG-020.
+
+
+### CHG-020 increment A — General comments (2026-11-26, local)
+
+Owner approved adding an optional Comment field for all findings. Removed the
+Other-only visibility/disabled rule from the shared End-user/MAH form. Retain
+1,000 characters, source-preserving escaped text, existing authorisation, explicit
+submission, append-only finding history and all existing CAPA rules. Reload/amend
+loads comments for any finding; the confirmation displays the submitted comment
+using textContent. Switching findings does not discard or omit the draft. Shared
+assets receive a new cache version. No schema or external service changes.
+
+The Findings payload already supported optional comments for all findings; this
+increment exposes that existing capability consistently. It does not send a
+comment without a finding or implement the template catalogue. Eight new role/
+finding round-trip tests cover persistence, confirmation/amendment markup, escaped
+source text, empty optional comments and rejection over 1,000 characters. Browser
+verification covers switch-without-loss, submission/reload/amend, NMVO projection,
+MAH progress comments and 1500/650 CSS-pixel layouts using isolated synthetic data.
+Local pilot only; no production Alert Desk deployment. Personal template ownership,
+CRUD and insertion remain pending under URS-122 / CHG-020. FRS/RA/RTM reconciliation
+remains required before the controlled baseline.
+
+
+Verification result for CHG-020 A: **561 tests passed**, one existing Starlette/
+httpx deprecation warning. Ruff and JavaScript syntax checks passed. Browser checks
+used an isolated temporary workspace; existing review cases were not reset or
+submitted by verification. The existing local workspace serves the updated form
+and cache-versioned assets on reload.

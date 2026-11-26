@@ -676,3 +676,15 @@ recovery becomes visible without another report submission. These checks do not
 start a worker. Local review needs the separate `--serve-manual` process described
 above; production uses its supervised scheduler. Liveness is evidence of a recent
 worker, not a guarantee that an external report is ready.
+
+
+## Optional Alert Desk comments (local pilot)
+
+Every supported participant finding has a **Comment (optional)** field, including
+**Still investigating** and **Root cause not on my side**. Add up to 1,000 characters
+of details or a progress update. The comment is separate from the selected finding
+and CAPA; switching the finding keeps the draft. **Update findings** submits both.
+Your comment appears in the confirmation and is restored when reopening findings
+to amend them. SMVS sees it with your submitted finding. Empty comments are allowed;
+this is not a separate comment-only messaging function. Personal saved templates
+are planned under CHG-020 and are not part of this first increment.

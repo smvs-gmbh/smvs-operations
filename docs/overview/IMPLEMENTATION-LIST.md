@@ -12,6 +12,7 @@ release. Dated sections further down preserve earlier decisions and milestones.
   private templates with Insert / Save as template / Manage; durable verified-owner
   scope across sessions/devices, editable draft insertion and unchanged published
   comments. Review making comments available beyond Finding = Other issue.
+  General comments for all findings are implemented locally (increment A).
   No automatic sending, finding selection or Case closure. Define participant
   ownership using existing verified CRM contact/access scope and audit mutations.
 
@@ -789,3 +790,14 @@ No Jelastic deployment or production source request was performed.
   authorised photo upload/live evidence extensions; configured Hub closure/sync;
   FRS/RA/RTM and audit/retention validation. AI Operations Intelligence remains a
   documented proposal, not an enabled source-to-decision model.
+
+
+### CHG-020 increment A — Optional general comment (2026-11-26, local)
+
+- [x] Comment available for all supported End-user/MAH findings; optional, 1,000
+  characters; independent of CAPA and structured findings.
+- [x] Retain draft on finding change and submitted comment on reload/amendment;
+  show confirmation and existing NMVO finding projection with escaped source text.
+- [x] Role/finding round trips, empty/oversized inputs and responsive browser checks.
+- [ ] Personal named-template storage, ownership, management and insertion.
+- [ ] Owner acceptance and FRS/RA/RTM reconciliation; Alert Desk remains local.

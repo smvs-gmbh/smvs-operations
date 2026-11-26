@@ -7,7 +7,7 @@
 | **Document ID**    | URS-001                         |
 | **Title**          | User Requirements Specification |
 | **Status**         | Draft                           |
-| **Version**        | 0.20                            |
+| **Version**        | 0.21                            |
 | **Classification** | Internal                        |
 | **Owner**          | SMVS GmbH                       |
 | **Author**         | Reinhold Sojer                  |
@@ -22,6 +22,7 @@
 | ------- | ---------- | -------------- | ------------- |
 | 0.9     | 2026-06-27 | Reinhold Sojer | Initial draft |
 | 0.10    | 2026-11-17 | SMVS Operations project | Reconciled the intended use and added requirements for current workflows and planned Hub integration |
+| 0.21    | 2026-11-26 | SMVS Operations project | Optional participant comments for all findings; first local increment towards personal templates |
 | 0.20    | 2026-11-26 | SMVS Operations project | Personal reusable comment templates for Alert Desk; requirement recorded, implementation pending |
 | 0.19    | 2026-11-26 | SMVS Operations project | Pack Audit worker liveness, visible queue delay/retry and environment context (local pilot) |
 | 0.18    | 2026-11-26 | SMVS Operations project | Imported Exceptions date bounds, calendar shortcuts and whole-retained-period views (local pilot) |
@@ -723,3 +724,15 @@ contact/access context, not a caller-supplied owner, a case token alone or brows
 only storage. Initial scope is plain text; organisation-wide sharing, AI generation
 and dynamic placeholders require separate decisions. This is a requested capability;
 no implemented template storage/editor or production release is implied.
+
+
+### URS-122 — General comment prerequisite
+
+For each supported End-user/MAH finding, including ongoing investigation or a
+finding outside the participant’s responsibility, an optional plain-text comment
+shall be available independently of structured answers and CAPA. The current
+1,000-character bound shall remain enforced. Changing findings shall preserve the
+unsubmitted draft; submitted comments shall remain visible in confirmation,
+reopening for amendment and the NMVO’s participant-finding view. Submitted text
+shall be escaped when displayed. This first increment does not implement saved
+personal templates, independent comment-only messages or new sharing privileges.

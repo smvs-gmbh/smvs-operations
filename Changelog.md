@@ -4,6 +4,13 @@ Entries distinguish deployed pilot changes from development-only increments.
 Pilot checkpoints and requirements drafts do not constitute an approved QMS
 baseline. Detailed scope/evidence: [change register](docs/validation/CHANGE-REGISTER.md).
 
+## Unreleased — optional general Alert Desk comments (local)
+
+- CHG-020 A / URS-122: Optional Comment for all supported End-user/MAH findings,
+  including progress updates. Retain drafts on finding changes and comments on
+  confirmation/reload/amendment; existing 1,000-character bound and CAPA rules.
+- Personal named templates remain planned. No production deployment.
+
 ## Planned — personal Alert Desk comment templates
 
 - CHG-020 / URS-122: Named private comment templates, reusable editable drafts,
