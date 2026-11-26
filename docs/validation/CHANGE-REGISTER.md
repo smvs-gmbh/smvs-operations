@@ -611,3 +611,14 @@ FRS/RA/RTM reconciliation and QMS baseline approval remain pending.
 - **Boundary.** URS draft v0.19 / URS-121, guide and ToDo updated. Local pilot only;
   FRS/RA/RTM reconciliation and production rollout remain pending. Previously
   authorised CHG-017/018 deployment does not include this increment.
+
+
+### CHG-019 rollout — 2026-11-26
+
+Owner acceptance and production installation completed. Runtime
+`9c04152ec605ffa04d3311ca8dc7fd901e4b71ee` is the targeted successor to `ae86621`,
+with unchanged schema 0054. 547 candidate tests and authenticated production
+Pack Audit/Imports checks passed; 399 hashes and existing source/CRM/request records
+verified. [Evidence](../deployment/PACK-AUDIT-WORKER-2026-11-26.md) retains the
+rollback location and actual results. Earlier local-only statements above describe
+the preceding stage; Alert Desk Pilot and API Access remain local.

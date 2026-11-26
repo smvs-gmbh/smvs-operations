@@ -752,5 +752,6 @@ No Jelastic deployment or production source request was performed.
   delayed pickup, running retrieval and unconfirmed processing; retain tasks.
 - [x] Reuse Imports liveness; verify read-only refresh/recovery and safe POSTs.
 - [x] Record URS-121, automated and responsive browser checks.
-- [ ] Owner acceptance and separately authorised production deployment.
+- [x] Owner acceptance and authorised production deployment (`9c04152`);
+  [evidence](../deployment/PACK-AUDIT-WORKER-2026-11-26.md).
 - [ ] Reconcile FRS/RA/RTM before the controlled validation baseline.

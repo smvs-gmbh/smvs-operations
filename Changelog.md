@@ -4,12 +4,14 @@ Entries distinguish deployed pilot changes from development-only increments.
 Pilot checkpoints and requirements drafts do not constitute an approved QMS
 baseline. Detailed scope/evidence: [change register](docs/validation/CHANGE-REGISTER.md).
 
-## Unreleased — Pack Audit worker feedback (local pilot)
+## 2026-11-26 — Pack Audit worker feedback (pilot server)
 
 - CHG-019 / URS-121: Show environment and recent worker heartbeat before/after a
   Pack Audit request. Distinguish missing worker, normal/delayed queue, competing
   work, retry and running/unconfirmed processing. Preserve queued work and reports.
-- Share liveness with Imports; refresh remains read-only. No production rollout.
+- Shared Imports liveness; read-only refresh. Targeted runtime `9c04152`, schema
+  0054 unchanged. 547 candidate tests and production verification passed; 399 source
+  hashes and existing records verified. [Deployment evidence](docs/deployment/PACK-AUDIT-WORKER-2026-11-26.md).
 
 ## 2026-11-26 — Exceptions markets and dates (pilot server)
 
