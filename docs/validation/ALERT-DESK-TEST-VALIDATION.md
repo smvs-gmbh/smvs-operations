@@ -1,9 +1,10 @@
 # Alert Desk — TEST validation guide
 
 Draft v0.1, 2026-11-26. Owner: SMVS GmbH. Change: CHG-021.
-Status: prepared protocol, not executed or approved. Application candidate:
-`f9245ba` (local functionality before TEST portability changes). Record the final
-deployment commit separately; this identifier is not evidence of installation.
+Status: prepared protocol, not formally executed or approved. Initial local
+functional candidate was `f9245ba`; installed TEST runtime is now `42f85d6`, schema
+0055. [Deployment evidence](../deployment/ALERT-DESK-TEST-2026-11-26.md) records
+the actual technical checks and limits; they do not mark all twenty cases passed.
 
 ## Purpose and release boundary
 
@@ -28,11 +29,11 @@ for the participant workflow tests below.
 
 | Item | Value/evidence |
 | --- | --- |
-| TEST Operations URL, environment/node ID | Supplied env-1900268 currently serves VerifyIt; Operations target/coexistence pending |
-| Participant URL and selected access mode | Pending: VPN-only / public TEST Connect |
-| Source commit, archive manifest, dependency versions | Pending final candidate |
+| TEST Operations URL, environment/node ID | Shared env-1900268; private staff tunnel localhost:8025 to node221862 loopback 8016 |
+| Participant URL and selected access mode | Public HTTPS node221862-env-1900268.jcloud.ik-server.com/alerts; no participant VPN |
+| Source commit, archive manifest, dependency versions | 42f85d6; 632 hashes; full manifest/freeze retained in protected runtime evidence |
 | Database identity and migration before/after | Dedicated TEST store; target `0055_comment_templates`; record actual values |
-| Synthetic dataset version, fixture IDs/counts | Record after inspection; preserve existing TEST records |
+| Synthetic dataset version, fixture IDs/counts | Reviewed fixture seed: six alerts A2/A3/A7/A24, two contacts, one MAH/End User; see installed record |
 | Staff authentication and test account roles | Record named accounts; no credentials in this document |
 | Participant identities | Controlled End User A/B, MAH A, second contact in A |
 | Mail transport and recipient restrictions | Capturing mailbox initially; restrict real delivery to approved test recipients |

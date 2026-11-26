@@ -4,13 +4,25 @@ Entries distinguish deployed pilot changes from development-only increments.
 Pilot checkpoints and requirements drafts do not constitute an approved QMS
 baseline. Detailed scope/evidence: [change register](docs/validation/CHANGE-REGISTER.md).
 
+## 2026-11-26 — Alert Desk on shared synthetic TEST
+
+- CHG-021: Runtime `42f85d6`, schema 0055, on a separate Operations store/processes
+  beside VerifyIt. Public participant HTTPS at the node hostname; staff Operations
+  stays private through an authenticated tunnel. Capturing mail only.
+- Six synthetic alerts; real HTTPS participant verification, findings/comments and
+  private template checks passed. VerifyIt's 17 tables/data, vhost and release
+  unchanged. 632 source hashes verified; PROD unchanged.
+- 586 local tests pass. Hosted: 582 pass, four SQLite downgrade cases excluded
+  after documented platform failures. Formal protocol/restore/timing/mail acceptance
+  remain open. [Deployment evidence](docs/deployment/ALERT-DESK-TEST-2026-11-26.md).
+
 ## Unreleased — Alert Desk TEST preparation
 
 - CHG-021: Prepared deployment/access comparison and a 20-case validation protocol
   with traceability, expected outcomes, evidence and open timing-policy decision.
   Reconcile local templates and planned hosted controls in draft FRS/RA/RTM.
-- Owner-supplied TEST hostname currently serves VerifyIt; Operations target or
-  coexistence requires clarification. No server, data or public routing change.
+- Initial preflight identified VerifyIt; owner subsequently confirmed shared TEST.
+  See the dated deployment above for the actual installed scope.
 
 ## Unreleased — hosted Alert Desk TEST candidate
 
@@ -19,7 +31,7 @@ baseline. Detailed scope/evidence: [change register](docs/validation/CHANGE-REGI
   command ceiling and synthetic-data banner; production remains disabled.
 - Separate service runner, private capturing SMTP and guarded synthetic seed.
   Initial Operations staff route remains private through an authenticated tunnel.
-  No external test email is enabled; actual rollout evidence follows installation.
+  No external test email is enabled; rollout evidence is in the dated entry above.
 
 ## Unreleased — compact participant template navigation (local)
 

@@ -8,14 +8,16 @@ release. Dated sections further down preserve earlier decisions and milestones.
 
 ## Next
 
-- [ ] **CHG-021 — Alert Desk on synthetic TEST.** Resolve the supplied VerifyIt
-  TEST hostname versus intended Operations installation, then implement hosted
-  origins/feature gate/mail/private gateway safeguards locally and deploy a
-  committed candidate to the confirmed TEST target. Keep PROD unchanged.
-  Select VPN-only or dedicated public TEST Connect; restrict real test delivery.
-  Execute the [prepared 20-case validation guide](../validation/ALERT-DESK-TEST-VALIDATION.md)
-  with retained evidence, timing-policy decision and named review. Preparation is
-  documented; no hosted TEST deployment/acceptance has occurred.
+- [x] **CHG-021 — Install Alert Desk on shared synthetic TEST.** Runtime `42f85d6`,
+  schema 0055, dedicated public participant HTTPS, private staff tunnel and captured
+  mail. VerifyIt data/configuration and PROD unchanged.
+  [Installed evidence](../deployment/ALERT-DESK-TEST-2026-11-26.md).
+- [ ] **CHG-021 — TEST acceptance.** Execute the
+  [20-case validation guide](../validation/ALERT-DESK-TEST-VALIDATION.md) with
+  named review, timing-policy decision, controlled test recipients and recovery
+  evidence. Technical smoke checks are not formal acceptance. Address the four
+  hosted SQLite downgrade test limitations without changing VerifyIt. Enable and
+  verify approved external test email before independent participant testing.
 
 - [x] **Alert Desk — personal comment templates (CHG-020 / URS-122), local participants.** Named,
   private templates with Insert / Save as template / Manage; durable verified-owner

@@ -1,0 +1,24 @@
+{
+  "end_user_template_id": 3,
+  "end_user": {
+    "mailbox_verification": "PASS",
+    "scoped_case": "PASS",
+    "progress_comment_persisted": "PASS",
+    "private_template_create_read": "PASS",
+    "separate_library": "PASS"
+  },
+  "mah_template_id": 4,
+  "mah": {
+    "mailbox_verification": "PASS",
+    "scoped_case": "PASS",
+    "progress_comment_persisted": "PASS",
+    "private_template_create_read": "PASS",
+    "separate_library": "PASS"
+  },
+  "cross_role_template_refused": true,
+  "internal_and_unknown_paths_refused": true,
+  "wrong_origin_refused": true,
+  "verifyit_https_available": true,
+  "authenticated_staff_and_unauthenticated_rejection": true,
+  "mail_mode": "loopback capture only; no external delivery"
+}

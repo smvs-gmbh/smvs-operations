@@ -1,5 +1,9 @@
 # Alert Desk — TEST deployment and access preparation
 
+Historical preparation snapshot. The owner subsequently confirmed the shared
+target and public TEST access; [installed evidence](ALERT-DESK-TEST-2026-11-26.md)
+supersedes the pending target/deployment statements below.
+
 2026-11-26, CHG-021. Status: preparation; no TEST deployment or public opening
 performed. The owner authorises transfer to a synthetic TEST environment.
 The supplied target `env-1900268.jcloud.ik-server.com` currently serves VerifyIt;

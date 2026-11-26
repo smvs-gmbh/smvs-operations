@@ -1,6 +1,34 @@
 # SMVS Operations change register
 
+Use one entry per change or independently reviewable increment. Record
+scope, requirement and risk references, and the evidence and decision for
+the release. The pre-release baseline for comparison is `d446f5d`.
+
+Current phase: **owner-operated pilot evaluation**, confirmed 2026-11-25.
+Development and installed scope are distinguished in the
+[pilot checkpoint](../deployment/PILOT-2026-11-25.md) and [changelog](../../Changelog.md).
+Neither the pilot source checkpoint nor the requirements drafts are an approved
+QMS baseline. Subsequent server changes follow development, verification and a
+committed, identified source candidate.
+
+| ID | Proposed on | Change | Release target | Status |
+| --- | --- | --- | --- | --- |
+| CHG-001 | 2026-11-17 | Display AMS Hub information in Exceptions | Pilot server | Read-only view deployed; UAT/PRD retrieval and application checks recorded. Formal validation acceptance remains pending. |
+| CHG-002 | 2026-11-17 | Reconcile confirmed Hub closure into local Case closure | Confirm after CHG-001 | Recorded. Implementation and acceptance pending. |
+| CHG-003 | 2026-11-17 | Complete transaction audit and protected retention/recovery | Current pre-release assessment | Requirements recorded. Coverage review and backup design pending. |
+| CHG-004 | 2026-11-17 | Background Hub change synchronisation | To discuss | Proposed. Cadence and reopening response pending. |
+| CHG-005 | 2026-11-18 | Expose retained Catalogue Snapshot fields in personal views | Next increment | Implemented locally; server unchanged. |
+| CHG-006 | 2026-11-18 | Download current table views as audited CSV | Next increment | Implemented locally; acceptance and deployment pending. |
+| CHG-007 | 2026-11-18 | Typed Excel view downloads preserve identifiers | Next increment | Implemented locally; acceptance and deployment pending. |
+| CHG-008 | 2026-11-25 | Reduce import worker memory pressure | Pilot server repair | Implemented and verified on development and server; reconciled in `f951354`. |
+| CHG-009 | 2026-11-25 | Expandable import failure diagnostics | Pilot server repair | Implemented and verified on development and server; reconciled in `f951354`. |
+| CHG-010 | 2026-11-25 | Pilot consolidation and development-first workflow | Development checkpoint | Phase decision recorded; source, delivery scope and draft evidence consolidated. No additional feature deployment. |
+| CHG-011 | 2026-11-25 | Local CRM relation lookups and integrity checks | Local experiment | Implemented and verified locally; owner review and FRS/RA/RTM update pending. |
+
 ## CHG-021 — Hosted Alert Desk TEST pilot and validation preparation
+
+The initial preparation below is historical; the installed-state subsection
+records the subsequent owner decisions, rollout and actual verification.
 
 - **Request/date:** 2026-11-26. Owner authorises transfer to a synthetic TEST
   installation, requests validation instructions and comparison of VPN versus
@@ -47,30 +75,22 @@ staff access and approved external mail remain separate configuration work.
 See `deploy/alert-desk-test/README.md` for the installed design. Actual rollout
 and TEST verification evidence must be appended after execution.
 
-Use one entry per change or independently reviewable increment. Record
-scope, requirement and risk references, and the evidence and decision for
-the release. The pre-release baseline for comparison is `d446f5d`.
+### CHG-021 installed TEST evidence — 2026-11-26
 
-Current phase: **owner-operated pilot evaluation**, confirmed 2026-11-25.
-Development and installed scope are distinguished in the
-[pilot checkpoint](../deployment/PILOT-2026-11-25.md) and [changelog](../../Changelog.md).
-Neither the pilot source checkpoint nor the requirements drafts are an approved
-QMS baseline. Subsequent server changes follow development, verification and a
-committed, identified source candidate.
+Installed source `42f85d6`, schema 0055, 632 source/support hashes verified.
+[Deployment record](../deployment/ALERT-DESK-TEST-2026-11-26.md) links actual
+HTTPS End User/MAH mailbox verification, comments/templates, scope/private-path
+refusals and staff rendering. Six synthetic alerts; no external delivery.
+Four dedicated supervised services and private staff tunnel are running. VerifyIt
+data (17 tables, 204 existing rows), vhost and release remain unchanged; PROD is
+unchanged. Test participant/staff check sessions were revoked after execution.
 
-| ID | Proposed on | Change | Release target | Status |
-| --- | --- | --- | --- | --- |
-| CHG-001 | 2026-11-17 | Display AMS Hub information in Exceptions | Pilot server | Read-only view deployed; UAT/PRD retrieval and application checks recorded. Formal validation acceptance remains pending. |
-| CHG-002 | 2026-11-17 | Reconcile confirmed Hub closure into local Case closure | Confirm after CHG-001 | Recorded. Implementation and acceptance pending. |
-| CHG-003 | 2026-11-17 | Complete transaction audit and protected retention/recovery | Current pre-release assessment | Requirements recorded. Coverage review and backup design pending. |
-| CHG-004 | 2026-11-17 | Background Hub change synchronisation | To discuss | Proposed. Cadence and reopening response pending. |
-| CHG-005 | 2026-11-18 | Expose retained Catalogue Snapshot fields in personal views | Next increment | Implemented locally; server unchanged. |
-| CHG-006 | 2026-11-18 | Download current table views as audited CSV | Next increment | Implemented locally; acceptance and deployment pending. |
-| CHG-007 | 2026-11-18 | Typed Excel view downloads preserve identifiers | Next increment | Implemented locally; acceptance and deployment pending. |
-| CHG-008 | 2026-11-25 | Reduce import worker memory pressure | Pilot server repair | Implemented and verified on development and server; reconciled in `f951354`. |
-| CHG-009 | 2026-11-25 | Expandable import failure diagnostics | Pilot server repair | Implemented and verified on development and server; reconciled in `f951354`. |
-| CHG-010 | 2026-11-25 | Pilot consolidation and development-first workflow | Development checkpoint | Phase decision recorded; source, delivery scope and draft evidence consolidated. No additional feature deployment. |
-| CHG-011 | 2026-11-25 | Local CRM relation lookups and integrity checks | Local experiment | Implemented and verified locally; owner review and FRS/RA/RTM update pending. |
+586 local tests pass. Hosted final regression: 582 pass, four SQLite downgrade
+cases deselected after documented 3.34.1 platform failures; these are not counted
+as passed or restored. First setup/interpreter/archive/seed issues and corrective
+commits are recorded in the deployment evidence. Actual MySQL upgrade succeeded.
+Formal 20-case execution, staff enrolment, timing decision, approved external
+test mail, recovery rehearsal and wider audit/retention acceptance remain open.
 
 ## CHG-001 — AMS Hub in Exceptions
 

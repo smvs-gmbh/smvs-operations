@@ -1,0 +1,27 @@
+{
+  "source_commit": "42f85d6dc205baf0b1166079d76b884743b7a7ff",
+  "source_hashes_verified": 632,
+  "schema": "0055_comment_templates",
+  "database": [
+    "node221861-env-1900268.jcloud.ik-server.com",
+    "smvs_operations",
+    "smvsops_test@10.100.32.14"
+  ],
+  "counts": {
+    "nmvs_exceptions": 6,
+    "crm_contacts": 2,
+    "crm_mahs": 1,
+    "crm_end_users": 1,
+    "alert_desk_comment_templates": 4,
+    "alert_desk_events": 4
+  },
+  "verifyit_tables_and_rows_unchanged": true,
+  "verifyit_vhost_and_release_unchanged": true,
+  "test_participant_sessions_revoked": true,
+  "services": [
+    "smvs-test-api                    RUNNING   pid 33311, uptime 0:03:12",
+    "smvs-test-gateway                RUNNING   pid 33312, uptime 0:03:12",
+    "smvs-test-mail                   RUNNING   pid 33313, uptime 0:03:12",
+    "smvs-test-portal                 RUNNING   pid 33314, uptime 0:03:12"
+  ]
+}
