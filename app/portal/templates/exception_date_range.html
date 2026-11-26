@@ -1,0 +1,12 @@
+<div class="exception-date-range" data-date-range>
+  <div class="exception-date-inputs">
+    <label>From (UTC)<input type="date" name="start" value="{{ start }}" min="{{ date_min or '' }}" max="{{ date_max or '' }}" required {{ 'disabled' if not date_min }}></label>
+    <label>To (UTC)<input type="date" name="end" value="{{ end }}" min="{{ date_min or '' }}" max="{{ date_max or '' }}" required {{ 'disabled' if not date_min }}></label>
+  </div>
+  {% if date_min %}
+  <div class="exception-date-presets" role="group" aria-label="Date shortcuts">
+    {% for key, label, first, last in date_presets %}<button type="submit" class="portal-button portal-button-secondary" name="period" value="{{ key }}" data-date-start="{{ first }}" data-date-end="{{ last }}">{{ label }}</button>{% endfor %}
+  </div>
+  <p class="subtle">Imported range: {{ date_min }}–{{ date_max }} · UTC. Shortcuts end at the latest imported date. Coverage may contain gaps.</p>
+  {% else %}<p class="subtle">No imported exception period available.</p>{% endif %}
+</div>

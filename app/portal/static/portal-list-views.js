@@ -1,4 +1,4 @@
-import {initialiseViews} from './crm-list-views.js?v=crm-cutover-1';
+import {initialiseViews} from './crm-list-views.js?v=dates-1';
 import {installActions} from './table-actions.js?v=csv-1';
 import {installCsvDownload,applyReportView,cellText} from './table-csv.js?v=crm-cutover-1';
 
@@ -45,6 +45,8 @@ for(const [index,table] of [...document.querySelectorAll('main .table-scroll > t
     const scopeControls=node('div','crm-view-sorting');scopes.append(node('summary','','Report scope'),scopeControls);
     if(filter){
         for(const control of [...filter.querySelectorAll('input[name],select[name]')]) {
+            const dateGroup=control.closest('[data-date-range]');
+            if(dateGroup){scopeControls.append(dateGroup);continue;}
             if(control.type==='hidden') {form.append(control);continue;}
             let label=control.closest('label');
             if(!label||label===filter) {label=node('label');label.append(document.createTextNode(control.getAttribute('aria-label')||control.name),control);}

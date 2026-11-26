@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% import 'macros.html' as ui %}
-{% block table_views %}{% endblock %}
+{% block table_views %}<script type="module">import {enhanceDateRanges} from "{{ request.url_for('portal_static', path='date-range.js') }}?v=dates-1"; enhanceDateRanges(document);</script>{% endblock %}
 {% block module_navigation %}{% include 'exception_list_tabs.html' %}{% endblock %}
 {% block heading %}
 {{ ui.list_heading('OPERATIONAL INFORMATION · NMVS', 'Alert Trends', 'Monthly alert counts and the organisations and products most affected.') }}
@@ -9,8 +9,7 @@
 <section class="panel">
   <form class="activity-filters" method="get">
     <div class="activity-filter-row">
-      <label>From (UTC)<input type="date" name="start" value="{{ start }}" required></label>
-      <label>To (UTC)<input type="date" name="end" value="{{ end }}" required></label>
+      {% include 'exception_date_range.html' %}
       <label>Alert types<select name="alert_group"><option value="">All types</option><option value="a2-a3" {{ 'selected' if alert_group }}>A2 and A3</option></select></label>
       <label>End User country<select name="country">
         <option value="">All countries</option>

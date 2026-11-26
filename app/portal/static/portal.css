@@ -567,3 +567,20 @@ div.test-case-columns { color: var(--muted); background: #f7f9fb; font-weight: 6
 
 .crm-relation-editor > :is(label, h3, p, fieldset) { margin-bottom: 1rem; }
 .crm-relation-editor > label { display: grid; gap: .4rem; }
+
+.multiple-select{display:flex;flex-direction:column;gap:.45rem;min-width:0;font-size:var(--portal-label-size,.8125rem)}
+.multiple-select-trigger{display:flex;align-items:center;justify-content:space-between;gap:.5rem;text-align:left;white-space:normal;overflow-wrap:anywhere;width:100%}
+.multiple-select-choices{margin:0;min-width:0;max-height:18rem;overflow:auto;border:1px solid var(--line);border-radius:6px;padding:.6rem}
+.multiple-select-choices>label{display:flex;flex-direction:row;align-items:center;gap:.6rem;padding:.35rem 0;font-size:inherit}
+.multiple-select-choices input[type=checkbox]{width:auto;min-width:0;flex:none;margin:0}
+.multiple-select-commands{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:.5rem}
+.multiple-select-commands button{background:transparent;border:0;color:var(--blue);padding:.25rem;cursor:pointer;text-decoration:underline}
+
+.multiple-select-trigger::after{content:"▾"}
+.multiple-select-choices legend{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+.exception-date-range { grid-column: 1 / -1; min-width: 0; }
+.exception-date-inputs, .exception-date-presets { display: flex; flex-wrap: wrap; gap: .5rem; }
+.exception-date-inputs > label { flex: 1 1 10rem; min-width: 0; }
+.exception-date-presets { margin-top: .6rem; }
+.exception-date-range p { margin: .6rem 0; }
