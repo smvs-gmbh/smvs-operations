@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse, Response
 from sqlalchemy import select
 
+from app.core.config import get_settings
 from app.core.db.models import AcquiredArtifact
 from app.core.db.session import SessionFactory
 from app.domain.mapping import key
@@ -20,6 +21,7 @@ from app.integration.sources.nmvs.pack_audit.parsing import details
 from app.portal import exception_queries
 from app.portal.exception_routes import current, exception_record_navigation
 from app.portal.routes import DbSession, templates
+from app.portal.worker_status import pack_audit_progress, worker_state
 
 router = APIRouter()
 
@@ -119,6 +121,7 @@ def render(
         if record and result
         else {}
     )
+    worker = worker_state(session) if record and eligible else None
     return templates.TemplateResponse(
         request=request,
         name="pack_audit.html",
@@ -132,6 +135,9 @@ def render(
             "active": "exceptions",
             "record": record,
             "task": task,
+            "worker": worker,
+            "progress": pack_audit_progress(session, task, worker) if worker else None,
+            "worker_environment": get_settings().environment,
             "report": report,
             "eligible": eligible,
             "timeline": result,

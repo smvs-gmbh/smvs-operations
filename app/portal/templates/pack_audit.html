@@ -21,9 +21,19 @@
 
 <section class="panel audit-toolbar">
 <div>{% if report %}<strong>Report version {{ report.id }}</strong> · <a class="audit-link" href="/pack-audit/reports/{{ report.id }}/original">Download original report</a><p class="subtle">{{ 'Demo timestamp' if request.app.state.alert_desk_test_workspace else 'Imported' if example else 'Retrieved' }} {{ report.captured_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC · {{ timeline.event_count }} audit entries · {{ timeline.transaction_count }} transactions{% if report.source_data_as_of %}<br>Source data available at request time: {{ report.source_data_as_of }}{% endif %}</p>{% else %}<strong>No report loaded yet</strong><p class="subtle">An existing report for the same pack is reused for related exceptions.</p>{% endif %}</div>
-{% if record and not request.app.state.alert_desk_test_workspace %}<div>{% if task and task.status in ('queued','running') %}<span class="audit-status">{{ 'Report is being generated …' if task.status=='running' else 'Queued …' }}</span><p class="subtle">This view refreshes local processing status only.</p>
+{% if record and not request.app.state.alert_desk_test_workspace %}<div>{% if task and task.status in ('queued','running') %}<span class="audit-status">{{ progress.title }}</span><p class="subtle">{{ progress.message }}</p>
 {% elif eligible %}<form method="post" action="/exceptions/{{ record.id }}/audit-trail{{ '?refresh=true' if report or task and task.status=='failed' else '' }}"><button class="exception-filter-button" type="submit">{{ 'Refresh report' if report else 'Retry' if task and task.status=='failed' else 'Load pack audit trail' }}</button></form>{% else %}<span class="subtle">A supported product code scheme, product code or serial number is missing.</span>{% endif %}</div>{% endif %}
 </section>
+{% if worker and not request.app.state.alert_desk_test_workspace %}
+<div class="{{ 'subtle' if worker.available else 'notice' }} review-body" role="status" aria-live="polite">
+<strong>{{ 'Background worker connected' if worker.available else 'No recent background-worker heartbeat' }}</strong>
+· {{ 'Development' if worker_environment == 'development' else 'Production' if worker_environment == 'production' else worker_environment|capitalize }}
+<p>{% if worker.last_seen_at %}Last heartbeat: {{ worker.last_seen_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC.{% else %}No worker heartbeat has been recorded.{% endif %}
+{% if not worker.available %}No active worker has been confirmed in the last 60 seconds. New requests can be saved, but must wait for an available worker. Contact the administrator.{% endif %}</p>
+<a class="audit-link" href="/imports">View background-worker status →</a>
+{% if task %}<p>Requested: {{ task.requested_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC · Attempts: {{ task.attempt_count }}</p>{% endif %}
+</div>
+{% endif %}
 {% if task and task.last_error %}<div class="notice">The report could not be retrieved or unambiguously matched to the pack.{% if task.status=='queued' %} Another attempt is scheduled.{% endif %}{% if report %} The existing report remains available.{% endif %}</div>{% endif %}
 {% if not report %}<section class="panel audit-empty"><h2>Retrieve on request, reuse across exceptions</h2><p>Reports are retrieved only on request. Opening an exception does not trigger a report, and IMT alerts are not fetched in bulk.</p><p class="subtle">After retrieval, state changes, failed attempts and their original source events appear in a shared chronology.</p></section>{% endif %}
 {% if report %}
