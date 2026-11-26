@@ -688,3 +688,34 @@ Your comment appears in the confirmation and is restored when reopening findings
 to amend them. SMVS sees it with your submitted finding. Empty comments are allowed;
 this is not a separate comment-only messaging function. Personal saved templates
 are planned under CHG-020 and are not part of this first increment.
+
+
+## My comment templates (local Alert Desk)
+
+For verified End-user/MAH access, the Comment area now includes **My templates**.
+Write a comment and choose **Save as template**, enter a name and select **Save new
+template**. Saving does not change or send your comment. Select a saved template
+and choose **Insert** to copy its text to the cursor position in the comment. The
+result remains editable; existing selected text is preserved. Insertion is rejected
+if the resulting draft exceeds 1,000 characters; nothing is silently truncated.
+
+Select a template and choose **Manage templates** to change its name/text, then
+**Save template changes**, or **Delete template** to remove it from your library.
+**Cancel** closes the editor. Rename/delete do not change earlier submitted comments
+or the current comment draft. **Reload list** refreshes saved names/versions after
+changes elsewhere. Stale edits are rejected; keep/copy your draft before reloading
+an edited template. Previously submitted finding text stays in its own history.
+
+Templates are stored on the server for your verified CRM contact, role and
+organisation context. They work across your authorised cases and renewed sessions;
+other contacts do not see them even within the same organisation. Invitations/session
+links are not the owner. A shared verified contact/mailbox is a shared identity, not
+an independently identified person. Maximum 50 active templates, 80-character names,
+1,000-character plain text. Identical normalised names within your library are
+rejected. No placeholders or automatic finding/CAPA selection, sending or closure.
+
+Each create/edit/delete or draft insertion is recorded with its case/access and
+text version. Removed library entries are retained in audit history; this is not a
+personal-data erasure action. These controls do not appear in a case-token-only
+legacy view or the internal NMVO closing-note editor. Template failures do not
+prevent typing and submitting a normal comment. The [local synthetic workspace](http://localhost:8021/) provides separate End-user and MAH libraries for testing.

@@ -7,8 +7,9 @@
   <link rel="stylesheet" href="{{ assets }}/design/focused.css">
   <link rel="stylesheet" href="{{ assets }}/design/compact.css">
   <link rel="stylesheet" href="{{ assets }}/design/columns.css">
-  <link rel="stylesheet" href="{{ assets }}/case.css?v=comments-1">
-  <script defer src="{{ assets }}/case.js?v=comments-1"></script>
+  <link rel="stylesheet" href="{{ assets }}/case.css?v=templates-1">
+  <script defer src="{{ assets }}/case.js?v=templates-1"></script>
+  {% if organisation_case and not preview %}<script defer src="{{ assets }}/comment-templates.js?v=templates-1"></script>{% endif %}
 </head>
 <body>
   <header>
@@ -149,6 +150,32 @@
               <div id="comment-field">
                 <label for="comment">Comment (optional)</label>
                 <p class="investigation-hint" id="comment-hint">Add details or a progress update. Maximum 1,000 characters.</p>
+                {% if organisation_case and not preview %}
+                <div class="comment-templates" data-template-url="{{ request.url.path }}/comment-templates">
+                  <label for="comment-template">My templates</label>
+                  <select id="comment-template" aria-describedby="template-status"><option value="">Loading templates …</option></select>
+                  <div class="template-buttons">
+                    <button class="button" type="button" id="template-insert" disabled>Insert</button>
+                    <button class="button" type="button" id="template-create">Save as template</button>
+                    <button class="button" type="button" id="template-manage">Manage templates</button>
+                    <button class="button" type="button" id="template-reload">Reload list</button>
+                  </div>
+                  <p class="investigation-hint" id="template-status" role="status" aria-live="polite">Templates are private to your verified contact and organisation context.</p>
+                  <details id="template-editor">
+                    <summary>Template editor</summary>
+                    <label for="template-name">Template name</label>
+                    <input id="template-name" maxlength="80" autocomplete="off">
+                    <label for="template-text">Template text</label>
+                    <textarea id="template-text" rows="4" maxlength="1000"></textarea>
+                    <p class="investigation-hint">Plain text, up to 1,000 characters. Saving here does not submit a finding.</p>
+                    <div class="template-buttons">
+                      <button class="button" type="button" id="template-save">Save new template</button>
+                      <button class="button" type="button" id="template-delete" disabled>Delete template</button>
+                      <button class="button" type="button" id="template-cancel">Cancel</button>
+                    </div>
+                  </details>
+                </div>
+                {% endif %}
                 <textarea id="comment" name="comment" aria-describedby="comment-hint" rows="3" maxlength="1000">{{ latest.comment or "" }}</textarea>
               </div>
               <p class="investigation-hint" id="finding-hint">SMVS will review your finding.</p>

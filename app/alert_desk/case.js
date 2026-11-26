@@ -90,6 +90,10 @@ if (form) {
   form.addEventListener("submit", async event => {
     event.preventDefault();
     if (submitting) return;
+    if (form.dataset.templateBusy) {
+      status.textContent = "Wait for the template action to finish, then submit your findings.";
+      return;
+    }
     if (form.hasAttribute("data-preview")) {
       status.textContent = event.submitter === batchButton
         ? "Preview only. This action would apply the finding to the matching alerts in this batch."

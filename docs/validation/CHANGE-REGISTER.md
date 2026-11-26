@@ -677,3 +677,50 @@ httpx deprecation warning. Ruff and JavaScript syntax checks passed. Browser che
 used an isolated temporary workspace; existing review cases were not reset or
 submitted by verification. The existing local workspace serves the updated form
 and cache-versioned assets on reload.
+
+
+### CHG-020 increment B — Personal template library (2026-11-26, local)
+
+- **Implemented scope.** Verified End-user/MAH organisation access: list, create,
+  insert, rename/edit and remove personal comment templates. Stable owner key is
+  `(contact_id, role, crm_organisation_id)`, independent of case/session tokens.
+  Active access/membership and case visibility are rechecked on every operation.
+  Legacy case-only tokens and internal NMVO closing notes do not own this library.
+- **UI.** My templates / Insert / Save as template / Manage templates beside
+  Comment. Editor fields do not enter the finding payload. Editor saves never
+  mutate the draft; insertion at the remembered caret preserves selected text,
+  validates combined length and produces an editable draft only. Existing finding
+  submission remains explicit. Network requests have a ten-second bound; errors
+  release template busy state so manual comment submission remains available.
+- **Persistence/schema.** Local schema `0055_comment_templates` adds templates
+  and template-event tables. 80-character name, 1,000-character text, 50 active
+  records per owner scope. Normalised name hashes enforce owner-scoped uniqueness;
+  access-row locking serialises quota checks. Version checks reject stale edits,
+  deletion and insertions. Soft removal releases the active name for reuse.
+- **Audit.** Mutation/draft-insert events retain actor access ID, case and before/
+  after text/version snapshots in the same transaction. Audit-write failure rolls
+  back the template change. An insert receipt records copying to a draft, not proof
+  of an unchanged eventual submission; actual submitted comments retain their own
+  existing finding/event history. System-wide retention/protection is still CHG-003.
+- **Verification.** Tests cover cross-case/session reuse; another role/contact in
+  the same organisation; revoked, expired, reassigned or changed-contact access;
+  source-case visibility; origin/cookie/payload boundaries; normalised name collision;
+  quota, stale versions, transactional audit rollback and unchanged sent comments.
+  Migration chain/metadata and upgrade/downgrade preserve existing cases. Real Chrome
+  checks create/insert/manage/delete, cross-case reuse, caret/selection preservation,
+  old findings, oversized insertion and responsive 1500/650 CSS-pixel layouts.
+- **Delivery.** Only local MySQL schema and local pilot/test-workspace services were
+  updated. Existing synthetic review cases were not reset. No invitations/messages
+  sent by activation; no production schema/configuration or Alert Desk deployment.
+  URS v0.22, guide/ToDo updated; owner acceptance and FRS/RA/RTM reconciliation pending.
+
+
+CHG-020 B verification outcome: **570 tests passed**, one existing Starlette/httpx
+warning. Ruff and both JavaScript syntax checks pass. Local MySQL upgrade to
+`0055_comment_templates` succeeded; both new mapped tables are readable. Browser
+checks also simulate typing during an in-flight insertion: a second length check
+preserves the draft and rejects overflow after the receipt returns. The audit entry
+records the insertion request, not confirmation of the browser’s eventual edit.
+Existing local End-user/MAH test-case URLs serve their separate libraries without
+resetting source cases. Main portal reloaded the new model metadata; manual report
+worker, production runtime/schema and production data were not changed.

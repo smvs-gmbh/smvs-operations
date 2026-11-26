@@ -124,10 +124,10 @@ def create_app(secret, *, transport=None):
             pass
         raise HTTPException(503, "Alert Desk is temporarily unavailable. Try again.")
 
-    async def command(request, schema):
+    async def command(request, schema, *, limit=4096):
         if request.headers.get("origin") != PUBLIC_ORIGIN:
             raise HTTPException(403, "Use the Alert Desk form.")
-        raw = await bounded_json(request, 4096)
+        raw = await bounded_json(request, limit)
         try:
             return schema.model_validate(json_object(raw))
         except (ValueError, TypeError):
@@ -188,6 +188,10 @@ def create_app(secret, *, transport=None):
     @app.get("/alerts/case.js")
     def script():
         return FileResponse(ASSETS / "case.js", media_type="text/javascript")
+
+    @app.get("/alerts/comment-templates.js")
+    def comment_template_script():
+        return FileResponse(ASSETS / "comment-templates.js", media_type="text/javascript")
 
     @app.get("/alerts/portal.css")
     def portal_stylesheet():
@@ -350,6 +354,36 @@ def create_app(secret, *, transport=None):
                 503, "Alert Desk is temporarily unavailable. Try again."
             )
         return result
+
+    @app.get("/alerts/{identifier:int}/comment-templates")
+    async def list_templates(request: Request, identifier: int):
+        return await forward("GET", f"/access/alerts/{identifier}/comment-templates",
+                             session=template_session(request))
+
+    @app.get("/alerts/{identifier:int}/comment-templates/{template_id:int}")
+    async def read_template(request: Request, identifier: int, template_id: int):
+        return await forward("GET", f"/access/alerts/{identifier}/comment-templates/{template_id}",
+                             session=template_session(request))
+
+    def template_session(request):
+        session = request.cookies.get(ACCESS_COOKIE)
+        if not session:
+            raise HTTPException(404, "Alert Desk access unavailable.")
+        return session
+
+    @app.post("/alerts/{identifier:int}/comment-templates")
+    async def change_template(request: Request, identifier: int):
+        from app.domain.investigations.comment_templates import TemplateCommand
+
+        session = template_session(request)
+        payload = await command(request, TemplateCommand, limit=8192)
+        try:
+            return await forward("POST", f"/access/alerts/{identifier}/comment-templates",
+                                 session=session, payload=payload.model_dump())
+        except HTTPException as error:
+            if error.status_code == 409:
+                raise HTTPException(409, "The template changed or its name is already in use. Reload the list.") from None
+            raise
 
     return app
 

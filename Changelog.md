@@ -11,12 +11,13 @@ baseline. Detailed scope/evidence: [change register](docs/validation/CHANGE-REGI
   confirmation/reload/amendment; existing 1,000-character bound and CAPA rules.
 - Personal named templates remain planned. No production deployment.
 
-## Planned — personal Alert Desk comment templates
+## Unreleased — personal Alert Desk comment templates (local)
 
-- CHG-020 / URS-122: Named private comment templates, reusable editable drafts,
-  durable verified-owner scope and preservation of submitted comments. Requirement
-  recorded; implementation pending. Local Alert Desk pilot/test mailbox resumed
-  for continuing review, with no messages sent and no production pilot enablement.
+- CHG-020 B / URS-122: Verified participants can create, reuse, rename/edit and
+  remove private named templates. Insert preserves draft text and does not send.
+  Stable ownership, stale-version checks and transactional history; prior comments
+  remain unchanged. Local schema 0055 adds template/event tables.
+- Local pilot services updated; no production schema or Alert Desk rollout.
 
 ## 2026-11-26 — Pack Audit worker feedback (pilot server)
 

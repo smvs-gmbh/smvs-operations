@@ -7,7 +7,7 @@
 | **Document ID**    | URS-001                         |
 | **Title**          | User Requirements Specification |
 | **Status**         | Draft                           |
-| **Version**        | 0.21                            |
+| **Version**        | 0.22                            |
 | **Classification** | Internal                        |
 | **Owner**          | SMVS GmbH                       |
 | **Author**         | Reinhold Sojer                  |
@@ -22,6 +22,7 @@
 | ------- | ---------- | -------------- | ------------- |
 | 0.9     | 2026-06-27 | Reinhold Sojer | Initial draft |
 | 0.10    | 2026-11-17 | SMVS Operations project | Reconciled the intended use and added requirements for current workflows and planned Hub integration |
+| 0.22    | 2026-11-26 | SMVS Operations project | Durable private participant comment templates with verified scope, versioned management and audit history (local pilot) |
 | 0.21    | 2026-11-26 | SMVS Operations project | Optional participant comments for all findings; first local increment towards personal templates |
 | 0.20    | 2026-11-26 | SMVS Operations project | Personal reusable comment templates for Alert Desk; requirement recorded, implementation pending |
 | 0.19    | 2026-11-26 | SMVS Operations project | Pack Audit worker liveness, visible queue delay/retry and environment context (local pilot) |
@@ -736,3 +737,25 @@ unsubmitted draft; submitted comments shall remain visible in confirmation,
 reopening for amendment and the NMVO’s participant-finding view. Submitted text
 shall be escaped when displayed. This first increment does not implement saved
 personal templates, independent comment-only messages or new sharing privileges.
+
+
+### URS-122 — Local template management increment
+
+Verified End-user/MAH contacts shall maintain up to 50 named plain-text templates
+per contact, role and CRM organisation context. Names are limited to 80 characters
+and text to 1,000; duplicate normalised names are rejected within that owner scope.
+Owner identity shall be derived from current verified access, never supplied by
+an API caller. Current contact assignment, revocation and session expiry shall
+apply to each read/mutation. Stable ownership shall survive renewal of access and
+case changes; another contact in the same organisation shall not inherit templates.
+
+Create/edit/delete and draft insertion shall retain a transactional event with the
+verified access, case, action and text/version snapshot. Rename/edit/delete shall
+require a current version; conflicts shall not silently overwrite work. Removed
+templates shall leave the active library while retained history and submitted
+finding text remain unchanged. Insertion shall preserve existing draft selection/
+text and reject combined content beyond the comment limit, without truncation or
+implicit submission. Template-service failure shall leave manual comments usable.
+Case-token-only legacy access shall not acquire template ownership. This increment
+covers verified participant comments; NMVO closing notes are a separate future
+integration. Audit retention/protection remains subject to CHG-003 acceptance.

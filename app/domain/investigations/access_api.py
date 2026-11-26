@@ -383,4 +383,7 @@ def install(app, sessions, secret):
                     )
         return {"received": True, **({"batch_count": len(batch) + 1} if batch else {})}
 
-    return read_case, submit_case
+    from app.domain.investigations import comment_templates
+
+    template_api = comment_templates.install(app, sessions, capability, active, current_case)
+    return read_case, submit_case, template_api

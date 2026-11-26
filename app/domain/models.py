@@ -1188,3 +1188,34 @@ class CRMContactLinkEvent(Base):
         ForeignKey("portal_users.id", ondelete="SET NULL")
     )
     occurred_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+DOMAIN_TABLES.update({'alert_desk_comment_templates', 'alert_desk_comment_template_events'})
+
+
+class AlertDeskCommentTemplate(Base):
+    __tablename__ = 'alert_desk_comment_templates'
+    __table_args__ = (UniqueConstraint('contact_id', 'role', 'crm_organisation_id', 'name_key', name='uq_comment_template_owner_name'),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    contact_id: Mapped[int] = mapped_column(ForeignKey('crm_contacts.id'))
+    role: Mapped[str] = mapped_column(String(12))
+    crm_organisation_id: Mapped[int] = mapped_column(Integer)
+    name: Mapped[str] = mapped_column(String(80))
+    name_key: Mapped[str | None] = mapped_column(String(64))
+    text: Mapped[str] = mapped_column(Text)
+    version: Mapped[int] = mapped_column(Integer, default=1, server_default='1')
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    updated_at: Mapped[datetime] = mapped_column(DateTime)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime)
+    __mapper_args__: ClassVar[dict] = {'version_id_col': version}
+
+
+class AlertDeskCommentTemplateEvent(Base):
+    __tablename__ = 'alert_desk_comment_template_events'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    template_id: Mapped[int] = mapped_column(ForeignKey('alert_desk_comment_templates.id'))
+    access_id: Mapped[int] = mapped_column(ForeignKey('alert_desk_access.id'))
+    exception_id: Mapped[int] = mapped_column(ForeignKey('nmvs_exceptions.id'))
+    action: Mapped[str] = mapped_column(String(12))
+    occurred_at: Mapped[datetime] = mapped_column(DateTime)
+    data: Mapped[dict[str, Any]] = mapped_column(JSON)

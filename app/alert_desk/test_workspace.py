@@ -529,12 +529,12 @@ def create_workspace(factory, *, origin=ORIGIN):
 
     # Serve the participant assets without exposing application files.
     @app.get("/case-assets/{name}")
-    def asset(name: Literal["case.css", "case.js"]):
+    def asset(name: Literal["case.css", "case.js", "comment-templates.js"]):
         return FileResponse(ASSETS / name)
 
     # Reuse the organisation endpoints against this isolated database, including
     # the same validation, batch selection and event persistence as Alert Desk.
-    read_case, submit_case = access_api.install(
+    read_case, submit_case, template_api = access_api.install(
         FastAPI(), factory, secrets.token_urlsafe(32)
     )
 
@@ -608,6 +608,26 @@ def create_workspace(factory, *, origin=ORIGIN):
             back_label="Test workspace",
             findings_url=f"/cases/{identifier}/{role}/findings",
         )
+
+    @app.get("/cases/{identifier}/{role}/comment-templates")
+    def comment_template_list(identifier: int, role: ROLE):
+        return template_api[0](identifier, tokens[role])
+
+    @app.get("/cases/{identifier}/{role}/comment-templates/{template_id}")
+    def comment_template_detail(identifier: int, role: ROLE, template_id: int):
+        return template_api[1](identifier, template_id, tokens[role])
+
+    @app.post("/cases/{identifier}/{role}/comment-templates")
+    async def comment_template_command(request: Request, identifier: int, role: ROLE):
+        from app.domain.investigations.comment_templates import TemplateCommand
+
+        if request.headers.get("origin") != origin:
+            raise HTTPException(403, "Use the test workspace form.")
+        try:
+            body = TemplateCommand.model_validate(json_object(await bounded_json(request, 8192)))
+        except (ValueError, TypeError):
+            raise HTTPException(422, "Check the template name and text.") from None
+        return await run_in_threadpool(template_api[2], identifier, body, tokens[role])
 
     @app.post("/cases/{identifier}/{role}/findings")
     async def findings(request: Request, identifier: int, role: ROLE):

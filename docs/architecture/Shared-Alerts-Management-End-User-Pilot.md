@@ -1026,3 +1026,16 @@ Template text does not select an answer, make a finding or close a case. Publish
 comments remain an immutable text snapshot when their source template is changed
 or deleted. Plan mutation/usage attribution under the existing audit requirements.
 Plain text is the first scope; no macros/placeholders or AI generation are required.
+
+
+### Implemented local increment — 2026-11-26
+
+The general comment field and personal library now exist for verified End-user/MAH
+organisation access, including the local synthetic workspace. Ownership is derived
+from the contact, role and CRM organisation, with current access checks. Names/text
+are stored in schema 0055; management and draft insertion retain transactional event
+snapshots. Legacy case-only links do not provide a verified personal template owner;
+NMVO closing notes remain separate. The library has no effect on actual submitted
+comments or case status until the participant explicitly submits a finding. Dynamic
+placeholders, organisation-wide sharing and AI generation remain outside this scope.
+This is local pilot functionality, not an approved/production Alert Desk release.

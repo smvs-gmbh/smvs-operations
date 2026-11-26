@@ -8,7 +8,7 @@ release. Dated sections further down preserve earlier decisions and milestones.
 
 ## Next
 
-- [ ] **Alert Desk — personal comment templates (CHG-020 / URS-122).** Named,
+- [x] **Alert Desk — personal comment templates (CHG-020 / URS-122), local participants.** Named,
   private templates with Insert / Save as template / Manage; durable verified-owner
   scope across sessions/devices, editable draft insertion and unchanged published
   comments. Review making comments available beyond Finding = Other issue.
@@ -799,5 +799,18 @@ No Jelastic deployment or production source request was performed.
 - [x] Retain draft on finding change and submitted comment on reload/amendment;
   show confirmation and existing NMVO finding projection with escaped source text.
 - [x] Role/finding round trips, empty/oversized inputs and responsive browser checks.
-- [ ] Personal named-template storage, ownership, management and insertion.
+- [x] Personal named-template storage, verified participant ownership, management
+  and insertion (CHG-020 B, local schema 0055).
 - [ ] Owner acceptance and FRS/RA/RTM reconciliation; Alert Desk remains local.
+
+
+### CHG-020 increment B — Personal templates (2026-11-26, local)
+
+- [x] Durable private participant library across cases/session renewal, create,
+  rename/edit/remove and safe insertion without sending or overwriting draft text.
+- [x] Current verified contact/role/organisation and case access, expiry/revocation,
+  optimistic version checks, bounded quota/names/text and atomic audit events.
+- [x] Local migration 0055, migration-chain preservation and API/browser checks.
+- [x] Restart local gateway/API/test workspace with existing configuration and cases.
+- [ ] Owner acceptance and controlled FRS/RA/RTM/CHG-003 reconciliation.
+- [ ] Separately decide NMVO closing-note integration; no production rollout.
