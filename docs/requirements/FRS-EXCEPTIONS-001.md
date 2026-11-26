@@ -176,3 +176,17 @@ automatic local/Hub closure is triggered. Access is still rechecked by requestin
 Location under FRS-EXC-003. MAH A24 entry remains outside this increment. Provide
 matching NMVO participant preview and explicit pack-state guidance; missing batch
 reference shall not be presented as the A24 investigation rationale.
+
+
+## FRS-EXC-014
+
+URS-125 / CHG-025: Use one active SendGrid dynamic template for invitations, codes,
+case updates, findings requests and reminders. Permit SendGrid only in enabled TEST
+with complete private configuration and an exact recipient allowlist. Use one
+recipient, fixed HTTPS endpoint and disabled click/open tracking. Commit a delivery
+attempt before network I/O, then persist accepted/failed/uncertain outcome and safe
+provider reference. Never store bodies, codes, capabilities or API keys in receipts;
+use a keyed fingerprint. Refuse automatic retries of unconfirmed outcomes. Expose
+receipt history only to TEST staff with no-store/no-referrer; capture inbox contains
+captures only. Keep key out of participant gateway. Require fresh invitations after
+contact-version changes. Retain existing evidence through configuration rollback.

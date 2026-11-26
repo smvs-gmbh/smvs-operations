@@ -9,6 +9,7 @@ from pathlib import Path
 
 from fastapi import HTTPException
 
+from app.alert_desk.mail_settings import MailSettings
 from app.alert_desk.settings import AlertDeskSettings
 from app.core.config import get_settings
 from app.portal.routes import templates
@@ -79,5 +80,5 @@ def page(request, identifier=None):
     return templates.TemplateResponse(
         request=request, name="alert_desk_test_mailbox.html", headers=PRIVATE,
         context={"title": "TEST mailbox", "active": "workflows",
-                 "messages": messages, "message": selected},
+                 "messages": messages, "message": selected, "mail_mode": MailSettings().alert_desk_mail_mode},
     )

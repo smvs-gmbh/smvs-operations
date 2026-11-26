@@ -15,6 +15,7 @@
   ('Access confirmed', confirmed_count|number, '')
 ]) }}
 <p><a class="audit-link" href="/workflows/alert-desk/review">Priority review →</a></p>
+{% if test_mailbox_url == "/workflows/alert-desk/mailbox" %}<p class="notice">{% if mail_mode == "sendgrid" %}TEST email uses SendGrid for approved recipients only.{% else %}Capture mode is active; no external email is sent.{% endif %} <a href="/workflows/alert-desk/deliveries">View email deliveries →</a></p>{% endif %}
 {% if notice %}<p class="notice" role="status">{{ notice }}</p>{% endif %}
 <section class="panel review-body">
   <div class="review-controls">

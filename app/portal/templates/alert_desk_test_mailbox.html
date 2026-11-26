@@ -2,7 +2,8 @@
 {% block heading %}
 <a class="back-link" href="/workflows/alert-desk">← Alert Desk invitations</a>
 <div class="heading"><div><div class="eyebrow">TEST · Captured mail</div><h1>TEST mailbox</h1>
-<p>Messages captured on this TEST server. No external email is sent.</p></div></div>
+<p>Messages captured on this TEST server. {% if mail_mode == "sendgrid" %}SendGrid is active; new external messages appear in the delivery history, not in this inbox.{% else %}Capture mode is active; no external email is sent.{% endif %}</p>
+{% if mail_mode == "sendgrid" %}<a class="audit-link" href="/workflows/alert-desk/deliveries">View email deliveries →</a>{% endif %}</div></div>
 {% endblock %}
 {% block content %}
 {% if message %}

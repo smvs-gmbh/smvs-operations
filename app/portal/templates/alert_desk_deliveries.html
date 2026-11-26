@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block heading %}
+<a class="back-link" href="/workflows/alert-desk">← Alert Desk invitations</a>
+<div class="heading"><div><h1>TEST email deliveries</h1><p>Accepted means SendGrid accepted the request; it does not confirm inbox delivery. Sending or uncertain outcomes must be reviewed before retrying.</p></div></div>
+{% endblock %}
+{% block content %}
+<section class="panel review-body"><div class="table-scroll"><table>
+<thead><tr><th>Attempted at (UTC)</th><th>Recipient</th><th>Message</th><th>Outcome</th><th>HTTP status</th><th>Provider reference</th></tr></thead><tbody>
+{% for item in deliveries %}<tr><td>{{ item.attempted_at.strftime('%Y-%m-%d %H:%M:%S') }}</td><td>{{ item.recipient }}</td><td>{{ item.kind }}</td><td>{{ item.status }}</td><td>{{ item.http_status or '—' }}</td><td>{{ item.provider_id or '—' }}</td></tr>
+{% else %}<tr><td colspan="6">No SendGrid attempts recorded.</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}

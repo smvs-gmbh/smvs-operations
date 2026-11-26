@@ -809,3 +809,13 @@ workflow. Findings shall remain distinct from the NMVO decision and shall not
 change pack status or automatically close the Case. Foreign-requester A24 alerts
 remain inaccessible under URS-123, even when earlier pack history mentions an own
 Location. Preserve separate own/foreign synthetic cases for acceptance testing.
+
+
+## URS-125 — Controlled TEST email
+
+TEST participants shall be invited and notified individually through an explicitly
+configured sender/template and approved recipient list. Capture remains the default.
+Protect credentials and invitation/code content, retain accountable delivery attempts
+and distinguish provider acceptance from actual delivery. Updating contact addresses
+shall invalidate access verified against the old contact version without deleting
+findings or changing staff authentication. Production mail is outside this increment.

@@ -6,7 +6,7 @@
 {% block content %}
 <section class="panel review-body">
   {% if sent is defined %}
-    <p class="notice" role="status">{{ sent }} of {{ groups|length }} reminders accepted by the local test mailbox.</p>
+    <p class="notice" role="status">{{ sent }} of {{ groups|length }} reminders accepted by the configured mail service.</p>
   {% endif %}
   {% if groups %}
   <ul>

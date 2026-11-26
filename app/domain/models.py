@@ -1219,3 +1219,20 @@ class AlertDeskCommentTemplateEvent(Base):
     action: Mapped[str] = mapped_column(String(12))
     occurred_at: Mapped[datetime] = mapped_column(DateTime)
     data: Mapped[dict[str, Any]] = mapped_column(JSON)
+
+
+DOMAIN_TABLES.add("alert_desk_mail_deliveries")
+
+
+class AlertDeskMailDelivery(Base):
+    __tablename__ = "alert_desk_mail_deliveries"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    recipient: Mapped[str] = mapped_column(String(254))
+    kind: Mapped[str] = mapped_column(String(80))
+    template_id: Mapped[str] = mapped_column(String(70))
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    attempted_at: Mapped[datetime] = mapped_column(DateTime)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime)
+    status: Mapped[str] = mapped_column(String(12))
+    http_status: Mapped[int | None] = mapped_column(Integer)
+    provider_id: Mapped[str | None] = mapped_column(String(200))

@@ -25,7 +25,7 @@ def main():
         }
         config = {k: v for k, v in config.items() if k in allowed}
     for name in list(os.environ):
-        if name.startswith(("DB_", "NMVS_", "AMS_", "SENDGRID_", "OPENAI_")):
+        if name.startswith(("DB_", "NMVS_", "AMS_", "SENDGRID_", "OPENAI_", "ALERT_DESK_SENDGRID_")):
             del os.environ[name]
     os.environ.update(config)
     release = (root / "current").resolve()

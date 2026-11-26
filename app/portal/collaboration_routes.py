@@ -500,6 +500,8 @@ def invitation_rows(session, scope):
 
 
 def render_access_directory(request, session, notice=None):
+    from app.alert_desk.mail_settings import MailSettings
+
     scope = invitation_directory_scope(request)
     rows = invitation_rows(session, scope)
     send_url = "/workflows/alert-desk/send"
@@ -519,6 +521,7 @@ def render_access_directory(request, session, notice=None):
             "send_url": send_url,
             "case_url": case_url,
             "notice": notice,
+            "mail_mode": MailSettings().alert_desk_mail_mode,
             "test_mailbox_url": "/workflows/alert-desk/mailbox"
             if get_settings().environment == "test" else "http://localhost:18025/",
             "sent_count": sum(
@@ -547,6 +550,18 @@ def test_mail_message(request: Request, identifier: str):
     from app.portal.test_mailbox import page
 
     return page(request, identifier)
+
+
+@router.get("/workflows/alert-desk/deliveries", include_in_schema=False)
+def mail_deliveries(request: Request, session: DbSession):
+    require_invitation_staff(request)
+    if get_settings().environment != "test":
+        raise HTTPException(404, "TEST email deliveries are unavailable.")
+    from app.domain.models import AlertDeskMailDelivery
+    rows = session.scalars(select(AlertDeskMailDelivery).order_by(AlertDeskMailDelivery.attempted_at.desc()).limit(100)).all()
+    return templates.TemplateResponse(request=request, name="alert_desk_deliveries.html",
+        headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer"},
+        context={"title": "TEST email deliveries", "active": "workflows", "deliveries": rows})
 
 
 @router.post("/workflows/alert-desk/send", include_in_schema=False)
@@ -620,7 +635,7 @@ async def send_access_invitations(request: Request, session: DbSession):
     return render_access_directory(
         request,
         session,
-        f"{sent} of {len(selected)} selected invitations accepted by the local test mailbox.",
+        f"{sent} of {len(selected)} selected invitations accepted by the configured mail service.",
     )
 
 
@@ -750,7 +765,7 @@ async def publish_case_update(request: Request, identifier: int, session: DbSess
                 continue
             sent += 1
             accepted.add(email.casefold())
-        update.notification = f"{sent} of {len(addresses)} accepted by test mailbox"
+        update.notification = f"{sent} of {len(addresses)} accepted by configured mail service"
         if response_request and accepted & response_request[1]:
             current_record = session.get(
                 NMVSException, identifier, with_for_update=True, populate_existing=True
@@ -825,7 +840,7 @@ async def request_alert_response(request: Request, identifier: int, session: DbS
         sent += 1
     if not sent:
         raise HTTPException(
-            503, "The test mailbox did not accept the request. No deadline was started."
+            503, "The mail service did not confirm acceptance. No deadline was started; review email deliveries before retrying."
         )
     session.add(
         AlertDeskResponseRequest(

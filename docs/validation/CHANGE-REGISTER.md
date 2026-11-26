@@ -944,3 +944,21 @@ FRS-EXC-004/005/009/010; risks RA-01/04/07/11/14. Plan synthetic Hub fixtures an
 source/actor/order/amendment/pagination/failure tests on TEST; no real Hub writes,
 new credentials, automatic closure or production deployment is implied. Scope,
 FRS/RTM reconciliation, implementation and actual acceptance remain pending.
+
+
+## CHG-025 — Controlled TEST email delivery (2026-11-26)
+
+Owner-authorised preparation for Nicolas Florin as End User and Reinhold Sojer as
+MAH, sender alerts@smvs-gmbh.ch. Add a single dynamic SendGrid template for the
+five existing mail types, explicit TEST recipient allowlist and private credentials.
+Default capture remains active; do not send invitations as part of configuration.
+Retain delivery attempts/outcomes before/after provider calls without storing
+capabilities or codes. Accepted is provider acceptance, not proof of delivery.
+Schema 0056 adds an isolated receipt table and refuses destructive downgrade when
+receipts exist. Contact email changes invalidate old access by contact version;
+findings, templates, passkeys and synthetic source data remain.
+
+URS-125 → FRS-EXC-014 → RA-01/04/07/14. See
+[setup and activation](../deployment/ALERT-DESK-SENDGRID-TEST.md). Automated checks
+are supporting evidence; actual recipient delivery and owner acceptance remain
+pending until the private key and active template are configured. Production unchanged.

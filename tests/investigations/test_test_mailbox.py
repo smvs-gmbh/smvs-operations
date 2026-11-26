@@ -75,3 +75,31 @@ def test_mailbox_requires_test_staff_and_refuses_paths_symlinks_and_foreign_link
     (folder / (identifier + ".eml")).unlink()
     (folder / (identifier + ".eml")).write_text("Subject: Test\n\nhttps://attacker.test/alerts/access#" + "t" * 43)
     assert "Open participant invitation" not in client.get(base + "/" + identifier).text
+
+
+def test_sendgrid_mailbox_explains_external_delivery_and_receipts_require_staff(mailbox, monkeypatch, tmp_path):
+    from app.alert_desk.test_workspace import fixture_database
+    from app.core.db.session import get_session
+
+    client, _, settings = mailbox
+    monkeypatch.setenv("ALERT_DESK_MAIL_MODE", "sendgrid")
+    page = client.get("/workflows/alert-desk/mailbox")
+    assert "SendGrid is active" in page.text
+    assert "No external email is sent" not in page.text
+    engine, factory = fixture_database(tmp_path / "deliveries.db")
+    def session():
+        with factory() as s:
+            yield s
+    client.app.dependency_overrides[get_session] = session
+    try:
+        route = "/workflows/alert-desk/deliveries"
+        result = client.get(route)
+        assert result.status_code == 200 and "No SendGrid attempts" in result.text
+        assert result.headers["cache-control"] == "no-store"
+        assert result.headers["referrer-policy"] == "no-referrer"
+        assert client.get(route, headers={"x-test-role": "participant"}).status_code == 403
+        settings.environment = "production"
+        assert client.get(route).status_code == 404
+    finally:
+        client.app.dependency_overrides.clear()
+        engine.dispose()

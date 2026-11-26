@@ -217,3 +217,11 @@ existing records/sessions preserved and no real mail/pack operation performed.
   participant/Hub Case history. Participant findings already persist separately;
   Hub history remains live-only and needs retained source observations. No
   implementation/deployment or audit-completeness claim in this planning entry.
+
+
+### 2026-11-26 — CHG-025 TEST email preparation
+
+Add controlled SendGrid transport, shared dynamic template assets, protected
+configuration example and private delivery history (schema 0056). Capture stays
+the default; real external delivery requires private key/template activation.
+No production change or completed end-user delivery validation is claimed.

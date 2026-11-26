@@ -293,7 +293,11 @@ def test_upgrade_matches_models_and_preserves_all_ids_and_provenance(migration_d
     templates_migration = load_migration("0055_comment_templates")
     templates_migration.op = Operations(MigrationContext.configure(connection))
     templates_migration.upgrade()
+    mail_migration = load_migration("0056_alert_desk_mail")
+    mail_migration.op = Operations(MigrationContext.configure(connection))
+    mail_migration.upgrade()
     assert compare_metadata(MigrationContext.configure(connection), Base.metadata) == []
+    mail_migration.downgrade()
     templates_migration.downgrade()
     contact_links_migration.downgrade()
     export_format_migration.downgrade()

@@ -1,4 +1,4 @@
-"""Deliver individual pilot messages to the loopback test mailbox."""
+"""Deliver individual pilot messages through capture or controlled TEST SendGrid."""
 
 import smtplib
 from email.message import EmailMessage
@@ -7,8 +7,15 @@ from app.alert_desk.settings import mail_origin
 
 
 def deliver(email, subject, body):
+    from app.alert_desk.mail_settings import MailSettings
+
+    settings = MailSettings()
+    if settings.alert_desk_mail_mode == "sendgrid":
+        from app.domain.investigations.mail_delivery import send
+
+        return send(settings, email, subject, body)
     message = EmailMessage()
-    message["From"] = "SMVS Alert Desk <office@smvs-gmbh.ch>"
+    message["From"] = f"SMVS Alert Desk TEST <{settings.alert_desk_mail_from}>"
     message["To"] = email
     message["Subject"] = subject
     message.set_content(body)
