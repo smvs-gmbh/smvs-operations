@@ -1,0 +1,3 @@
+{% if request.app.state.alert_desk_test|default(false) %}
+<aside class="alert-desk-test-banner" aria-label="Test environment">TEST · Synthetic data only</aside>
+{% endif %}

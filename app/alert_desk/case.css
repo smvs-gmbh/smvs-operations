@@ -62,3 +62,4 @@ header .logo > span { font-size: 2.1rem; color: #868c91; }
 .template-buttons {display:flex;flex-wrap:wrap;gap:.5rem;}
 .template-library-status {grid-column:1/-1;}
 @media(max-width:650px){.template-library{grid-template-columns:minmax(0,1fr);}.template-library select{max-height:10rem;}}
+.alert-desk-test-banner { padding: .6rem 1.2rem; background: #fff3cd; color: #684e00; font: 600 .9rem system-ui, sans-serif; text-align: center; }

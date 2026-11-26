@@ -12,6 +12,15 @@ baseline. Detailed scope/evidence: [change register](docs/validation/CHANGE-REGI
 - Owner-supplied TEST hostname currently serves VerifyIt; Operations target or
   coexistence requires clarification. No server, data or public routing change.
 
+## Unreleased — hosted Alert Desk TEST candidate
+
+- CHG-021: Owner confirmed shared TEST and selected public participant access.
+  Add explicit TEST enablement, configurable origins/links, secure gateway checks,
+  command ceiling and synthetic-data banner; production remains disabled.
+- Separate service runner, private capturing SMTP and guarded synthetic seed.
+  Initial Operations staff route remains private through an authenticated tunnel.
+  No external test email is enabled; actual rollout evidence follows installation.
+
 ## Unreleased — compact participant template navigation (local)
 
 - CHG-020 C / URS-122: Templates picker beside Comment; create/edit/delete move to

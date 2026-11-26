@@ -3,7 +3,7 @@
 import smtplib
 from email.message import EmailMessage
 
-from app.alert_desk.schema import PUBLIC_ORIGIN
+from app.alert_desk.settings import mail_origin
 
 
 def deliver(email, subject, body):
@@ -20,7 +20,7 @@ def send_access(email, token):
     deliver(
         email,
         "SMVS Alert Desk | Invitation",
-        f"Open your organisation’s Alert Desk: {PUBLIC_ORIGIN}/alerts/access#{token}\n\n"
+        f"Open your organisation’s Alert Desk: {mail_origin()}/alerts/access#{token}\n\n"
         "The invitation expires after 24 hours. You will receive a separate code to confirm access.\n\n"
         "Kind regards,\nSMVS",
     )
@@ -40,7 +40,7 @@ def send_case_update(email, alert_reference, identifier):
         email,
         "SMVS Alert Desk | Case update",
         f"SMVS has posted an update for alert {alert_reference}.\n\n"
-        f"Open the case to review the current instructions: {PUBLIC_ORIGIN}/alerts/{identifier}\n\n"
+        f"Open the case to review the current instructions: {mail_origin()}/alerts/{identifier}\n\n"
         "Kind regards,\nSMVS",
     )
 
@@ -50,7 +50,7 @@ def send_response_request(email, reference, identifier, due_on):
         email,
         "SMVS Alert Desk | Findings requested",
         f"Please share your findings or a progress update for alert {reference} by {due_on}.\n\n"
-        f"Open your case: {PUBLIC_ORIGIN}/alerts/{identifier}\n\n"
+        f"Open your case: {mail_origin()}/alerts/{identifier}\n\n"
         "If your session has expired, open a valid invitation or contact SMVS to renew access.\n\n"
         "Kind regards,\nSMVS",
     )
@@ -58,7 +58,7 @@ def send_response_request(email, reference, identifier, due_on):
 
 def send_response_reminder(email, cases):
     items = "\n".join(
-        f"- {reference} ({role}, due {due_on}): {PUBLIC_ORIGIN}/alerts/{identifier}"
+        f"- {reference} ({role}, due {due_on}): {mail_origin()}/alerts/{identifier}"
         for reference, role, due_on, identifier in cases
     )
     deliver(

@@ -190,7 +190,9 @@ async def prepare_evidence(
 
 def pilot_enabled():
     return (
-        get_settings().environment == "development"
+        (get_settings().environment == "development" or (
+            get_settings().environment == "test" and get_settings().alert_desk_test_enabled
+        ))
         and len(os.environ.get("ALERT_DESK_PILOT_SECRET", "")) >= 32
     )
 

@@ -25,6 +25,28 @@
   at `f9245ba`, schema 0055; hosted portability and actual deployment pending.
   Existing PROD Operations/Connect and local services remain unchanged.
 
+### CHG-021 hosted implementation — authorised shared TEST target
+
+The owner confirmed coexistence with VerifyIt in env-1900268 and selected a
+separate public TEST Connect access. Read-only preflight verifies an existing
+dedicated `smvsops_test` account, empty Operations schema on TEST node221861 and
+the separate VerifyIt schema. No production credentials or data are reused.
+
+The local candidate adds validated origins, explicit TEST-only enablement with
+production refusal, same-node loopback API, configured invitation/update/reminder
+links, HTTPS cookies, Host/Origin and peer checks, an aggregate command ceiling,
+and a synthetic-data banner. A private capturing SMTP service has no external
+delivery path. Separate TEST service launcher filters DB/source keys out of the
+gateway/capture environments. Existing synthetic seed is reused only on the
+verified empty TEST store; pre-authenticated fixture sessions are invalidated.
+
+Deployment uses a new provider hostname/vhost and dedicated runtime/processes;
+VerifyIt's canonical hostname/vhost remains unchanged. Initial staff access is an
+authenticated SSH tunnel, not a public Operations route. Future VPN-only HTTPS
+staff access and approved external mail remain separate configuration work.
+See `deploy/alert-desk-test/README.md` for the installed design. Actual rollout
+and TEST verification evidence must be appended after execution.
+
 Use one entry per change or independently reviewable increment. Record
 scope, requirement and risk references, and the evidence and decision for
 the release. The pre-release baseline for comparison is `d446f5d`.

@@ -2,9 +2,11 @@
 
 import json
 import os
+import time
+from collections import deque
 from hashlib import sha256
 from pathlib import Path
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 from uuid import uuid4
 
 import httpx
@@ -100,23 +102,48 @@ def render_case(
     )
 
 
-def create_app(secret, *, transport=None):
+def create_app(secret, *, transport=None, public_origin=PUBLIC_ORIGIN, private_origin=PRIVATE_ORIGIN):
+    from app.alert_desk.settings import AlertDeskSettings
+
+    origins = AlertDeskSettings(
+        alert_desk_public_origin=public_origin,
+        alert_desk_private_origin=private_origin,
+    )
+    public_origin = origins.alert_desk_public_origin
+    private_origin = origins.alert_desk_private_origin
     if len(secret) < 32:
         raise ValueError(
             "Set a dedicated Alert Desk pilot secret of at least 32 characters."
         )
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
+    app.state.alert_desk_test = origins.environment == "test"
+    recent_commands = deque()
 
     @app.middleware("http")
     async def protect(request, call_next):
         if (
-            request.headers.get("host") != PUBLIC_ORIGIN.removeprefix("http://")
+            request.headers.get("host") != urlsplit(public_origin).netloc
             or not request.client
             or request.client.host not in {"127.0.0.1", "::1"}
         ):
             return HTMLResponse(
-                "Use the local Alert Desk address.", 403, headers=PRIVATE_HEADERS
+                "Use the configured Alert Desk address.", 403, headers=PRIVATE_HEADERS
             )
+        # TLS terminates at the configured edge; construct links/redirects from
+        # that fixed origin, never from a client-supplied forwarded scheme.
+        request.scope["scheme"] = urlsplit(public_origin).scheme
+        # Aggregate ceiling at the same-node proxy boundary. Do not treat an
+        # arbitrary forwarded IP as a verified client identity.
+        if request.method == "POST":
+            now = time.monotonic()
+            while recent_commands and recent_commands[0] <= now - 60:
+                recent_commands.popleft()
+            if len(recent_commands) >= 120:
+                return JSONResponse(
+                    {"detail": "Too many requests. Try again in a minute."}, 429,
+                    headers={**PRIVATE_HEADERS, "Retry-After": "60"},
+                )
+            recent_commands.append(now)
         response = await call_next(request)
         response.headers.update(PRIVATE_HEADERS)
         return response
@@ -132,7 +159,7 @@ def create_app(secret, *, transport=None):
                 ) as client,
                 client.stream(
                     method,
-                    PRIVATE_ORIGIN + path,
+                    private_origin + path,
                     headers=headers,
                     json=payload,
                     params=params,
@@ -156,7 +183,7 @@ def create_app(secret, *, transport=None):
         raise HTTPException(503, "Alert Desk is temporarily unavailable. Try again.")
 
     async def command(request, schema, *, limit=4096):
-        if request.headers.get("origin") != PUBLIC_ORIGIN:
+        if request.headers.get("origin") != public_origin:
             raise HTTPException(403, "Use the Alert Desk form.")
         raw = await bounded_json(request, limit)
         try:
@@ -258,7 +285,7 @@ def create_app(secret, *, transport=None):
             samesite="strict",
             max_age=GRANT_HOURS * 3600,
             path=SESSION_PATH,
-            secure=PUBLIC_ORIGIN.startswith("https://"),
+            secure=public_origin.startswith("https://"),
         )
         return response
 
@@ -307,13 +334,13 @@ def create_app(secret, *, transport=None):
             samesite="strict",
             max_age=600,
             path="/alerts/access",
-            secure=PUBLIC_ORIGIN.startswith("https://"),
+            secure=public_origin.startswith("https://"),
         )
         return response
 
     @app.post("/alerts/access/verify")
     async def verify_code(request: Request):
-        if request.headers.get("origin") != PUBLIC_ORIGIN:
+        if request.headers.get("origin") != public_origin:
             raise HTTPException(403, "Use the Alert Desk form.")
         raw = await bounded_json(request, 256)
         try:
@@ -335,7 +362,7 @@ def create_app(secret, *, transport=None):
             samesite="strict",
             max_age=8 * 3600,
             path="/alerts",
-            secure=PUBLIC_ORIGIN.startswith("https://"),
+            secure=public_origin.startswith("https://"),
         )
         return response
 
@@ -438,4 +465,12 @@ def create_app(secret, *, transport=None):
 
 
 def local_app():
-    return create_app(os.environ.get("ALERT_DESK_PILOT_SECRET", ""))
+    from app.alert_desk.settings import AlertDeskSettings
+
+    settings = AlertDeskSettings()
+    settings.require_enabled()
+    return create_app(
+        os.environ.get("ALERT_DESK_PILOT_SECRET", ""),
+        public_origin=settings.alert_desk_public_origin,
+        private_origin=settings.alert_desk_private_origin,
+    )

@@ -149,6 +149,9 @@ def create_app(sessions, secret):
 
 
 def local_app():
-    if get_settings().environment != "development":
-        raise RuntimeError("The Alert Desk pilot is available only in development.")
+    settings = get_settings()
+    if settings.environment != "development" and not (
+        settings.environment == "test" and settings.alert_desk_test_enabled
+    ):
+        raise RuntimeError("Alert Desk is disabled in this environment.")
     return create_app(SessionFactory, os.environ.get("ALERT_DESK_PILOT_SECRET", ""))
