@@ -1,0 +1,35 @@
+{
+  "date": "2026-11-27",
+  "change": "CHG-031",
+  "tested_application_commit": "86de333a437e772edcab323c0a9de3216daaafa3",
+  "previous_test_commit": "c00704bf00f551035854b031fd1c62fcab58d407",
+  "schema": "0058_alert_desk_attachments",
+  "local_full_suite_passed": 627,
+  "local_final_focused_passed": 21,
+  "hosted_targeted_passed": 95,
+  "native_exact_5_mib_and_over_limit_checks": true,
+  "native_all_80_tables_restored": true,
+  "original_test_business_data_and_config_preserved": true,
+  "real_contacts_and_passkeys_preserved": true,
+  "browser": {
+    "mah_a2_a3_direct_findings": true,
+    "optional_empty_comment_saves": true,
+    "measures_saved_and_reloaded": true,
+    "no_automatic_closure": true,
+    "file_upload_without_comment_or_finding": true,
+    "other_role_does_not_see_file": true,
+    "end_user_alert_specific_comparison_and_categories_retained": true,
+    "mobile_no_overflow": true,
+    "external_emails_sent": 0
+  },
+  "public_https": {
+    "public_https_login_and_new_assets": true,
+    "unauthenticated_attachment_list_denied": true,
+    "staff_download_not_public": true,
+    "verifyit_available": true,
+    "external_emails_sent": 0
+  },
+  "external_emails_sent": 0,
+  "production_changed": false,
+  "owner_acceptance": "open"
+}

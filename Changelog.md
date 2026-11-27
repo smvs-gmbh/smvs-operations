@@ -336,3 +336,9 @@ Schema 0058 adds the protected evidence table; no automatic closure or Hub write
 627 local tests pass; Chrome checks direct findings, empty comments, measures,
 independent uploads, role isolation and mobile layout. Development and TEST scope;
 production excluded. See docs/deployment/ALERT-DESK-FINDING-FIRST.md.
+
+CHG-031 installed in development and synthetic TEST on schema 0058. 95 hosted
+checks and native MySQL 5 MiB boundary/ownership/replay tests passed; native writes
+rolled back and all 80 table fingerprints restored. Protected backup and unchanged
+existing-data/configuration checks completed. Final source archive reconciled with
+local/remote Git and all four TEST processes. No external mail or PROD changes.

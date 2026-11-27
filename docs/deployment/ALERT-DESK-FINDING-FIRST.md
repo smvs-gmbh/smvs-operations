@@ -79,3 +79,35 @@ schema 0058 when evidence exists; downgrade deliberately refuses populated files
 Do not restore old data over subsequent findings, uploads or credentials. Protected
 preflight snapshot and fingerprints support recovery/reconciliation. Owner-only
 TEST records use `evidence/finding-first-*` and `backups/before-finding-first-*`.
+
+
+## Executed TEST deployment and verification
+
+Tested application commit: `86de333a437e772edcab323c0a9de3216daaafa3`.
+Protected preflight read back the native SQL/gzip snapshot of all 79 existing
+TEST tables; 674 candidate file hashes verified. All four TEST roles stopped,
+additive migration 0057→0058 applied, original business-table fingerprints checked,
+real contacts verified and roles restarted. Runtime configuration remained
+byte-identical; existing passkeys/sessions/findings and SendGrid settings preserved.
+
+Hosted targeted regression: 95 passed, one existing Starlette TestClient
+warning. Native MySQL with actual TEST origin: MEDIUMBLOB verified, exact 5 MiB
+upload/download succeeds, over-limit upload refused, exact retry produces one
+file, role/source boundaries refuse access, direct own-side finding with empty
+comment/in-progress measures works, and no Case auto-closure occurs. Entire native
+test transaction rolled back and all 80 table fingerprints matched afterwards.
+The native harness accepts whole-case refusal for an End User without that
+requesting Location; same-case role separation is additionally covered in the
+local/hosted fixture tests. No access rules were relaxed for the harness.
+
+Public HTTPS: current login and all changed JS/CSS hashes match source;
+unauthenticated file listing denied, staff download is not public, existing VerifyIt
+root still responds. No external email sent by deployment or tests. Local guarded
+schema is also 0058 and services restarted with their existing secrets/configuration.
+
+The final documentation-only archive is reconciled to local/remote Git and all
+four TEST process working directories. Machine-readable non-secret summary:
+[CHG-031 evidence](../validation/evidence/2026-11-27-finding-first.json).
+Private TEST `finding-first-final-sync.json` records its final SHA and manifest;
+`finding-first-native.json` records native execution. Owner acceptance of the
+business flow and actual file examples remains open.
