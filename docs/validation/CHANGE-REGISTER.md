@@ -962,3 +962,16 @@ URS-125 → FRS-EXC-014 → RA-01/04/07/14. See
 [setup and activation](../deployment/ALERT-DESK-SENDGRID-TEST.md). Automated checks
 are supporting evidence; actual recipient delivery and owner acceptance remain
 pending until the private key and active template are configured. Production unchanged.
+
+
+## CHG-026 — Owner-supplied product logos (2026-11-27, local only)
+
+Replace approximated header lettering with the supplied Alert Desk wide PNG,
+retain the narrow PNG for future placements, and use the Operations PNG on white
+sidebar/sign-in surfaces. Original images remain byte-identical; no AI redrawing.
+Explicit brand-file allowlists and same-origin image CSP support participant
+gateway and staff preview rendering. Authentication and case scope are unchanged.
+39 targeted tests passed, including same-origin CSP/logo serving and unknown-file
+refusal; Chrome desktop/mobile and Operations sign-in checks provide visual QA.
+No schema/messaging/process requirement change; no TEST/PROD rollout authorised
+by this local implementation. Email template branding is separate from this change.

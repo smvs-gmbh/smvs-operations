@@ -14,7 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from starlette.concurrency import run_in_threadpool
 
 from app.alert_desk.schema import CAPA, COMPARISON, FINDINGS
-from app.alert_desk.web import ASSETS, DESIGN_ASSETS, DESIGN_STYLES, render_case
+from app.alert_desk.web import ASSETS, BRAND_FILES, DESIGN_ASSETS, DESIGN_STYLES, render_case
 from app.core.config import get_settings
 from app.core.db.session import SessionFactory
 from app.domain.investigations import (
@@ -384,8 +384,11 @@ def live_invitation_preview(
 
 @router.get("/exceptions/invitation-assets/{name}", include_in_schema=False)
 @router.get("/exceptions/invitation-assets/design/{name}", include_in_schema=False)
+@router.get("/exceptions/invitation-assets/brand/{name}", include_in_schema=False)
 def live_invitation_asset(request: Request, name: str):
     require_invitation_staff(request)
+    if name in BRAND_FILES:
+        return FileResponse(ASSETS / "brand" / name, media_type="image/png")
     if name in DESIGN_STYLES:
         return FileResponse(DESIGN_ASSETS / name, media_type="text/css")
     if name in {"case.js", "case.css"}:

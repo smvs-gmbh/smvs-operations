@@ -63,3 +63,14 @@ header .logo > span { font-size: 2.1rem; color: #868c91; }
 .template-library-status {grid-column:1/-1;}
 @media(max-width:650px){.template-library{grid-template-columns:minmax(0,1fr);}.template-library select{max-height:10rem;}}
 .alert-desk-test-banner { padding: .6rem 1.2rem; background: #fff3cd; color: #684e00; font: 600 .9rem system-ui, sans-serif; text-align: center; }
+
+/* Preserve the supplied logo artwork and its proportions. */
+header .alert-desk-brand { width: min(27rem, 100%); flex: 0 1 27rem; min-width: 0; text-align: left; }
+header .alert-desk-brand img { display: block; width: 100%; height: auto; }
+header:has(.alert-desk-brand) { gap: 1.5rem; background: #fff; }
+.alert-desk-topbar:has(.alert-desk-brand) { height: auto; min-height: 68px; }
+@media(max-width:650px) {
+  header:has(.alert-desk-brand) { flex-wrap: wrap; gap: .5rem; padding: .75rem 1rem; }
+  header .alert-desk-brand { flex-basis: 100%; max-width: 27rem; }
+  header:has(.alert-desk-brand) > div:last-child { max-width: 100%; overflow-wrap: anywhere; }
+}

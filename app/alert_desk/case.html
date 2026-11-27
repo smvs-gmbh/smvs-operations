@@ -14,7 +14,7 @@
 <body>
 {% include 'test_banner.html' %}
   <header>
-    <div class="logo" aria-label="SMVS Alert Desk"><span>SMV<b>S</b></span><small>Alert Desk</small></div>
+    {% include "brand.html" %}
     {% if case %}<div><strong>{{ case.organisation }}</strong><span>{{ "MAH" if case.audience == "mah" else "End User" }}{% if case.location %} · {{ case.location }}{% endif %}</span></div>{% endif %}
   </header>
   <main>

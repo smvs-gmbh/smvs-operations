@@ -31,10 +31,11 @@ from app.alert_desk.test_pack_audits import seed_pack_audits
 from app.alert_desk.web import (
     ASSETS,
     DESIGN_ASSETS,
+    PRIVATE_HEADERS,
     render_case,
     render_template_library,
 )
-from app.connect.protocol import PRIVATE_HEADERS, bounded_json, json_object
+from app.connect.protocol import bounded_json, json_object
 from app.core.db.models import (
     AcquiredArtifact,
     ArtifactContent,
@@ -563,6 +564,7 @@ def create_workspace(factory, *, origin=ORIGIN):
         name="portal_static",
     )
     app.mount("/case-assets/design", StaticFiles(directory=DESIGN_ASSETS))
+    app.mount("/case-assets/brand", StaticFiles(directory=ASSETS / "brand"))
 
     # Serve the participant assets without exposing application files.
     @app.get("/case-assets/{name}")

@@ -28,9 +28,16 @@ from app.alert_desk.schema import (
     Findings,
     MailboxCode,
 )
-from app.connect.protocol import PRIVATE_HEADERS, bounded_json, json_object
+from app.connect.protocol import PRIVATE_HEADERS as CONNECT_PRIVATE_HEADERS
+from app.connect.protocol import bounded_json, json_object
+
+PRIVATE_HEADERS = {
+    **CONNECT_PRIVATE_HEADERS,
+    "Content-Security-Policy": CONNECT_PRIVATE_HEADERS["Content-Security-Policy"] + "; img-src 'self'",
+}
 
 ASSETS = Path(__file__).parent
+BRAND_FILES = {"smvs-alert-desk-wide.png", "smvs-alert-desk-narrow.png"}
 DESIGN_ASSETS = ASSETS.parent / "connect_preview" / "assets"
 ACCESS_COOKIE = "alert_desk_access"
 CHALLENGE_COOKIE = "alert_desk_mailbox_check"
@@ -260,6 +267,12 @@ def create_app(secret, *, transport=None, public_origin=PUBLIC_ORIGIN, private_o
     @app.get("/alerts/case.css")
     def stylesheet():
         return FileResponse(ASSETS / "case.css", media_type="text/css")
+
+    @app.get("/alerts/brand/{name}")
+    def brand_image(name: str):
+        if name not in BRAND_FILES:
+            raise HTTPException(404)
+        return FileResponse(ASSETS / "brand" / name, media_type="image/png")
 
     @app.get("/alerts/design/{name}")
     def design_stylesheet(name: str):

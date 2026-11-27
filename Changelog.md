@@ -235,3 +235,20 @@ and real external delivery acceptance pending. PROD unchanged.
 and activated the two-recipient allowlist; API/portal restarted. Source/schema
 unchanged. No invitation was sent by activation; first inbox/code validation pending.
 Development stays in capture mode; PROD unchanged. Email languages are deferred.
+
+
+### 2026-11-27 — CHG-026 Owner-supplied product logos (local)
+
+Use the supplied wide Alert Desk PNG in participant access/list/case/template
+headers and NMVO previews. Retain the narrow variant as an available brand asset.
+Use the supplied Operations PNG in the sidebar and sign-in page, on a white CSS
+surface. Preserve original image bytes/proportions and accessible image text.
+Serve only named public brand files; Alert Desk CSP permits same-origin images
+while keeping default-src none and existing authentication/no-store controls.
+Local workspace supports the same assets. No schema, workflow, mail template or
+hosted TEST/PROD change.
+
+Verification: 39 targeted investigation/workspace/hosted-origin tests passed;
+Ruff and diff checks passed. Chrome desktop and emulated 390 px mobile previews
+verified loaded artwork and no horizontal overflow on the access page; local
+Operations sign-in visually checked. Input hashes match repository copies.

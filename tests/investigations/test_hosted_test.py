@@ -58,7 +58,13 @@ def test_hosted_https_gateway_host_origin_cookie_and_private_destination(monkeyp
     app = create_app("test-secret-" * 4, public_origin=origin, private_origin=private,
                      transport=httpx.MockTransport(backend))
     with TestClient(app, base_url=origin, client=("127.0.0.1", 1234)) as client:
-        assert "TEST · Synthetic data only" in client.get("/alerts/access").text
+        access_page = client.get("/alerts/access")
+        assert "TEST · Synthetic data only" in access_page.text
+        assert "img-src 'self'" in access_page.headers["content-security-policy"]
+        assert "default-src 'none'" in access_page.headers["content-security-policy"]
+        logo = client.get("/alerts/brand/smvs-alert-desk-wide.png")
+        assert logo.status_code == 200 and logo.headers["content-type"] == "image/png"
+        assert client.get("/alerts/brand/unknown.png").status_code == 404
         assert client.get("/alerts", headers={"Host": "attacker.test"}).status_code == 403
         path = "/alerts/access/challenge"
         result = client.post(path, headers={"Origin": origin}, json={"token": "t" * 43})
