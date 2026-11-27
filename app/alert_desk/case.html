@@ -7,9 +7,9 @@
   <link rel="stylesheet" href="{{ assets }}/design/focused.css">
   <link rel="stylesheet" href="{{ assets }}/design/compact.css">
   <link rel="stylesheet" href="{{ assets }}/design/columns.css">
-  <link rel="stylesheet" href="{{ assets }}/case.css?v=templates-page-1">
-  <script defer src="{{ assets }}/case.js?v=templates-page-1"></script>
-  {% if organisation_case and not preview %}<script defer src="{{ assets }}/comment-templates.js?v=templates-page-1"></script>{% endif %}
+  <link rel="stylesheet" href="{{ assets }}/case.css?v=finding-first-2">
+  <script defer src="{{ assets }}/case.js?v=finding-first-2"></script>
+  {% if organisation_case and not preview %}<script defer src="{{ assets }}/attachments.js"></script><script defer src="{{ assets }}/comment-templates.js?v=finding-first-2"></script>{% endif %}
 </head>
 <body>
 {% include 'test_banner.html' %}
@@ -101,6 +101,8 @@
             {% elif mah_a24 and case.mah_a24_requested %}<p>SMVS has requested an investigation from your organisation.</p>{% endif %}
             <div id="review-state" {% if not latest %}hidden{% endif %}>
               <p role="status" id="review-message">{{ ("Findings recorded for " ~ latest.batch_count ~ " alerts.") if latest.batch_count else "Findings recorded for SMVS review." }}</p>
+              <p id="review-finding">{{ 'Root cause on my side' if mah and latest.finding in own_side else findings.get(latest.finding, '') }}</p>
+              <p id="review-measures" {% if not latest.capa %}hidden{% endif %}>Measures · {{ capa.get(latest.capa, '') }}</p>
               <div id="review-comment" {% if not latest.comment %}hidden{% endif %}><strong>Your comment</strong><p class="comment-text" id="review-comment-text">{{ latest.comment or "" }}</p></div>
               <button type="button" class="button" id="amend">Update findings</button>
             </div>
@@ -108,6 +110,15 @@
               {% if organisation_case %}<input type="hidden" name="basis" value="{{ case.basis }}">{% endif %}
               <input type="hidden" name="publication" value="{{ case.publication }}">
               <input type="hidden" name="submission_key" value="{{ key }}">
+              {% set simple_mah = mah and case.code in ['A2', 'A3'] %}
+              {% if simple_mah %}
+              <fieldset class="finding" aria-describedby="finding-hint">
+                <legend>What did you find?</legend>
+                {% for value, label in [('on_my_side', 'Root cause on my side'), ('not_my_side', 'Root cause not on my side'), ('investigating', 'Still investigating')] %}
+                <label><input type="radio" name="finding" value="{{ value }}" {% if latest.finding == value or (value == 'on_my_side' and latest.finding in own_side) %}checked{% endif %} {% if value == 'on_my_side' %}data-own-side{% endif %} required>{{ label }}</label>
+                {% endfor %}
+              </fieldset>
+              {% endif %}
               {% if mah_a24 %}
               <input type="hidden" name="own_cause" value="{{ 'true' if case.mah_a24_own_cause else 'false' }}">
               <p>Review earlier pack-state transactions made by your organisation or its service providers. Record your findings or progress; this does not change the pack state or close the case.</p>
@@ -115,7 +126,7 @@
               <p>Review whether your process, scanner or software triggered the attempted operation. Report your findings and any corrective action. SMVS will review the pack history; this finding does not change the pack state.</p>
               {% elif a7 %}
               <p>Check whether a process or software on your side triggered the request shown above.</p>
-              {% elif mah %}
+              {% elif mah and not simple_mah %}
               {% set checks = [('batch_uploaded', 'Was this batch uploaded?')] %}
               {% if case.code != 'A2' %}{% set checks = checks + [('serial_accepted', 'Was this serial accepted in the upload?')] %}{% endif %}
               {% for field, question in checks %}
@@ -129,7 +140,7 @@
               </fieldset>
               {% endfor %}
               <label class="checkbox"><input type="checkbox" name="other_issue" value="true" {% if latest.other_issue %}checked{% endif %}> Other issue on my side</label>
-              {% else %}
+              {% elif not mah %}
               <fieldset class="yes-no" id="comparison-check">
                 <legend>{{ 'Does the submitted batch match the one printed on the pack?' if case.code == 'A2' else 'Does the serial number shown match the one printed on the pack?' }}</legend>
                 <p class="comparison-reference">{{ "Submitted batch" if case.code == "A2" else "Submitted serial number" }} · <strong>{{ case.batch if case.code == "A2" else case.serial }}</strong></p>
@@ -141,6 +152,7 @@
               </fieldset>
               <p id="next-check" class="investigation-hint" aria-live="polite">Check the scanner, software and any manual entry used for this verification.</p>
               {% endif %}
+              {% if not simple_mah %}
               <fieldset class="finding" aria-describedby="finding-hint{% if mah and not a7 and not a24 %} upload-finding-guidance{% endif %}">
                 <legend>What did you find?</legend>
                 {% if mah and not a7 and not a24 %}
@@ -149,7 +161,7 @@
                 {% if mah %}
                 <label><input type="radio" name="finding" value="other" {% if latest.finding == "other" %}checked{% endif %} data-own-side required>Root cause on my side</label>
                 {% else %}
-                {% for value, label in findings.items() if value in own_side %}
+                {% for value, label in findings.items() if value in own_side and value != 'on_my_side' %}
                 <label><input type="radio" name="finding" value="{{ value }}" {% if latest.finding == value %}checked{% endif %} data-own-side required>{{ label }}</label>
                 {% endfor %}
                 {% endif %}
@@ -159,10 +171,11 @@
                   {% endfor %}
                 </div>
               </fieldset>
+              {% endif %}
               <fieldset class="yes-no capa-status" id="own-measures" hidden disabled>
-                <legend>Corrective and preventive action (CAPA)</legend>
+                <legend>Measures to correct the issue and prevent recurrence</legend>
                 <div>
-                  {% for value, label in capa.items() %}
+                  {% for value, label in capa.items() if value != 'planned' or latest.capa == 'planned' %}
                   <label><input type="radio" name="capa" value="{{ value }}" {% if latest.capa == value %}checked{% endif %} required>{{ label }}</label>
                   {% endfor %}
                 </div>
@@ -180,7 +193,7 @@
                   </div>
                   {% endif %}
                 </div>
-                <p class="investigation-hint" id="comment-hint">Add details or a progress update. Maximum 1,000 characters.</p>
+                <p class="investigation-hint" id="comment-hint">Add background, measures taken or planned, or a progress update. Maximum 1,000 characters.</p>
                 {% if organisation_case and not preview %}<p id="template-status" class="investigation-hint" role="status" aria-live="polite"></p>{% endif %}
                 <textarea id="comment" name="comment" aria-describedby="comment-hint" rows="3" maxlength="1000">{{ latest.comment or "" }}</textarea>
               </div>
@@ -196,6 +209,22 @@
               {% if case.batch_count %}<p class="investigation-hint">{% if a7 %}Applies to this alert and matching Export alerts that are new or still under investigation.{% else %}Applies to matching A2 alerts for this product, batch and location that are new or still under investigation.{% if not mah %} The pack comparison is saved for this alert only.{% endif %}{% endif %}</p>{% endif %}
               <p class="receipt" id="findings-status" role="status"></p>
             </form>
+          </section>
+          {% endif %}
+          {% if organisation_case and not preview %}
+          <section class="action" id="case-attachments" data-url="{{ request.url.path }}/attachments" data-basis="{{ case.basis }}">
+            <h2>Attachments (optional)</h2>
+            <p class="investigation-hint">Shared with your organisation and SMVS. Files relate to this alert only.</p>
+            <ul id="attachment-list"></ul>
+            {% if not (case.progress and case.progress.closed) %}
+            <form id="attachment-form">
+              <label for="attachment-file">Add a file</label>
+              <input id="attachment-file" type="file" accept=".pdf,.png,.jpg,.jpeg,.txt,.log,.csv" required>
+              <p class="investigation-hint">PDF, PNG, JPEG or UTF-8 text/log/CSV. Up to five files, 5 MiB each. No comment required.</p>
+              <button class="button" type="submit">Upload file</button>
+            </form>
+            {% endif %}
+            <p id="attachment-status" role="status" aria-live="polite"></p>
           </section>
           {% endif %}
         </div>

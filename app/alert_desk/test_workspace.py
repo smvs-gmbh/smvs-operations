@@ -568,14 +568,42 @@ def create_workspace(factory, *, origin=ORIGIN):
 
     # Serve the participant assets without exposing application files.
     @app.get("/case-assets/{name}")
-    def asset(name: Literal["case.css", "case.js", "comment-templates.js"]):
+    def asset(name: Literal["case.css", "case.js", "comment-templates.js", "attachments.js"]):
         return FileResponse(ASSETS / name)
 
     # Reuse the organisation endpoints against this isolated database, including
     # the same validation, batch selection and event persistence as Alert Desk.
+    participant_api = FastAPI()
     read_case, submit_case, template_api = access_api.install(
-        FastAPI(), factory, secrets.token_urlsafe(32)
+        participant_api, factory, secrets.token_urlsafe(32)
     )
+    attachment_api = participant_api.state.participant_attachments
+
+    @app.get("/cases/{identifier}/{role}/attachments")
+    def attachment_list(identifier: int, role: ROLE):
+        return attachment_api[0](identifier, tokens[role])
+
+    @app.post("/cases/{identifier}/{role}/attachments")
+    async def attachment_upload(request: Request, identifier: int, role: ROLE):
+        from app.alert_desk.attachment_schema import MAX_JSON, Upload
+        from app.connect.protocol import bounded_json, json_object
+        if request.headers.get("origin") != origin:
+            raise HTTPException(403, "Use the local workspace form.")
+        try:
+            body = Upload.model_validate(json_object(await bounded_json(request, MAX_JSON)))
+        except ValueError:
+            raise HTTPException(422, "Check the selected file.") from None
+        return attachment_api[2](identifier, body, tokens[role])
+
+    @app.get("/cases/{identifier}/{role}/attachments/{attachment_id}")
+    def attachment_download(identifier: int, role: ROLE, attachment_id: int):
+        import base64
+        from urllib.parse import quote
+
+        from fastapi.responses import Response
+        data = attachment_api[1](identifier, attachment_id, tokens[role])
+        return Response(base64.b64decode(data['content']), media_type='application/octet-stream',
+                        headers={'Content-Disposition': "attachment; filename*=UTF-8''" + quote(data['filename'], safe='')})
 
     @app.get("/")
     def overview(

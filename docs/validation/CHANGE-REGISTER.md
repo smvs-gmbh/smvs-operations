@@ -1058,3 +1058,15 @@ Local preview/workspace regression: 25 passed. Isolated Chrome exercise covers
 amendment, prerequisites and reload. Commit before development/TEST restart;
 no schema/data migration or external email. Protected TEST backup/hash/process
 verification under `evidence/upload-guidance-*`. Owner acceptance remains open.
+
+
+## CHG-031 — Findings, measures and participant evidence (2026-11-27)
+
+Owner approves direct MAH A2/A3 findings and measures-focused clarification;
+comments and attachments optional. Preserve alert-specific End User comparisons
+and process/technical questions. URS-129 → FRS-EXC-018 → RA-01/04/07/09/14.
+Schema 0058 adds retained participant evidence with grant/source/organisation
+scope, bounded files and repeat-safe writes. Preserve existing source, classified
+findings, credentials, contacts and SendGrid configuration. No automatic case
+closure or Hub write. Develop/test/commit before TEST deployment; protected backup
+and original-table reconciliation. Formal acceptance remains owner-led.

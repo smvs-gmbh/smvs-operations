@@ -153,3 +153,33 @@ benötigt wird. Nach Yes muss diese Ergebniswahl verfügbar sein und gespeichert
 werden können. Bei A3 zusätzlich die bestätigte Annahme der Seriennummer prüfen.
 No bzw. Other issue on my side muss die entsprechende Einschränkung erklären.
 Ein neuer Befund wird ausdrücklich gewählt; frühere Befunde bleiben erhalten.
+
+
+## CHG-031 — Direkter MAH-Befund und Anhänge (2026-11-27)
+
+Dieser Ablauf ersetzt für MAH A2/A3 die oben beschriebenen Upload-Pflichtfragen.
+
+1. Als MAH A2 und A3 öffnen. Die drei Befunde müssen sofort wählbar sein;
+   Batch-/Seriennummer-Upload-Fragen und Fehlerkategorien entfallen.
+2. Root cause on my side wählen. Ohne Massnahmenstatus muss Speichern verhindert
+   werden. Open, In progress oder Implemented wählen, Kommentar leer lassen und
+   speichern. Nach Neuladen müssen Befund und Massnahmenstatus erhalten sein.
+3. Zu Root cause not on my side wechseln: kein Massnahmenstatus erforderlich.
+   Still investigating ebenfalls ohne Kommentar speichern. Frühere Befunde bleiben
+   im Verlauf; der NMVO-Fall wird nicht automatisch geschlossen.
+4. Als End User A2/A3 öffnen: A2 fragt nach Übereinstimmung der Charge, A3 nach
+   Übereinstimmung der Seriennummer mit der Packung. Prozess-/Handhabungsfehler und
+   Scanner-/Softwarefehler bleiben unterscheidbar. Nicht durch einen generischen
+   MAH-Befund ersetzen.
+5. Ohne Kommentar/Befund eine synthetische TXT-, PDF- oder Bilddatei hochladen.
+   Link aufrufen und Inhalt prüfen. Andere Teilnehmerrolle darf diese Datei nicht
+   sehen; NMVO muss sie in der Analyse dieses Alerts abrufen können. Ein anderer
+   Alert darf über eine kopierte Datei-ID keinen Zugriff erhalten.
+6. 5 MiB Grenze, nicht unterstützten Dateityp und fünf Dateien pro Rolle/Organisation/
+   Alert-Version prüfen. Dateien bleiben am einzelnen Alert, auch bei Batch-Befund.
+   Bei geschlossenen Fällen nur Download; bei neuer Quellversion zeigt die NMVO
+   ältere Dateien als frühere Version. Keine vertraulichen Echtdokumente für diese
+   technischen Tests verwenden.
+
+Weitere End-User-Fragen weiterhin je Alerttyp fachlich prüfen. Diese Anleitung
+ersetzt keine Abnahme der Fälschungsbeurteilung oder QMS-Freigabe.

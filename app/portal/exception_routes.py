@@ -1,10 +1,10 @@
 from datetime import UTC, date, datetime, timedelta
 from hashlib import sha256
-from urllib.parse import parse_qs, urlencode, urlsplit
+from urllib.parse import parse_qs, quote, urlencode, urlsplit
 
 import httpx
 from fastapi import APIRouter, HTTPException, Query, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import StaleDataError
@@ -16,11 +16,16 @@ from app.domain.exceptions import causes, repeat_evidence
 from app.domain.exceptions import review as work
 from app.domain.exceptions.list_search import interpret_filters
 from app.domain.investigations import rca, responses
-from app.domain.models import ExceptionReview, ExceptionReviewEvent, NMVSException
+from app.domain.models import (
+    AlertDeskAttachment,
+    ExceptionReview,
+    ExceptionReviewEvent,
+    NMVSException,
+)
 from app.integration.sources import ams
 from app.portal import alert_trends
-from app.portal.exception_dates import date_scope, resolve_period
 from app.portal import exception_queries as queries
+from app.portal.exception_dates import date_scope, resolve_period
 from app.portal.market_filter import selected_markets
 from app.portal.queries import paged
 from app.portal.record_navigation import list_record_navigation
@@ -429,6 +434,7 @@ def exception_analysis(request: Request, identifier: int, session: DbSession):
             "origins": rca.origin_options(scope),
             "roles": rca.ROLES,
             "findings": rca.applicable_findings(findings.get(record.id, {}), scope),
+            "participant_attachments": list(session.scalars(select(AlertDeskAttachment).where(AlertDeskAttachment.exception_id == record.id).order_by(AlertDeskAttachment.id))) if can_decide else [],
             "finding_labels": FINDINGS,
             "batch_finding_links": batch_finding_links,
             "test_review": test_review,
@@ -457,6 +463,20 @@ def has_pending_review(review):
         review
         and (review.status == "to_do" or review.next_action.strip() or review.due_date)
     )
+
+
+@router.get("/exceptions/{identifier}/participant-attachments/{attachment_id}", include_in_schema=False)
+def participant_attachment_download(request: Request, identifier: int, attachment_id: int, session: DbSession):
+    rca_actor(request)
+    record = current(session, identifier)
+    row = session.get(AlertDeskAttachment, attachment_id)
+    if not row or row.exception_id != record.id:
+        raise HTTPException(404, "Attachment unavailable.")
+    if sha256(row.content).hexdigest() != row.sha256 or len(row.content) != row.byte_count:
+        raise HTTPException(503, "Attachment integrity check failed.")
+    return Response(row.content, media_type="application/octet-stream", headers={
+        "Content-Disposition": "attachment; filename*=UTF-8''" + quote(row.filename, safe=""),
+        "X-Content-Type-Options": "nosniff", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer"})
 
 
 def rca_staff(request):

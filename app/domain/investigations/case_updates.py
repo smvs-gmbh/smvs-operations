@@ -19,7 +19,7 @@ FINDING_LABELS = {
     "not_my_side": "Root cause not on my side",
     "on_my_side": "Root cause on my side",
 }
-OWN_FINDINGS = ("procedural", "technical", "other")
+OWN_FINDINGS = ("on_my_side", "procedural", "technical", "other")
 PACK_LABELS = {
     "none": "No pack instruction",
     "hold": "Keep pack on hold",

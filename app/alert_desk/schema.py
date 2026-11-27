@@ -12,18 +12,21 @@ SESSION_PATH = "/alerts"
 GRANT_HOURS = 24
 
 FINDINGS = {
+    "on_my_side": "Root cause on my side",
     "procedural": "Process or handling error on my side",
     "technical": "Scanner or software error on my side",
     "other": "Other issue on my side",
     "not_my_side": "Root cause not on my side",
     "investigating": "Still investigating",
 }
-OWN_SIDE = ("procedural", "technical", "other")
+OWN_SIDE = ("on_my_side", "procedural", "technical", "other")
 CAPA = {
+    "pending": "Open",
+    "in_progress": "In progress",
     "implemented": "Implemented",
     "planned": "Planned",
-    "pending": "Not yet planned",
 }
+
 COMPARISON = {"yes": "Yes", "no": "No", "not_checked": "Not checked"}
 
 
@@ -46,8 +49,8 @@ class Findings(BaseModel):
     batch_uploaded: Literal["yes", "no"] | None = None
     serial_accepted: Literal["yes", "no"] | None = None
     other_issue: bool = False
-    finding: Literal["procedural", "technical", "other", "not_my_side", "investigating"]
-    capa: Literal["implemented", "planned", "pending"] | None = None
+    finding: Literal["on_my_side", "procedural", "technical", "other", "not_my_side", "investigating"]
+    capa: Literal["implemented", "in_progress", "planned", "pending"] | None = None
     comment: Annotated[
         str, StringConstraints(strip_whitespace=True, max_length=1000)
     ] = ""
@@ -59,6 +62,8 @@ class Findings(BaseModel):
         return self
 
     def matches_audience(self, audience, alert_code="A3", *, mah_a24_enabled=False):
+        if audience != "mah" and self.finding == "on_my_side":
+            return False
         if self.own_cause and (audience != "mah" or alert_code != "A24"):
             return False
         if self.pack_on_hold and (
@@ -96,19 +101,10 @@ class Findings(BaseModel):
                     self.batch_uploaded or self.serial_accepted or self.other_issue
                 )
             )
-        if alert_code == "A2":
-            return not (self.comparison or self.serial_accepted) and (
-                self.finding == "investigating"
-                or (
-                    self.finding == "other"
-                    and (self.other_issue or self.batch_uploaded == "no")
-                )
-                or (
-                    self.finding == "not_my_side"
-                    and self.batch_uploaded == "yes"
-                    and not self.other_issue
-                )
-            )
+        if alert_code in {"A2", "A3"}:
+            return not self.comparison and self.finding in {
+                "on_my_side", "other", "not_my_side", "investigating"
+            }
         if self.comparison or (self.serial_accepted and self.batch_uploaded != "yes"):
             return False
         if self.finding == "investigating":

@@ -876,3 +876,14 @@ No Jelastic deployment or production source request was performed.
 - [ ] Owner acceptance of MAH task allocation and My account on actual devices.
 - [ ] Trusted own-Hub client mapping, if later required; no market-based inference.
 - [ ] Formal QMS baseline approval; this remains a pilot increment.
+
+
+## CHG-031 — Findings, measures and participant evidence (2026-11-27)
+
+- [x] Direct MAH A2/A3 findings, optional comment and explicit measures status.
+- [x] Preserve End User alert-specific batch/serial comparison and error choices.
+- [x] Independent source-bound participant files and NMVO retrieval, schema 0058.
+- [x] Local regression and Chrome checks; controlled TEST rollout prepared.
+- [ ] Owner acceptance of simplified MAH flow and evidence visibility.
+- [ ] Review further End User questions separately for each alert type.
+- [ ] Specify and validate outbound AMS Hub status/message/file integration.

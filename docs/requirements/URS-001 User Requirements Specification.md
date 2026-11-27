@@ -7,7 +7,7 @@
 | **Document ID**    | URS-001                         |
 | **Title**          | User Requirements Specification |
 | **Status**         | Draft                           |
-| **Version**        | 0.29                            |
+| **Version**        | 0.30                            |
 | **Classification** | Internal                        |
 | **Owner**          | SMVS GmbH                       |
 | **Author**         | Reinhold Sojer                  |
@@ -859,3 +859,23 @@ optional passkey setup with Later. Successful enrolment returns to cases with a
 confirmation. Request fresh proof only when a protected change needs it, with a
 fixed return to My account. Preserve CRM identity management, existing methods,
 sessions, invitation eligibility and the configured flexible mail template.
+
+
+## URS-129 — Direct MAH findings, measures and optional evidence
+
+For A2/A3 the MAH shall directly choose own-side cause, no own-side cause or
+investigation in progress, without a prescribed upload checklist or error-type
+classification. An own-side cause requires measures status: open, in progress or
+implemented. Comment remains optional for every finding. Preserve earlier
+classified findings and planned measures as historical evidence. Findings and
+measures shall not themselves close the Case or determine falsification.
+
+End User A2/A3 shall retain alert-specific printed batch/serial comparison and
+process/handling versus scanner/software findings. Broader End User questionnaire
+refinement remains subject to owner review per alert type.
+
+Both participant roles shall optionally upload evidence independently of comments
+and findings. Retain the author/access attribution, alert/source version, checksum
+and original bytes. Current authorised own-organisation participants and NMVO
+staff may retrieve the evidence; other participants may not. Do not copy files
+implicitly to batch siblings or send them automatically to the Hub.

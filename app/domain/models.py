@@ -12,12 +12,13 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    LargeBinary,
     Numeric,
     String,
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.mysql import DATETIME
+from sqlalchemy.dialects.mysql import DATETIME, MEDIUMBLOB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db.models import Base
@@ -1287,3 +1288,26 @@ class AlertDeskAuthEvent(Base):
     occurred_at: Mapped[datetime] = mapped_column(DateTime)
     kind: Mapped[str] = mapped_column(String(40))
     data: Mapped[dict[str, Any]] = mapped_column(JSON)
+
+
+DOMAIN_TABLES.add("alert_desk_attachments")
+
+
+class AlertDeskAttachment(Base):
+    __tablename__ = "alert_desk_attachments"
+    __table_args__ = (UniqueConstraint("access_id", "submission_key", name="uq_alert_desk_attachment_submission"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    exception_id: Mapped[int] = mapped_column(ForeignKey("nmvs_exceptions.id"), index=True)
+    source_version: Mapped[str] = mapped_column(String(64))
+    access_id: Mapped[int] = mapped_column(ForeignKey("alert_desk_access.id"))
+    contact_version: Mapped[int] = mapped_column(Integer)
+    role: Mapped[str] = mapped_column(String(20))
+    crm_organisation_id: Mapped[int] = mapped_column(Integer)
+    submission_key: Mapped[str] = mapped_column(String(36))
+    filename: Mapped[str] = mapped_column(String(255))
+    content_type: Mapped[str] = mapped_column(String(40))
+    byte_count: Mapped[int] = mapped_column(Integer)
+    sha256: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    content: Mapped[bytes] = mapped_column(LargeBinary().with_variant(MEDIUMBLOB(), "mysql"), deferred=True)

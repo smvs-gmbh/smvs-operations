@@ -99,3 +99,6 @@ header:has(.alert-desk-brand) { gap: 1.5rem; background: #fff; }
 .participant-account .portal-button-secondary, .passkey-onboarding .portal-button-secondary { background:#fff; border-color:var(--line); color:var(--ink); }
 .participant-account .portal-button:hover:not(:disabled), .passkey-onboarding .portal-button:hover { background:#e0edf9; border-color:#a3bedb; }
 .participant-account .portal-button:disabled { opacity:.55; cursor:wait; }
+
+#attachment-list li { overflow-wrap:anywhere; }
+#case-attachments input[type=file] { max-width:100%; }

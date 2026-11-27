@@ -140,6 +140,11 @@ if (form) {
       if (!caseStatus.hasAttribute("data-smvs-status")) {
         caseStatus.textContent = answers.finding === "investigating" ? "Still investigating" : "Awaiting SMVS review";
       }
+      document.querySelector('#review-finding').textContent = form.querySelector('[name="finding"]:checked').closest('label').textContent.trim();
+      const measure = form.querySelector('[name="capa"]:checked');
+      const measures = document.querySelector('#review-measures');
+      measures.hidden = !measure;
+      measures.textContent = measure ? 'Measures · ' + measure.closest('label').textContent.trim() : '';
       form.dispatchEvent(new Event("alert-desk:findings-saved"));
       status.textContent = "";
       reviewCommentText.textContent = comment.value.trim();

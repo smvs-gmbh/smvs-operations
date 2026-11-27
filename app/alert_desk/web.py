@@ -1,19 +1,27 @@
 """Stateless local browser gateway for SMVS Alert Desk."""
 
+import base64
 import json
 import os
 import time
 from collections import deque
 from hashlib import sha256
 from pathlib import Path
-from urllib.parse import urlencode, urlsplit
+from urllib.parse import quote, urlencode, urlsplit
 from uuid import uuid4
 
 import httpx
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import (
+    FileResponse,
+    HTMLResponse,
+    JSONResponse,
+    RedirectResponse,
+    Response,
+)
 from fastapi.templating import Jinja2Templates
 
+from app.alert_desk.attachment_schema import MAX_JSON, Upload
 from app.alert_desk.schema import (
     CAPA,
     COMPARISON,
@@ -159,7 +167,7 @@ def create_app(secret, *, transport=None, public_origin=PUBLIC_ORIGIN, private_o
         response.headers.update(PRIVATE_HEADERS)
         return response
 
-    async def forward(method, path, *, session=None, payload=None, params=None):
+    async def forward(method, path, *, session=None, payload=None, params=None, limit=32768, file_errors=False):
         headers = {"Authorization": "Bearer " + secret}
         if session:
             headers["X-Case-Session"] = session
@@ -179,6 +187,12 @@ def create_app(secret, *, transport=None, public_origin=PUBLIC_ORIGIN, private_o
                 if response.status_code == 404:
                     raise HTTPException(404, "This case or invitation is unavailable.")
                 if response.status_code == 422:
+                    if file_errors:
+                        raw = await response.aread()
+                        if len(raw) <= 2048:
+                            detail = json_object(raw).get("detail")
+                            if isinstance(detail, str) and len(detail) <= 200:
+                                raise HTTPException(422, detail)
                     raise HTTPException(422, "Check your answers and try again.")
                 if response.status_code in {403, 429}:
                     raise HTTPException(response.status_code, "Wait before trying again." if response.status_code == 429 else "Sign-in verification failed or requires a fresh sign-in. Request a new link or try again.")
@@ -187,7 +201,7 @@ def create_app(secret, *, transport=None, public_origin=PUBLIC_ORIGIN, private_o
                 if response.status_code == 200:
                     body = bytearray()
                     async for chunk in response.aiter_bytes():
-                        if len(body) + len(chunk) > 32768:
+                        if len(body) + len(chunk) > limit:
                             raise ValueError("Response too large.")
                         body.extend(chunk)
                     return json_object(body)
@@ -492,6 +506,26 @@ def create_app(secret, *, transport=None, public_origin=PUBLIC_ORIGIN, private_o
                 503, "Alert Desk is temporarily unavailable. Try again."
             )
         return result
+
+    @app.get("/alerts/attachments.js")
+    def attachment_script():
+        return FileResponse(ASSETS / "attachments.js", media_type="text/javascript")
+
+    @app.get("/alerts/{identifier:int}/attachments")
+    async def attachment_list(request: Request, identifier: int):
+        return await forward("GET", f"/access/alerts/{identifier}/attachments", session=template_session(request))
+
+    @app.post("/alerts/{identifier:int}/attachments")
+    async def attachment_upload(request: Request, identifier: int):
+        token = template_session(request)
+        body = await command(request, Upload, limit=MAX_JSON)
+        return await forward("POST", f"/access/alerts/{identifier}/attachments", session=token, payload=body.model_dump(mode="json"), file_errors=True)
+
+    @app.get("/alerts/{identifier:int}/attachments/{attachment_id:int}")
+    async def attachment_download(request: Request, identifier: int, attachment_id: int):
+        data = await forward("GET", f"/access/alerts/{identifier}/attachments/{attachment_id}", session=template_session(request), limit=MAX_JSON)
+        return Response(base64.b64decode(data["content"], validate=True), media_type="application/octet-stream",
+            headers={"Content-Disposition": "attachment; filename*=UTF-8''" + quote(data["filename"], safe=""), "X-Content-Type-Options": "nosniff"})
 
     @app.get("/alerts/{identifier:int}/templates")
     async def template_library(request: Request, identifier: int):

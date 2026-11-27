@@ -299,7 +299,11 @@ def test_upgrade_matches_models_and_preserves_all_ids_and_provenance(migration_d
     login_migration = load_migration("0057_participant_login")
     login_migration.op = Operations(MigrationContext.configure(connection))
     login_migration.upgrade()
+    attachment_migration = load_migration("0058_alert_desk_attachments")
+    attachment_migration.op = Operations(MigrationContext.configure(connection))
+    attachment_migration.upgrade()
     assert compare_metadata(MigrationContext.configure(connection), Base.metadata) == []
+    attachment_migration.downgrade()
     login_migration.downgrade()
     mail_migration.downgrade()
     templates_migration.downgrade()

@@ -1058,7 +1058,8 @@ def test_organisation_invitation_and_case_scope(preview_portal, monkeypatch):
         assert mah.get(f"/alerts/{other_id}").status_code == 404
         page = mah.get(f"/alerts/{identifier}")
         assert (
-            "Was this batch uploaded?" in page.text
+            "Was this batch uploaded?" not in page.text
+            and 'value="on_my_side"' in page.text
             and "Synthetic location" not in page.text
         )
         assert mah.get(f"/alerts/{attributed_id}").status_code == 404

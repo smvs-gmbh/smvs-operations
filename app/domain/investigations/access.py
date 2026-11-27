@@ -132,7 +132,7 @@ def mah_own_cause_condition(organisation_id):
 
     return finding_events("mah", organisation_id).where(or_(
         AlertDeskEvent.data["own_cause"].as_boolean().is_(True),
-        AlertDeskEvent.data["finding"].as_string().in_(("procedural", "technical", "other")),
+        AlertDeskEvent.data["finding"].as_string().in_(("on_my_side", "procedural", "technical", "other")),
     )).exists()
 
 

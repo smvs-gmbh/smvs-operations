@@ -92,6 +92,13 @@
     {% endif %}
   </article>
   {% endfor %}
+  {% if participant_attachments %}
+  <section class="rca-participant"><h3>Participant attachments</h3><ul>
+  {% for file in participant_attachments %}
+  <li>{{ roles.get(file.role, file.role) }} · <a href="/exceptions/{{ record.id }}/participant-attachments/{{ file.id }}">{{ file.filename }} →</a> · {{ file.created_at.strftime('%Y-%m-%d %H:%M') }} UTC{% if file.source_version != record.payload_hash %} · Earlier alert version{% endif %}</li>
+  {% endfor %}
+  </ul></section>
+  {% endif %}
   <div class="rca-evidence">
     {% if test_review %}
     <a class="audit-link" href="/cases/{{ record.id }}/end_user">Open as End User →</a>

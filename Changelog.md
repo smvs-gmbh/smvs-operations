@@ -322,3 +322,17 @@ Existing outcome validation, explicit choice and stored findings remain unchange
 Local preview/workspace regressions: 25 passed. Schema remains 0057; development
 and TEST only. Deployment/process/data-preservation evidence is stored privately
 under `evidence/upload-guidance-*` on TEST.
+
+
+## CHG-031 — Findings, measures and participant evidence (2026-11-27)
+
+MAH A2/A3 now starts with the three investigation findings, without upload
+questions or error classification. Own-side findings require Open/In progress/
+Implemented measures; comment is always optional. End User A2/A3 retains specific
+printed batch/serial checks and error categories. Existing findings remain intact.
+Optional participant attachments are independent of findings/comments, retained
+per alert and current source, visible to own organisation/role and NMVO staff.
+Schema 0058 adds the protected evidence table; no automatic closure or Hub write.
+627 local tests pass; Chrome checks direct findings, empty comments, measures,
+independent uploads, role isolation and mobile layout. Development and TEST scope;
+production excluded. See docs/deployment/ALERT-DESK-FINDING-FIRST.md.

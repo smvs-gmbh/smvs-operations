@@ -1,6 +1,6 @@
 # FRS-EXCEPTIONS-001 — Exceptions and Alert Desk
 
-Status **Draft v0.9**, 2026-11-27. Owner SMVS GmbH. The
+Status **Draft v0.10**, 2026-11-27. Owner SMVS GmbH. The
 [traceability matrix](../validation/RTM-001.md) records implementation and test coverage.
 
 Revision 0.2 specifies the implemented local URS-122 template behaviour and the
@@ -248,3 +248,30 @@ server-verified success notice. Check fresh proof server-side for key management
 show reauthentication only after a protected action needs it. Whitelist the
 account return destination, retain HttpOnly/Secure cookies and existing origin,
 membership, binding and expiry checks. No schema migration.
+
+
+## FRS-EXC-018
+
+URS-129 / CHG-031: MAH A2/A3 offers on_my_side, not_my_side and investigating
+first, with no upload/comparison/error-category prerequisite. Require CAPA status
+for own-side findings, including in_progress, retaining planned as a distinct
+legacy value. Preserve optional comments, current-source/grant checks, replay-safe
+amendments, audit and independent NMVO closure. Retain old other findings/answers
+for compatibility, without making them mandatory for new submissions. End User
+A2/A3 retains the batch/serial comparison and procedural/technical/other choices.
+
+Implement additive schema 0058: original file bytes in MySQL MEDIUMBLOB, metadata,
+source hash, submitting access/contact version and upload identity. Limit to five
+files per alert source version/organisation/role and 5 MiB per file. Support PDF,
+PNG, JPEG and UTF-8 TXT/LOG/CSV with extension/content checks. Use bounded JSON
+commands at the exact-Origin gateway; never put credentials in that gateway.
+Recheck session/current CRM/central case scope on every operation; reject stale
+source and closed-case new uploads. Serialise quota checks with case locks; exact
+retries reuse one attachment. Retain upload audit separately from findings.
+
+Download as attachment/octet-stream with no-store/no-referrer/nosniff, validate
+checksum and length, and do not render or execute files. Own-role/organisation
+participants see current-source files; staff can retrieve all retained versions
+from RCA with explicit earlier-version labels. No public links, deletion, automatic
+batch copying or Hub write. Populated attachment downgrade must refuse evidence
+loss. Existing passkeys/sessions/CRM/mail configuration remain preserved.
