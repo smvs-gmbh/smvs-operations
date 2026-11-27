@@ -191,16 +191,11 @@ def recipient_scope(session, record, role, view):
         and grant.scope_key == access.scope_key(role, crm)
         and not grant.revoked_at
     }
-    now = pilot.now()
     recipients = [
         email
         for contact, email in contacts
         if (grant := current_grants.get(contact.id))
         and grant.sent_at
-        and (
-            (grant.invite_hash and grant.invite_expires_at > now)
-            or (grant.session_hash and grant.session_expires_at and grant.session_expires_at > now)
-        )
     ]
     if recipients:
         return crm, recipients, ""

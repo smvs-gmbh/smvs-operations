@@ -9,7 +9,14 @@ from fastapi import Depends, HTTPException, Request
 from sqlalchemy import func, or_, select
 
 from app.alert_desk.schema import Capability, Findings, MailboxCode
-from app.domain.investigations import access, case_updates, pilot, pilot_mail, rca
+from app.domain.investigations import (
+    access,
+    case_updates,
+    participant_auth,
+    pilot,
+    pilot_mail,
+    rca,
+)
 from app.domain.investigations.prechecks import collect
 from app.domain.investigations.preview import ERRORS, utc
 from app.domain.models import (
@@ -31,14 +38,10 @@ def install(app, sessions, secret):
             raise HTTPException(404, "Alert Desk access unavailable.") from None
 
     def active(session, token, *, lock=False):
-        result = access.lookup(session, AlertDeskAccess.session_hash, token, lock=lock)
-        if (
-            not result
-            or not result[0].session_expires_at
-            or result[0].session_expires_at <= pilot.now()
-        ):
+        result = participant_auth.resolve_session(session, token, secret, lock=lock)
+        if not result:
             raise HTTPException(404, "Alert Desk access unavailable.")
-        return result[0], result[1]
+        return result[:2]
 
     def current_case(session, grant, crm, identifier, *, lock=False):
         query = access.cases(session, grant.role, crm, namespace(session)).where(
@@ -258,7 +261,7 @@ def install(app, sessions, secret):
                 "basis": record.payload_hash,
                 "draft_context": hmac.digest(
                     secret.encode(),
-                    f"comment-draft:{grant.id}:{grant.contact_version}:{grant.session_hash}".encode(),
+                    f"comment-draft:{grant.id}:{grant.contact_version}:{pilot.digest(token)}".encode(),
                     "sha256",
                 ).hex(),
                 "latest": latest.data if latest else None,

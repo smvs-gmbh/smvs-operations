@@ -11,7 +11,7 @@ from uuid import uuid4
 
 import httpx
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app.alert_desk.schema import (
@@ -26,6 +26,7 @@ from app.alert_desk.schema import (
     SESSION_PATH,
     Capability,
     Findings,
+    LoginCommand,
     MailboxCode,
 )
 from app.connect.protocol import PRIVATE_HEADERS as CONNECT_PRIVATE_HEADERS
@@ -41,6 +42,8 @@ BRAND_FILES = {"smvs-alert-desk-wide.png", "smvs-alert-desk-narrow.png"}
 DESIGN_ASSETS = ASSETS.parent / "connect_preview" / "assets"
 ACCESS_COOKIE = "alert_desk_access"
 CHALLENGE_COOKIE = "alert_desk_mailbox_check"
+LOGIN_COOKIE = "alert_desk_login_challenge"
+CONTEXT_COOKIE = "alert_desk_login_context"
 DESIGN_STYLES = {"focused.css", "compact.css", "columns.css"}
 templates = Jinja2Templates(directory=str(ASSETS))
 
@@ -176,6 +179,8 @@ def create_app(secret, *, transport=None, public_origin=PUBLIC_ORIGIN, private_o
                     raise HTTPException(404, "This case or invitation is unavailable.")
                 if response.status_code == 422:
                     raise HTTPException(422, "Check your answers and try again.")
+                if response.status_code in {403, 429}:
+                    raise HTTPException(response.status_code, "Wait before trying again." if response.status_code == 429 else "Sign-in verification failed or requires a fresh sign-in. Request a new link or try again.")
                 if response.status_code == 409:
                     raise HTTPException(409, "Reload the case before submitting.")
                 if response.status_code == 200:
@@ -248,7 +253,63 @@ def create_app(secret, *, transport=None, public_origin=PUBLIC_ORIGIN, private_o
             except HTTPException as error:
                 if error.status_code != 404:
                     message = error.detail
-        return render_case(request, case, message=message)
+        if case or message:
+            return render_case(request, case, message=message)
+        return templates.TemplateResponse(request=request, name="login.html", context={"account": False})
+
+    @app.get("/alerts/login")
+    def login_page(request: Request):
+        return templates.TemplateResponse(request=request, name="login.html", context={"account": False})
+
+    @app.get("/alerts/login.js")
+    def login_script():
+        return FileResponse(ASSETS / "login.js", media_type="text/javascript")
+
+    @app.get("/alerts/account")
+    async def account_page(request: Request):
+        token = request.cookies.get(ACCESS_COOKIE)
+        if not token:
+            return RedirectResponse("/alerts/login", status_code=303)
+        try:
+            await forward("GET", "/access/login/account", session=token)
+        except HTTPException as error:
+            if error.status_code == 404:
+                return RedirectResponse("/alerts/login", status_code=303)
+            raise
+        return templates.TemplateResponse(request=request, name="login.html", context={"account": True})
+
+    @app.get("/alerts/auth/account")
+    async def account_keys(request: Request):
+        return await forward("GET", "/access/login/account", session=request.cookies.get(ACCESS_COOKIE))
+
+    @app.post("/alerts/auth/{step}")
+    async def login_command(request: Request, step: str):
+        if step not in {"magic", "consume", "scope", "options", "finish", "register-options", "register-finish", "revoke", "logout"}:
+            raise HTTPException(404)
+        body = await command(request, LoginCommand, limit=65536)
+        if step in {"finish", "register-finish"}:
+            body.token = request.cookies.get(LOGIN_COOKIE)
+        if step == "scope":
+            body.token = request.cookies.get(CONTEXT_COOKIE)
+        result = await forward("POST", "/access/login/"+step, session=request.cookies.get(ACCESS_COOKIE), payload=body.model_dump())
+        if "options" in result:
+            response = JSONResponse(result["options"])
+            response.set_cookie(LOGIN_COOKIE, result["challenge_token"], max_age=180, path="/alerts/auth", secure=public_origin.startswith("https://"), httponly=True, samesite="strict")
+        elif "token" in result:
+            response = JSONResponse({"next": "/alerts/account" if step in {"consume", "scope"} else "/alerts"})
+            response.set_cookie(ACCESS_COOKIE, result["token"], max_age=result["expires"], path="/alerts", secure=public_origin.startswith("https://"), httponly=True, samesite="lax")
+        elif "context" in result:
+            response = JSONResponse({"scopes": result["scopes"]})
+            response.set_cookie(CONTEXT_COOKIE, result["context"], max_age=180, path="/alerts/auth", secure=public_origin.startswith("https://"), httponly=True, samesite="strict")
+        else:
+            response = JSONResponse(result)
+        if step in {"finish", "register-finish"}:
+            response.delete_cookie(LOGIN_COOKIE, path="/alerts/auth")
+        if step == "scope":
+            response.delete_cookie(CONTEXT_COOKIE, path="/alerts/auth")
+        if step in {"logout", "revoke"}:
+            response.delete_cookie(ACCESS_COOKIE, path="/alerts")
+        return response
 
     @app.get("/alerts/case.js")
     def script():
@@ -372,7 +433,7 @@ def create_app(secret, *, transport=None, public_origin=PUBLIC_ORIGIN, private_o
             ACCESS_COOKIE,
             token,
             httponly=True,
-            samesite="strict",
+            samesite="lax",
             max_age=8 * 3600,
             path="/alerts",
             secure=public_origin.startswith("https://"),

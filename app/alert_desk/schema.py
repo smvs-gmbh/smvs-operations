@@ -1,6 +1,6 @@
 """Commands and labels shared by the pilot UI and private service."""
 
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, StringConstraints, model_validator
@@ -65,11 +65,19 @@ class Findings(BaseModel):
             audience != "end_user" or alert_code not in {"A2", "A3"}
         ):
             return False
-        if self.batch_revision and (alert_code not in {"A2", "A7"} or self.pack_on_hold):
+        if self.batch_revision and (
+            alert_code not in {"A2", "A7"} or self.pack_on_hold
+        ):
             return False
         if alert_code == "A24":
-            return (audience == "end_user" or (audience == "mah" and (mah_a24_enabled or self.own_cause))) and not (
-                self.comparison or self.batch_uploaded or self.serial_accepted or self.other_issue
+            return (
+                audience == "end_user"
+                or (audience == "mah" and (mah_a24_enabled or self.own_cause))
+            ) and not (
+                self.comparison
+                or self.batch_uploaded
+                or self.serial_accepted
+                or self.other_issue
             )
         if alert_code == "A7":
             return not (
@@ -119,3 +127,14 @@ class Findings(BaseModel):
 
 class MailboxCode(Capability):
     code: Annotated[str, StringConstraints(pattern=r"^[0-9]{6}$")]
+
+
+class LoginCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    email: Annotated[str, StringConstraints(strip_whitespace=True, max_length=254)] = ""
+    token: Annotated[str, StringConstraints(pattern=r"^[A-Za-z0-9_-]{43}$")] | None = (
+        None
+    )
+    credential: dict[str, Any] | None = None
+    scope: int | None = None
+    key: Annotated[str, StringConstraints(pattern=r"^[a-f0-9]{64}$")] | None = None

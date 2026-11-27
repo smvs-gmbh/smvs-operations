@@ -1034,10 +1034,10 @@ def test_organisation_invitation_and_case_scope(preview_portal, monkeypatch):
         expired.revoked_at = None
         expired.session_expires_at = utcnow() - timedelta(seconds=1)
         assert expired.invite_expires_at > utcnow()
-    assert "Session expired" in web.get(url, headers=nmvo).text
+    assert "Access confirmed" in web.get(url, headers=nmvo).text
     previous_invite = sent["alert@example.test"]
     assert (
-        "1 of 1 selected invitations accepted"
+        "0 of 1 selected invitations accepted"
         in web.post(
             url + "/send",
             data={
@@ -1046,7 +1046,7 @@ def test_organisation_invitation_and_case_scope(preview_portal, monkeypatch):
             headers=nmvo,
         ).text
     )
-    assert sent["alert@example.test"] != previous_invite
+    assert sent["alert@example.test"] == previous_invite
 
     with browser_client() as mah:
         mah.cookies.set(ACCESS_COOKIE, mah_cookie, path="/alerts")

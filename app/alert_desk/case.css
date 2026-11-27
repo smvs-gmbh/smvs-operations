@@ -74,3 +74,11 @@ header:has(.alert-desk-brand) { gap: 1.5rem; background: #fff; }
   header .alert-desk-brand { flex-basis: 100%; max-width: 27rem; }
   header:has(.alert-desk-brand) > div:last-child { max-width: 100%; overflow-wrap: anywhere; }
 }
+
+.participant-login { max-width: 46rem; }
+.participant-login input, .participant-login select { box-sizing: border-box; width: 100%; max-width: 100%; padding: .7rem; border: 1px solid #cbd9e4; border-radius: 6px; font: inherit; }
+.participant-login label { display: block; margin-bottom: .4rem; }
+.login-actions { display: flex; flex-wrap: wrap; gap: .7rem; margin-top: 1rem; }
+#passkey-list { padding-left: 1.2rem; }
+#passkey-list li { padding: .75rem 0; }
+#passkey-list li span { display: block; margin-bottom: .5rem; overflow-wrap: anywhere; }

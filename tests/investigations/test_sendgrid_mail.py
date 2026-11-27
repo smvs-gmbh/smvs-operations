@@ -31,10 +31,11 @@ def transport(monkeypatch, handler):
     monkeypatch.setattr(mail_delivery.httpx, "Client", lambda **kwargs: original(transport=httpx.MockTransport(handler), **kwargs))
 
 
-def test_sendgrid_single_allowed_recipient_template_tracking_and_durable_outcome(sender, monkeypatch):
+@pytest.mark.parametrize("path", ["access", "login"])
+def test_sendgrid_single_allowed_recipient_template_tracking_and_durable_outcome(sender, monkeypatch, path):
     settings, factory = sender
     token = "t" * 43
-    body = "Open: https://connect-test.example.test/alerts/access#" + token
+    body = "Open: https://connect-test.example.test/alerts/" + path + "#" + token
 
     def accept(request):
         import json

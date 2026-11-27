@@ -8,6 +8,11 @@ release. Dated sections further down preserve earlier decisions and milestones.
 
 ## Next
 
+- [ ] **CHG-029 — Accept returning participant sign-in on TEST.** Email-first
+  passkey/Magic Link flow with existing SendGrid template, fresh-proof key
+  management, scoped eight-hour sessions and migration 0057. Execute real-device/
+  inbox/recovery checks in the [guide](../deployment/ALERT-DESK-PARTICIPANT-LOGIN.md).
+
 - [ ] **CHG-028 — Accept conditional MAH A24 on TEST.** Information/no-request
   state, matching NMVO request or explicit own declaration, attributed progress/
   findings/comments/CAPA; no automatic mail or pack transaction. Technical checks

@@ -68,7 +68,8 @@ def issue(session, role, organisation, contact, actor_id):
         and grant.scope_key == scope_key(role, organisation)
         and not grant.revoked_at
         and (
-            (grant.invite_hash and grant.invite_expires_at > now)
+            grant.sent_at
+            or (grant.invite_hash and grant.invite_expires_at > now)
             or (
                 grant.session_hash
                 and grant.session_expires_at

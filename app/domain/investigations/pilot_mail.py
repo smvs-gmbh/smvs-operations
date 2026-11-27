@@ -75,3 +75,11 @@ def send_response_reminder(email, cases):
         "If your session has expired, open a valid invitation or contact SMVS to renew access.\n\n"
         "Kind regards,\nSMVS",
     )
+
+
+def send_signin(email, token):
+    deliver(email, "SMVS Alert Desk | Sign-in link",
+        f"Use this link to sign in to Alert Desk: {mail_origin()}/alerts/login#{token}\n\n"
+        "This personal sign-in link can be used once and expires in 15 minutes.\n"
+        "Open the link and confirm sign-in on the page. If you did not request it, ignore this email.\n\n"
+        "Kind regards,\nSMVS")

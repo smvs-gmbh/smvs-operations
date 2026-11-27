@@ -24,6 +24,7 @@
     <a href="{{ request.url.include_query_params(view=key).remove_query_params('before') }}" {% if filters.view == key %}aria-current="page"{% endif %}>{{ label }}{% if key == "on_hold" and listing.hold_count %} ({{ listing.hold_count }}){% endif %}</a>
     {% endfor %}
     <a href="/alerts/templates?{{ list_query }}">My templates</a>
+    <a href="/alerts/account">Account access</a>
   </nav>
   <div class="heading"><div>
     <h1>My cases</h1><p>{{ listing.organisation }} · {{ 'MAH' if listing.role == 'mah' else 'End User' }}</p>
@@ -56,6 +57,7 @@
     {% if listing.next %}<div class="pagination"><a class="portal-button portal-button-secondary" href="{{ request.url.include_query_params(before=listing.next) }}">More alerts →</a></div>{% endif %}
   </section>
   {% else %}
+  <p><a href="/alerts/login">Already invited? Sign in →</a></p>
   <h1>Confirm access</h1>
   <section class="action">
     <form id="request-alert-code" method="post" action="/alerts/access/challenge" hidden>

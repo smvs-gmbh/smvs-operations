@@ -14,7 +14,7 @@ from app.alert_desk.schema import Capability, Findings
 from app.connect.protocol import PRIVATE_HEADERS
 from app.core.config import get_settings
 from app.core.db.session import SessionFactory
-from app.domain.investigations import access_api, pilot, rca
+from app.domain.investigations import access_api, participant_auth, pilot, rca
 from app.domain.models import AlertDeskEvent, ExceptionReview, NMVSException
 
 
@@ -145,6 +145,7 @@ def create_app(sessions, secret):
         return {"received": True}
 
     access_api.install(app, sessions, secret)
+    participant_auth.install(app, sessions, secret)
     return app
 
 

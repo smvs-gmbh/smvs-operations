@@ -1236,3 +1236,54 @@ class AlertDeskMailDelivery(Base):
     status: Mapped[str] = mapped_column(String(12))
     http_status: Mapped[int | None] = mapped_column(Integer)
     provider_id: Mapped[str | None] = mapped_column(String(200))
+
+
+DOMAIN_TABLES.update({"alert_desk_login_tokens", "alert_desk_participant_sessions", "alert_desk_participant_passkeys", "alert_desk_login_throttles", "alert_desk_auth_events"})
+
+
+class AlertDeskLoginToken(Base):
+    __tablename__ = "alert_desk_login_tokens"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    kind: Mapped[str] = mapped_column(String(20))
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    data: Mapped[dict[str, Any]] = mapped_column(JSON)
+
+
+class AlertDeskParticipantSession(Base):
+    __tablename__ = "alert_desk_participant_sessions"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    access_id: Mapped[int] = mapped_column(ForeignKey("alert_desk_access.id"), index=True)
+    binding: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+class AlertDeskParticipantPasskey(Base):
+    __tablename__ = "alert_desk_participant_passkeys"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    access_id: Mapped[int] = mapped_column(ForeignKey("alert_desk_access.id"), index=True)
+    binding: Mapped[str] = mapped_column(String(64))
+    credential_id: Mapped[str] = mapped_column(Text)
+    public_key: Mapped[str] = mapped_column(Text)
+    sign_count: Mapped[int] = mapped_column(BigInteger)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+class AlertDeskLoginThrottle(Base):
+    __tablename__ = "alert_desk_login_throttles"
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    attempts: Mapped[int] = mapped_column(Integer)
+
+
+class AlertDeskAuthEvent(Base):
+    __tablename__ = "alert_desk_auth_events"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    access_id: Mapped[int | None] = mapped_column(ForeignKey("alert_desk_access.id"))
+    occurred_at: Mapped[datetime] = mapped_column(DateTime)
+    kind: Mapped[str] = mapped_column(String(40))
+    data: Mapped[dict[str, Any]] = mapped_column(JSON)

@@ -23,8 +23,8 @@ def send(settings, recipient, subject, body):
     fingerprint = hmac.digest(secret.encode(), (subject + "\0" + body).encode(), "sha256").hex()
     kind = subject.removeprefix("SMVS Alert Desk | ")[:80]
     origin = mail_origin()
-    pattern = re.escape(origin) + r"/alerts(?:/access#[A-Za-z0-9_-]{43}|/[0-9]+)(?![A-Za-z0-9_/#-])"
-    links = [{"url": url, "label": "Open Alert Desk" if "/access#" in url else "Open case"}
+    pattern = re.escape(origin) + r"/alerts(?:/(?:access|login)#[A-Za-z0-9_-]{43}|/[0-9]+)(?![A-Za-z0-9_/#-])"
+    links = [{"url": url, "label": "Open Alert Desk" if "/access#" in url or "/login#" in url else "Open case"}
              for url in dict.fromkeys(re.findall(pattern, body))]
     # Retain legacy message for existing templates; the revised template renders
     # message_text plus one explicit link, avoiding an auto-linked duplicate URL.
@@ -33,7 +33,7 @@ def send(settings, recipient, subject, body):
         message_text = message_text.replace(link["url"], "")
     message_text = "\n".join(
         line.rstrip() for line in message_text.splitlines()
-        if line.strip() not in {"Open:", "Open your organisation’s Alert Desk:",
+        if line.strip() not in {"Use this link to sign in to Alert Desk:", "Open:", "Open your organisation’s Alert Desk:",
             "Open your case:", "Open the case to review the current instructions:"}
     ).strip()
     payload = {

@@ -1015,3 +1015,21 @@ verified access, persisted declaration, server validation and closed-case checks
 Supporting tests: test_a24_participant.py covers default denial, request scope and
 source changes, own declaration, CAPA, repeat-safe writes, invalid commands and
 unchanged End User Location restrictions. Formal acceptance remains owner-led.
+
+
+## CHG-029 — Email-first participant passkey and Magic Link sign-in (2026-11-27)
+
+Owner authorises implementation locally and TEST rollout, reusing the existing
+SendGrid template ID. URS-127 → FRS-EXC-016 → RA-01/04/07/14. Permanent entry,
+mailbox recovery, discoverable user-verifying passkeys, current-grant binding,
+neutral responses/rate limits, explicit single-use link confirmation, fresh-proof
+key management and revocable independent eight-hour sessions. Existing staff
+identity, source/CRM data, findings, invitation/code access and TEST mail config
+are preserved. Add schema 0057; no PROD rollout.
+
+Initial source reconciliation: local/remote Git 2612187, TEST application c20f2f1
+plus its later documentation-only deployment record in Git. Preserve the owner's
+additional trailing newline in the text template. Supporting local tests/browser
+checks and deployment/rollback boundaries are described in
+[the login guide](../deployment/ALERT-DESK-PARTICIPANT-LOGIN.md). Formal owner
+acceptance of actual devices, delivered links and recovery remains separate.

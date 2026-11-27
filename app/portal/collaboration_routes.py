@@ -433,18 +433,14 @@ def access_directory(session):
         elif not active:
             status = "Access revoked" if grant.revoked_at else "CRM assignment changed"
         elif grant.accepted_at:
-            status = (
-                "Access confirmed"
-                if grant.session_expires_at and grant.session_expires_at > pilot.now()
-                else "Session expired"
-            )
+            status = "Access confirmed"
         elif not grant.sent_at:
             status = "Delivery unconfirmed"
         else:
             status = (
                 "Sent"
                 if grant.invite_expires_at > pilot.now()
-                else "Invitation expired"
+                else "Invited · sign-in available"
             )
         rows.append(
             {

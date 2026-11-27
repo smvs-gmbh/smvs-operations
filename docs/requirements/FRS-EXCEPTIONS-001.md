@@ -1,6 +1,6 @@
 # FRS-EXCEPTIONS-001 — Exceptions and Alert Desk
 
-Status **Draft v0.7**, 2026-11-26. Owner SMVS GmbH. The
+Status **Draft v0.8**, 2026-11-26. Owner SMVS GmbH. The
 [traceability matrix](../validation/RTM-001.md) records implementation and test coverage.
 
 Revision 0.2 specifies the implemented local URS-122 template behaviour and the
@@ -204,3 +204,18 @@ workflow after reload. Recheck verified access, source basis and closed-case sta
 on submission; require CAPA exactly for own-side findings. Reject own_cause for
 other roles/codes, pack-hold/batch/upload/comparison commands for A24. Enabling
 MAH request routing must not itself send a message or create a deadline.
+
+
+## FRS-EXC-016
+
+URS-127 / CHG-029: Implement permanent email-first entry, neutral rate-limited
+mailbox-link request and explicit single-use confirmation; keep raw capability
+fragments out of logs/database. Use the existing template ID and dynamic CTA.
+Bind short-lived WebAuthn challenges to the initiating browser, origin/RP ID, UV,
+entered email and current invited grant. Record public keys/counters, authenticate
+signed responses, and deny stale/revoked/wrong-scope credentials. Fresh proof
+within ten minutes is required to enrol/revoke passkeys; revocation invalidates
+that scope's sessions. Retain hashed eight-hour sessions independently per device,
+legacy sessions until their existing expiry, and source/Location checks on reads
+and writes. Snapshot current grants for magic links and explicitly select context
+when multiple valid scopes remain. Schema 0057 is additive and evidence-protected.

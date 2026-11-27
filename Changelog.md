@@ -275,3 +275,14 @@ CHG-026/027/028 installed on synthetic TEST as runtime `c20f2f1`, schema unchang
 findings, sessions/passkeys and SendGrid configuration preserved. Corrected email
 template assets await owner activation in SendGrid UI because the Mail Send key
 has no template permissions. No external messages sent by rollout; PROD unchanged.
+
+
+### 2026-11-27 — CHG-029 Participant sign-in
+
+Permanent email-first Alert Desk entry with passkey or fifteen-minute single-use
+Magic Link, using the existing SendGrid template. Account access provides fresh-proof
+passkey enrolment/revocation and sign-out. Keep invitations/CRM scope separate from
+authentication, revalidate grants, and retain existing findings and legacy sessions.
+New eight-hour multi-device sessions are independently revocable; direct email
+navigation uses a Lax access cookie with exact-Origin POST checks. Schema 0057
+retains hashed auth tokens/sessions, public-key records and audit evidence.

@@ -7,7 +7,7 @@
 | **Document ID**    | URS-001                         |
 | **Title**          | User Requirements Specification |
 | **Status**         | Draft                           |
-| **Version**        | 0.27                            |
+| **Version**        | 0.28                            |
 | **Classification** | Internal                        |
 | **Owner**          | SMVS GmbH                       |
 | **Author**         | Reinhold Sojer                  |
@@ -830,3 +830,15 @@ MAH explicitly declares its own involvement. Retain this declaration separately
 from the final finding. Permit progress, comments, personal templates and CAPA
 for own-side findings. Preserve case/organisation scope and NMVO closure authority;
 no automatic mail, case closure or pack-state transaction is triggered.
+
+
+## URS-127 — Returning participant access
+
+Invited participants shall sign in from a permanent email-first Alert Desk entry
+using a personal passkey or a single-use, fifteen-minute email sign-in link.
+Reuse the configured flexible SendGrid template. Do not disclose whether an
+address has access, enable self-registration or assign permissions through sign-in.
+Recheck current CRM membership, contact version and grant binding at proof and
+access. Support passkey enrolment/revocation after fresh proof, scoped multi-device
+eight-hour sessions and explicit context selection for multiple approved scopes.
+Preserve existing participant evidence and invitation/code access on migration.
