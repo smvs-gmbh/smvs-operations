@@ -1047,3 +1047,14 @@ reauthentication. Schema remains 0057; existing mail configuration/template and
 real TEST contacts/credentials are retained. PROD excluded. Supporting evidence:
 [deployment record](../deployment/ALERT-DESK-MAH-ACCOUNT.md). Owner acceptance and
 formal QMS approval remain separate.
+
+
+## CHG-030 B — Guided MAH upload outcome (2026-11-27)
+
+Reported ambiguity: disabled not-my-side outcome after Still investigating with
+unanswered upload check. Add contextual upload-prerequisite explanation, without
+relaxing validation or automatically selecting a finding. FRS-EXC-004, RA-04/09.
+Local preview/workspace regression: 25 passed. Isolated Chrome exercise covers
+amendment, prerequisites and reload. Commit before development/TEST restart;
+no schema/data migration or external email. Protected TEST backup/hash/process
+verification under `evidence/upload-guidance-*`. Owner acceptance remains open.

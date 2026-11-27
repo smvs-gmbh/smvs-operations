@@ -311,3 +311,14 @@ MySQL/TEST-origin authentication and MAH request guards passed. Browser flow
 verified with a virtual authenticator and desktop/mobile screenshots. Protected
 backup and all-table preservation checks completed. Final documentation-only
 archive aligned with local/remote Git and all four TEST process working directories.
+
+
+## CHG-030 B — Guided MAH upload outcome (2026-11-27)
+
+Explain the prerequisite for disabled MAH upload outcomes next to the finding
+selection. The hint follows batch/serial checks and Other issue on my side;
+participants can see how to amend progress to a justified not-my-side finding.
+Existing outcome validation, explicit choice and stored findings remain unchanged.
+Local preview/workspace regressions: 25 passed. Schema remains 0057; development
+and TEST only. Deployment/process/data-preservation evidence is stored privately
+under `evidence/upload-guidance-*` on TEST.

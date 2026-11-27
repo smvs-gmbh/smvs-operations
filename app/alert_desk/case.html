@@ -141,8 +141,11 @@
               </fieldset>
               <p id="next-check" class="investigation-hint" aria-live="polite">Check the scanner, software and any manual entry used for this verification.</p>
               {% endif %}
-              <fieldset class="finding" aria-describedby="finding-hint">
+              <fieldset class="finding" aria-describedby="finding-hint{% if mah and not a7 and not a24 %} upload-finding-guidance{% endif %}">
                 <legend>What did you find?</legend>
+                {% if mah and not a7 and not a24 %}
+                <p id="upload-finding-guidance" class="investigation-hint" role="status" aria-live="polite">First confirm the upload checks above. Then select your finding below.</p>
+                {% endif %}
                 {% if mah %}
                 <label><input type="radio" name="finding" value="other" {% if latest.finding == "other" %}checked{% endif %} data-own-side required>Root cause on my side</label>
                 {% else %}

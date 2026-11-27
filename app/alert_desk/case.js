@@ -54,6 +54,7 @@ if (form) {
     no: "Check manual entry and scanner settings.",
     not_checked: "If the pack becomes available, compare the printed identifier and update your findings.",
   };
+  const uploadGuidance = document.querySelector("#upload-finding-guidance");
   const serialCheck = form.querySelector('[data-upload-check="serial_accepted"]');
   const syncForm = () => {
     if (form.elements.batch_uploaded) {
@@ -73,6 +74,21 @@ if (form) {
         input.disabled = !allowed[input.value];
         if (input.disabled) input.checked = false;
       });
+      if (uploadGuidance) {
+        if (other) {
+          uploadGuidance.textContent = 'You selected “Other issue on my side”. Select “Root cause on my side”, or “Still investigating” while you check.';
+        } else if (batch === "no" || serial === "no") {
+          uploadGuidance.textContent = batch === "no"
+            ? 'You indicated that this batch was not uploaded. Select “Root cause on my side”, or “Still investigating” while you check.'
+            : 'You indicated that this serial number was not accepted in the upload. Select “Root cause on my side”, or “Still investigating” while you check.';
+        } else if (batch !== "yes") {
+          uploadGuidance.textContent = 'To select “Root cause not on my side”, first confirm “Yes” to “Was this batch uploaded?” above.';
+        } else if (serialCheck && serial !== "yes") {
+          uploadGuidance.textContent = 'The batch was uploaded. Now confirm whether this serial number was accepted in the upload. “Root cause not on my side” requires “Yes” to both checks.';
+        } else {
+          uploadGuidance.textContent = 'Upload checks complete. You can now select “Root cause not on my side” if you found no other issue on your side.';
+        }
+      }
     }
 
     const finding = form.querySelector('[name="finding"]:checked');

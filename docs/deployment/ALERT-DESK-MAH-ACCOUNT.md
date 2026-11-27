@@ -94,3 +94,23 @@ Owner acceptance: use the added CHG-030 section of the
 [TEST instructions](../validation/ALERT-DESK-TEST-ANLEITUNG.md). Test with an
 existing passkey; no re-enrolment is required by this deployment. The two approved
 real addresses remain available for future invitations/sign-in requests.
+
+
+## CHG-030 B — Guided MAH upload outcome (2026-11-27)
+
+Add a live explanation immediately below What did you find? for upload-based
+MAH workflows: unanswered batch check, missing serial confirmation, negative
+upload evidence, own-side issue, or completed checks. The existing gate remains
+unchanged. A2 needs confirmed batch upload; A3/A52/A68 need both upload checks;
+not-my-side is never selected automatically. Missing imported batch-reference
+evidence does not itself prohibit the participant's confirmed upload answer.
+
+Local targeted regression: 25 passed. Chrome uses a separate synthetic fixture
+(no live data or messages), exercising saved progress → amendment → confirmed
+upload → not-my-side → save/reload, additional serial requirement, negative checks,
+other issue, and mobile overflow. Deployment uses a committed archive, schema
+0057 unchanged, native protected snapshot and unchanged-table/configuration checks.
+The actual installed SHA and verified four process working directories are retained
+privately in `evidence/upload-guidance-final-sync.json`; previous release is
+`eec298b8b1ffbee0f0fd41b5b1b5f7ab2d033e44`. Rollback uses that release without
+restoring over user activity. No PROD changes or external messages.

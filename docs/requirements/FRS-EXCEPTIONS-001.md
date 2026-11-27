@@ -48,6 +48,12 @@ shall apply to the eligible Alerts within the confirmed scope and record the
 Alert IDs and role. RCA shall show the current Finding per role, together with
 the submitted CAPA status when supplied, separately from the NMVO assessment.
 
+CHG-030 B: For guided MAH upload findings, explain why an outcome is disabled
+and the next required upload check beside the finding selection. A2 requires
+confirmed batch upload for not_my_side; A3/A52/A68 additionally require accepted
+serial upload. An own-side issue precludes that outcome. Keep the existing
+server-side validation, explicit participant choice and amendment audit unchanged.
+
 ## FRS-EXC-005
 
 Authorised staff shall record local Case status, cause attribution, decision

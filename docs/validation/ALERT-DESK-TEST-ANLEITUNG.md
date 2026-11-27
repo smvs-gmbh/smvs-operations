@@ -142,3 +142,14 @@ Review- und Freigabeentscheidung. Eine TEST-Abnahme schaltet PROD nicht frei.
 Erwartung und tatsächliches Ergebnis mit Rolle, Zeit (UTC), Alert-ID und ohne
 Links, Codes oder Sitzungstoken protokollieren. Technische Tests ersetzen nicht
 die fachliche Abnahme. PROD gehört nicht zu diesem Prüfumfang.
+
+
+## CHG-030 B — Guided MAH upload outcome (2026-11-27)
+
+Bei A2 als MAH zunächst Still investigating speichern, dann Update findings
+öffnen. Solange die Upload-Frage unbeantwortet bleibt, muss der Hinweis erklären,
+dass für Root cause not on my side zuerst der bestätigte Batch-Upload (Yes)
+benötigt wird. Nach Yes muss diese Ergebniswahl verfügbar sein und gespeichert
+werden können. Bei A3 zusätzlich die bestätigte Annahme der Seriennummer prüfen.
+No bzw. Other issue on my side muss die entsprechende Einschränkung erklären.
+Ein neuer Befund wird ausdrücklich gewählt; frühere Befunde bleiben erhalten.
