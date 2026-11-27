@@ -40,6 +40,7 @@ class Findings(BaseModel):
     batch_revision: (
         Annotated[str, StringConstraints(pattern=r"^[a-f0-9]{64}$")] | None
     ) = None
+    own_cause: bool = False
     pack_on_hold: bool = False
     comparison: Literal["yes", "no", "not_checked"] | None = None
     batch_uploaded: Literal["yes", "no"] | None = None
@@ -57,7 +58,9 @@ class Findings(BaseModel):
             raise ValueError("Record CAPA status when reporting an issue on your side.")
         return self
 
-    def matches_audience(self, audience, alert_code="A3"):
+    def matches_audience(self, audience, alert_code="A3", *, mah_a24_enabled=False):
+        if self.own_cause and (audience != "mah" or alert_code != "A24"):
+            return False
         if self.pack_on_hold and (
             audience != "end_user" or alert_code not in {"A2", "A3"}
         ):
@@ -65,7 +68,7 @@ class Findings(BaseModel):
         if self.batch_revision and (alert_code not in {"A2", "A7"} or self.pack_on_hold):
             return False
         if alert_code == "A24":
-            return audience == "end_user" and not (
+            return (audience == "end_user" or (audience == "mah" and (mah_a24_enabled or self.own_cause))) and not (
                 self.comparison or self.batch_uploaded or self.serial_accepted or self.other_issue
             )
         if alert_code == "A7":

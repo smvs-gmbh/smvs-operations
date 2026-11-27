@@ -27,7 +27,9 @@
     {% set mah = case.audience == "mah" %}
     {% set mah_a7 = case.investigation == "mah_a7" %}
     {% set a7 = mah_a7 or case.investigation == "end_user_a7" %}
-    {% set a24 = case.investigation == "end_user_a24" %}
+    {% set mah_a24 = mah and case.code == "A24" %}
+    {% set a24 = case.investigation == "end_user_a24" or mah_a24 %}
+    {% set mah_a24_waiting = mah_a24 and not case.mah_a24_requested and not case.mah_a24_own_cause %}
     <div id="case-content">
       <div class="case-ref">{{ case.alert }}{% if case.alert_at %} · {{ case.alert_at }}{% endif %}</div>
       <div class="outcome"><span class="outcome-icon pending" aria-hidden="true">?</span><h1>{{ case.code or ("Alert" if organisation_case else "A3") }} · {{ case.label or "Pack not found" }}</h1></div>
@@ -87,19 +89,28 @@
             {% else %}<p>No pack report has been shared with this case.</p>{% endif %}
           </section>
           {% endif %}
-          {% if not (case.progress and case.progress.closed) and (not organisation_case or case.investigation) %}
+          {% if not (case.progress and case.progress.closed) and (not organisation_case or case.investigation or mah_a24) %}
           <section class="action" id="guided-action" aria-labelledby="guided-title">
-            <h2 id="guided-title">Your investigation</h2>
+            <h2 id="guided-title">{{ "Investigation status" if mah_a24_waiting else "Your investigation" }}</h2>
+            {% if mah_a24_waiting %}
+            <div id="mah-a24-information"><p><strong>No investigation requested.</strong></p>
+              <p>This A24 alert is provided for information. SMVS has not requested an investigation from your organisation. If you know an action on your side caused this alert, you can report it below.</p>
+              {% if not preview %}<button class="button" type="button" id="start-own-cause">Report an issue on our side</button>{% endif %}
+            </div>
+            {% elif mah_a24 and case.mah_a24_requested %}<p>SMVS has requested an investigation from your organisation.</p>{% endif %}
             <div id="review-state" {% if not latest %}hidden{% endif %}>
               <p role="status" id="review-message">{{ ("Findings recorded for " ~ latest.batch_count ~ " alerts.") if latest.batch_count else "Findings recorded for SMVS review." }}</p>
               <div id="review-comment" {% if not latest.comment %}hidden{% endif %}><strong>Your comment</strong><p class="comment-text" id="review-comment-text">{{ latest.comment or "" }}</p></div>
               <button type="button" class="button" id="amend">Update findings</button>
             </div>
-            <form id="guided-form" method="post" action="{{ request.url.path if preview else (findings_url or form_path) }}" {% if preview %}data-preview{% endif %} {% if latest %}hidden{% endif %}>
+            <form id="guided-form" method="post" action="{{ request.url.path if preview else (findings_url or form_path) }}" {% if preview %}data-preview{% endif %} {% if latest or mah_a24_waiting %}hidden{% endif %}>
               {% if organisation_case %}<input type="hidden" name="basis" value="{{ case.basis }}">{% endif %}
               <input type="hidden" name="publication" value="{{ case.publication }}">
               <input type="hidden" name="submission_key" value="{{ key }}">
-              {% if a24 %}
+              {% if mah_a24 %}
+              <input type="hidden" name="own_cause" value="{{ 'true' if case.mah_a24_own_cause else 'false' }}">
+              <p>Review earlier pack-state transactions made by your organisation or its service providers. Record your findings or progress; this does not change the pack state or close the case.</p>
+              {% elif a24 %}
               <p>Review whether your process, scanner or software triggered the attempted operation. Report your findings and any corrective action. SMVS will review the pack history; this finding does not change the pack state.</p>
               {% elif a7 %}
               <p>Check whether a process or software on your side triggered the request shown above.</p>

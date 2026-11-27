@@ -997,3 +997,21 @@ request). Conditional MAH workflow remains a proposal pending owner decision.
 
 Sources: https://emvo-medicines.eu/wp-content/uploads/EMVS-Alerts-and-Notifications.pdf
 and https://emvo-medicines.eu/wp-content/uploads/Best-Practice-on-Alert-Handling.docx.pdf.
+
+
+## CHG-028 — Conditional MAH A24 investigation (2026-11-27)
+
+Owner accepted the proposed EMVO-based conditional workflow after reviewing
+EMVO-00402 v3 and EMVO-00306 v2, pp.15–16. URS-126 → FRS-EXC-015. Use an explicit
+information/no-request state, enable on a correctly scoped current-source NMVO
+response request or attributed own_cause declaration, and retain independent
+findings/CAPA/comments without pack or NMVO-decision changes. Reuse existing
+response/event storage; no schema migration or fixture rewrite. No automatic mail.
+
+Risks RA-01/04/07/09: silent non-functioning MAH UI, mistaken universal duty to
+investigate, stale/foreign-organisation requests granting entry and unrecorded
+self-initiation. Mitigate by explicit UI state, source/organisation-bound requests,
+verified access, persisted declaration, server validation and closed-case checks.
+Supporting tests: test_a24_participant.py covers default denial, request scope and
+source changes, own declaration, CAPA, repeat-safe writes, invalid commands and
+unchanged End User Location restrictions. Formal acceptance remains owner-led.

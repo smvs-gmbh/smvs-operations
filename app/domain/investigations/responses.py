@@ -147,7 +147,8 @@ def recipient_scope(session, record, role, view):
     ):
         return None, [], "Out of scope"
     if not pilot.investigation_for(
-        record, view["organisation"], view["location"], role
+        record, view["organisation"], view["location"], role,
+        mah_a24_enabled=role == "mah" and record.error_code == "A24",
     ):
         return None, [], "Findings unavailable in Alert Desk"
     if role == "end_user" and record.source_market not in {"CH", "LI"}:

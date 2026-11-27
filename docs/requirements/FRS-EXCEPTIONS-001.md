@@ -1,6 +1,6 @@
 # FRS-EXCEPTIONS-001 — Exceptions and Alert Desk
 
-Status **Draft v0.6**, 2026-11-26. Owner SMVS GmbH. The
+Status **Draft v0.7**, 2026-11-26. Owner SMVS GmbH. The
 [traceability matrix](../validation/RTM-001.md) records implementation and test coverage.
 
 Revision 0.2 specifies the implemented local URS-122 template behaviour and the
@@ -190,3 +190,17 @@ use a keyed fingerprint. Refuse automatic retries of unconfirmed outcomes. Expos
 receipt history only to TEST staff with no-store/no-referrer; capture inbox contains
 captures only. Keep key out of participant gateway. Require fresh invitations after
 contact-version changes. Retain existing evidence through configuration rollback.
+
+
+## FRS-EXC-015
+
+URS-126 / CHG-028: Show A24 MAH information and a no-request explanation by default.
+Use an existing persisted AlertDeskResponseRequest matching case ID, role=mah,
+CRM organisation and current source hash to enable findings; a request for another
+MAH or source revision shall not enable entry. Alternatively an explicitly submitted
+own_cause declaration permits investigation and is retained in the attributed
+findings event. Use the current-source/current-MAH latest event to continue that
+workflow after reload. Recheck verified access, source basis and closed-case status
+on submission; require CAPA exactly for own-side findings. Reject own_cause for
+other roles/codes, pack-hold/batch/upload/comparison commands for A24. Enabling
+MAH request routing must not itself send a message or create a deadline.

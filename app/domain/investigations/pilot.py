@@ -42,9 +42,11 @@ def in_scope(record, organisation, location):
     )
 
 
-def investigation_for(record, organisation, location, role, *, requesting_location_verified=False):
+def investigation_for(record, organisation, location, role, *, requesting_location_verified=False, mah_a24_enabled=False):
     market = record.source_market
     if record.error_code == "A24":
+        if role == "mah":
+            return "mah_a24" if mah_a24_enabled and market != "LI" else None
         return "end_user_a24" if (
             role == "end_user"
             and ((market == "CH" and record.is_intermarket in {0, 1})

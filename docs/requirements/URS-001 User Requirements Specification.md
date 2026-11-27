@@ -7,7 +7,7 @@
 | **Document ID**    | URS-001                         |
 | **Title**          | User Requirements Specification |
 | **Status**         | Draft                           |
-| **Version**        | 0.26                            |
+| **Version**        | 0.27                            |
 | **Classification** | Internal                        |
 | **Owner**          | SMVS GmbH                       |
 | **Author**         | Reinhold Sojer                  |
@@ -819,3 +819,14 @@ Protect credentials and invitation/code content, retain accountable delivery att
 and distinguish provider acceptance from actual delivery. Updating contact addresses
 shall invalidate access verified against the old contact version without deleting
 findings or changing staff authentication. Production mail is outside this increment.
+
+
+## URS-126 — Conditional MAH investigation of A24
+
+A24 shall initially be presented to the authorised MAH for information with an
+explicit no-investigation-requested state. Enable findings when the NMVO has
+requested an investigation for that MAH and current alert source version, or the
+MAH explicitly declares its own involvement. Retain this declaration separately
+from the final finding. Permit progress, comments, personal templates and CAPA
+for own-side findings. Preserve case/organisation scope and NMVO closure authority;
+no automatic mail, case closure or pack-state transaction is triggered.

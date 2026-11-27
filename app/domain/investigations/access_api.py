@@ -16,6 +16,7 @@ from app.domain.models import (
     AlertDeskAccess,
     AlertDeskEvent,
     AlertDeskGrant,
+    AlertDeskResponseRequest,
     ExceptionReview,
     NMVSException,
 )
@@ -209,6 +210,18 @@ def install(app, sessions, secret):
                 "next": rows[-1]["id"] if len(records) > access.PAGE_SIZE else None,
             }
 
+    def mah_a24_context(session, record, grant, crm):
+        if grant.role != "mah" or record.error_code != "A24":
+            return False, False
+        requested = session.scalar(select(AlertDeskResponseRequest.id).where(
+            AlertDeskResponseRequest.exception_id == record.id,
+            AlertDeskResponseRequest.source_version == record.payload_hash,
+            AlertDeskResponseRequest.role == "mah",
+            AlertDeskResponseRequest.crm_organisation_id == crm.id,
+        ).limit(1)) is not None
+        latest = case_updates.latest_finding(session, record, "mah", crm.id)
+        return requested, bool(latest and latest.data.get("own_cause"))
+
     @app.get("/access/alerts/{identifier}")
     def read_case(identifier: int, token: Annotated[str, Depends(capability)]):
         with sessions() as session:
@@ -228,6 +241,7 @@ def install(app, sessions, secret):
             progress = case_updates.public_progress(
                 session, record, grant.role, crm.id, latest
             )
+            a24_requested, a24_own_cause = mah_a24_context(session, record, grant, crm)
             batch = (
                 []
                 if progress["closed"]
@@ -249,6 +263,8 @@ def install(app, sessions, secret):
                 ).hex(),
                 "latest": latest.data if latest else None,
                 "progress": progress,
+                "mah_a24_requested": a24_requested,
+                "mah_a24_own_cause": a24_own_cause,
                 "code": record.error_code,
                 "label": ERRORS.get(record.error_code, ("Reported alert",))[0],
                 "investigation": None
@@ -256,6 +272,7 @@ def install(app, sessions, secret):
                 else pilot.investigation_for(
                     record, view["organisation"], view["location"], grant.role,
                     requesting_location_verified=grant.role == "end_user",
+                    mah_a24_enabled=a24_requested or a24_own_cause,
                 ),
             }
 
@@ -286,16 +303,18 @@ def install(app, sessions, secret):
             org, location = view["organisation"], view["location"]
             if body.publication != identifier or body.basis != record.payload_hash:
                 raise HTTPException(409, "Reload the case before submitting.")
+            a24_requested, a24_own_cause = mah_a24_context(session, record, grant, crm)
             if not pilot.investigation_for(
                 record, org, location, grant.role,
                 requesting_location_verified=grant.role == "end_user",
-            ) or not body.matches_audience(grant.role, record.error_code):
+                mah_a24_enabled=a24_requested or a24_own_cause or body.own_cause,
+            ) or not body.matches_audience(grant.role, record.error_code, mah_a24_enabled=a24_requested or a24_own_cause):
                 raise HTTPException(422, "Check your answers and try again.")
             stored = existing_case_grant(session, grant, record)
             key = str(body.submission_key)
             data = body.model_dump(
                 mode="json",
-                exclude={"submission_key", "publication", "basis", "batch_revision"},
+                exclude={"submission_key", "publication", "basis", "batch_revision"} | ({"own_cause"} if not body.own_cause else set()),
             )
             if body.batch_revision:
                 data["batch_revision"] = body.batch_revision

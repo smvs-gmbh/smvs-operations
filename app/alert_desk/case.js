@@ -28,6 +28,14 @@ if (fragment.startsWith("access=")) {
 
 const form = document.querySelector("#guided-form");
 if (form) {
+  const startOwnCause = document.querySelector("#start-own-cause");
+  startOwnCause?.addEventListener("click", () => {
+    form.elements.own_cause.value = "true";
+    document.querySelector("#mah-a24-information").hidden = true;
+    document.querySelector("#guided-title").textContent = "Your investigation";
+    form.hidden = false;
+    form.querySelector("input[type=radio]")?.focus();
+  });
   const capa = document.querySelector("#own-measures");
   const comment = document.querySelector("#comment");
   const reviewComment = document.querySelector("#review-comment");

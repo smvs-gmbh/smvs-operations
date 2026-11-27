@@ -115,7 +115,7 @@ def create_app(sessions, secret):
             key = str(body.submission_key)
             data = body.model_dump(
                 mode="json",
-                exclude={"submission_key", "publication", "basis", "batch_revision"},
+                exclude={"submission_key", "publication", "basis", "batch_revision"} | ({"own_cause"} if not body.own_cause else set()),
             )
             previous = session.scalar(
                 select(AlertDeskEvent).where(

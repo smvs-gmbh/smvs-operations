@@ -261,3 +261,11 @@ logo; add message_text while retaining legacy message for existing active versio
 The invalid workspace URL observed in the email is not produced by the application.
 Template replacement needs the SendGrid UI (runtime key has no template rights).
 A24 MAH behaviour awaits owner decision based on EMVO guidance.
+
+
+### 2026-11-27 — CHG-028 Conditional MAH A24
+
+A24 MAH view now explains its informational status. A scoped NMVO request or an
+explicit own-cause declaration enables progress/findings/comments/CAPA. Current
+source and organisation are checked; existing access/closure rules stay in force.
+No pack transaction, automatic mail, schema migration or fixture reset.
