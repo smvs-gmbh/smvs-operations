@@ -1,0 +1,43 @@
+{
+  "date": "2026-11-27",
+  "change": "CHG-030",
+  "tested_application_commit": "0c9910fe1b873265c4ac3476706a009f8091354e",
+  "previous_test_commit": "6587f3358ed33da9747794ac876184df4752eca8",
+  "schema": "0057_participant_login",
+  "local_full_suite_passed": 624,
+  "local_final_focused_passed": 19,
+  "hosted_targeted_passed": 46,
+  "hosted_initial_configuration_failure_corrected": true,
+  "browser": {
+    "magic_request_neutral": true,
+    "magic_fragment_removed": true,
+    "explicit_confirmation": true,
+    "webauthn_registration_in_chrome": true,
+    "passkey_signin_in_chrome": true,
+    "new_tab_retains_session": true,
+    "mah_conditional_alerts_hidden": true,
+    "contextual_fresh_proof_and_account_return": true,
+    "my_account_navigation": true,
+    "optional_setup": true,
+    "registration_returns_to_cases": true,
+    "mobile_no_overflow": true,
+    "external_emails_sent": 0
+  },
+  "public_https": {
+    "public_https_login": true,
+    "unauthenticated_account_redirect": true,
+    "private_staff_route_not_public": true,
+    "current_css_and_js": true,
+    "no_store_and_no_referrer": true,
+    "existing_verifyit_available": true,
+    "external_messages_sent": 0
+  },
+  "native_mysql_scope_and_webauthn_passed": true,
+  "native_test_writes_rolled_back": true,
+  "all_79_tables_preserved": true,
+  "runtime_configuration_preserved": true,
+  "real_test_contacts_preserved": true,
+  "external_emails_sent": 0,
+  "production_changed": false,
+  "formal_owner_acceptance": "open"
+}

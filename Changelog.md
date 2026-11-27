@@ -305,3 +305,9 @@ only for protected changes. Schema remains 0057; existing credentials, findings,
 contacts and mail template/configuration preserved. Local suite: 624 passed.
 Controlled TEST rollout/evidence: docs/deployment/ALERT-DESK-MAH-ACCOUNT.md.
 PROD unchanged; owner acceptance remains open.
+
+CHG-030 installed locally and on synthetic TEST; 46 hosted checks and native
+MySQL/TEST-origin authentication and MAH request guards passed. Browser flow
+verified with a virtual authenticator and desktop/mobile screenshots. Protected
+backup and all-table preservation checks completed. Final documentation-only
+archive aligned with local/remote Git and all four TEST process working directories.

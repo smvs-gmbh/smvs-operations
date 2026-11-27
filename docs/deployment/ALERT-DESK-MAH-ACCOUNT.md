@@ -54,3 +54,43 @@ conditional MAH case exclusion, optional Later, return with success notice,
 contextual fresh-proof prompt and account return all passed. Desktop/mobile
 screens inspected; 390px viewport has no horizontal document overflow. Mail was
 captured in a private local fixture, never delivered externally.
+
+
+## Executed TEST checks (2026-11-27)
+
+Tested application source: `0c9910fe1b873265c4ac3476706a009f8091354e`;
+previous TEST release `6587f3358ed33da9747794ac876184df4752eca8`.
+All 666 candidate file hashes verified. Protected SQL/gzip snapshot of all
+79 tables read back successfully before switching the committed release.
+All four supervisor services restarted. All 79 table fingerprints, existing
+passkeys/sessions/findings and both real contact addresses unchanged after restart;
+runtime configuration byte-identical, existing SendGrid template retained.
+
+- Native MySQL: actual TEST-origin Magic Link single-use, WebAuthn registration,
+  signed assertion, logout/sign-in/revocation, read-only My account identity and
+  current-source MAH request guards passed. Test transactions rolled back; all
+  79 table fingerprints restored. Native list compilation emitted SQLAlchemy
+  correlated-query cartesian-product warnings; scope assertions still passed.
+- Hosted targeted regression: 46 passed, one existing Starlette TestClient
+  deprecation warning. Initial test-runner shell lacked fixture DB settings
+  (7 configuration failures, 39 passes); rerun with isolated synthetic fixture
+  settings, without loading the runtime database credentials, passed all 46.
+- Local: 624 full-suite tests; final focused 19 pass after account button styling;
+  Ruff and diff checks passed. Chrome desktop/mobile flow and actual virtual
+  authenticator checks passed, including contextual reauthentication and return.
+- Public HTTPS: sign-in, unauthenticated account redirect, current CSS/JS,
+  no-store/no-referrer, private staff route refusal and existing VerifyIt root
+  availability passed. No external messages sent by these checks or rollout.
+
+Supporting machine-readable results are in
+[the non-secret evidence summary](../validation/evidence/2026-11-27-mah-account.json).
+Protected backup/fingerprint/native/final process records remain in TEST's
+owner-only `evidence/mah-account-*` and `backups/before-mah-account-*` paths.
+The final documentation-only commit is synchronised to origin and installed as
+the TEST source archive with all four process working directories checked against
+that SHA. No schema change, fixture reset, contact rewrite or PROD operation.
+
+Owner acceptance: use the added CHG-030 section of the
+[TEST instructions](../validation/ALERT-DESK-TEST-ANLEITUNG.md). Test with an
+existing passkey; no re-enrolment is required by this deployment. The two approved
+real addresses remain available for future invitations/sign-in requests.
