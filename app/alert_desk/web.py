@@ -44,6 +44,7 @@ ACCESS_COOKIE = "alert_desk_access"
 CHALLENGE_COOKIE = "alert_desk_mailbox_check"
 LOGIN_COOKIE = "alert_desk_login_challenge"
 CONTEXT_COOKIE = "alert_desk_login_context"
+RETURN_COOKIE = "alert_desk_login_return"
 DESIGN_STYLES = {"focused.css", "compact.css", "columns.css"}
 templates = Jinja2Templates(directory=str(ASSETS))
 
@@ -259,7 +260,10 @@ def create_app(secret, *, transport=None, public_origin=PUBLIC_ORIGIN, private_o
 
     @app.get("/alerts/login")
     def login_page(request: Request):
-        return templates.TemplateResponse(request=request, name="login.html", context={"account": False})
+        response = templates.TemplateResponse(request=request, name="login.html", context={"account": False})
+        if request.query_params.get("next") == "account":
+            response.set_cookie(RETURN_COOKIE, "account", max_age=900, path="/alerts/auth", secure=public_origin.startswith("https://"), httponly=True, samesite="strict")
+        return response
 
     @app.get("/alerts/login.js")
     def login_script():
@@ -271,12 +275,12 @@ def create_app(secret, *, transport=None, public_origin=PUBLIC_ORIGIN, private_o
         if not token:
             return RedirectResponse("/alerts/login", status_code=303)
         try:
-            await forward("GET", "/access/login/account", session=token)
+            profile = await forward("GET", "/access/login/account", session=token)
         except HTTPException as error:
             if error.status_code == 404:
                 return RedirectResponse("/alerts/login", status_code=303)
             raise
-        return templates.TemplateResponse(request=request, name="login.html", context={"account": True})
+        return templates.TemplateResponse(request=request, name="account.html", context={"profile": profile, "setup": request.query_params.get("setup") == "1"})
 
     @app.get("/alerts/auth/account")
     async def account_keys(request: Request):
@@ -296,7 +300,7 @@ def create_app(secret, *, transport=None, public_origin=PUBLIC_ORIGIN, private_o
             response = JSONResponse(result["options"])
             response.set_cookie(LOGIN_COOKIE, result["challenge_token"], max_age=180, path="/alerts/auth", secure=public_origin.startswith("https://"), httponly=True, samesite="strict")
         elif "token" in result:
-            response = JSONResponse({"next": "/alerts/account" if step in {"consume", "scope"} else "/alerts"})
+            response = JSONResponse({"next": "/alerts/account" if request.cookies.get(RETURN_COOKIE) == "account" else "/alerts"})
             response.set_cookie(ACCESS_COOKIE, result["token"], max_age=result["expires"], path="/alerts", secure=public_origin.startswith("https://"), httponly=True, samesite="lax")
         elif "context" in result:
             response = JSONResponse({"scopes": result["scopes"]})
@@ -307,6 +311,8 @@ def create_app(secret, *, transport=None, public_origin=PUBLIC_ORIGIN, private_o
             response.delete_cookie(LOGIN_COOKIE, path="/alerts/auth")
         if step == "scope":
             response.delete_cookie(CONTEXT_COOKIE, path="/alerts/auth")
+        if "token" in result:
+            response.delete_cookie(RETURN_COOKIE, path="/alerts/auth")
         if step in {"logout", "revoke"}:
             response.delete_cookie(ACCESS_COOKIE, path="/alerts")
         return response

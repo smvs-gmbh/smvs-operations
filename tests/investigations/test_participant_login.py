@@ -66,7 +66,7 @@ def magic(client, messages, email="mah@example.test"):
 def sign_in(client, messages, email="mah@example.test"):
     token = magic(client, messages, email)
     result = post(client, "consume", token=token)
-    assert result.status_code == 200 and result.json()["next"] == "/alerts/account"
+    assert result.status_code == 200 and result.json()["next"] == "/alerts"
     return result
 
 
@@ -158,7 +158,7 @@ def test_magic_neutral_rate_limit_single_use_and_cookie(login):
     assert "HttpOnly" in cookie and "SameSite=lax" in cookie
     assert (
         "MAH" in client.get("/alerts").text
-        and "No investigation requested." in client.get("/alerts/6").text
+        and client.get("/alerts/6").status_code == 404
     )
     assert post(client, "consume", token=token).status_code == 403
     with factory() as s:
@@ -388,3 +388,38 @@ def test_new_session_expiry_and_assignment_changes_are_rechecked(login):
         contact.profile = {**contact.profile, 'email': 'changed@example.test'}
     assert 'Sign in to Alert Desk' in client.get('/alerts').text
     assert client.get('/alerts/6').status_code == 404
+
+
+def test_my_account_is_a_tab_and_setup_is_optional_without_freshness_warning(login):
+    client, factory, messages = login
+    sign_in(client,messages)
+    page=client.get('/alerts')
+    assert 'My account' in page.text and 'Sign in faster next time.' in page.text
+    assert 'passkey-later' in page.text
+    account=client.get('/alerts/account')
+    assert 'aria-current="page">My account' in account.text
+    assert 'ten minutes' not in account.text and 'Register a passkey to sign in' not in account.text
+    assert 'mah@example.test' in account.text and 'Email sign-in link available' in account.text
+    assert 'Add passkey' in account.text
+    register(client)
+    page=client.get('/alerts?notice=passkey-added')
+    assert 'Passkey added.' in page.text and 'passkey-onboarding' not in page.text
+    assert 'Add another passkey' in client.get('/alerts/account').text
+    with factory.begin() as s:
+        session=s.get(AlertDeskParticipantSession,pilot.digest(client.cookies.get(ACCESS_COOKIE)))
+        session.created_at=pilot.now()-timedelta(minutes=11)
+    data=client.get('/alerts/auth/account').json()
+    assert data['can_manage'] is False
+    assert 'ten minutes' not in client.get('/alerts/account').text
+    assert post(client,'register-options').status_code==403
+
+
+def test_reauthentication_returns_only_to_account_not_an_arbitrary_url(login):
+    client,_,messages=login
+    page=client.get('/alerts/login?next=account')
+    assert page.status_code==200
+    token=magic(client,messages)
+    assert post(client,'consume',token=token).json()['next']=='/alerts/account'
+    client.get('/alerts/login?next=https://attacker.example.test')
+    token=magic(client,messages)
+    assert post(client,'consume',token=token).json()['next']=='/alerts'

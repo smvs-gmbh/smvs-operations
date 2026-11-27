@@ -220,6 +220,9 @@ def test_optional_comment_survives_all_findings_and_round_trip(tmp_path, role, f
                     own.source_location_id = "fixture-location"
                     own.is_intermarket = 0
                     own.business_process = "National System Single Pack API"
+            if role == "mah":
+                from tests.investigations.mah_support import request_mah_review
+                request_mah_review(factory, [4])
             path = f"/cases/4/{role}"
             body = client.get(path).text
             textarea = re.search(r'<textarea id="comment"[^>]*>', body)[0]

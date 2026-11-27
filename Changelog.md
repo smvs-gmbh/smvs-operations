@@ -292,3 +292,16 @@ and existing SendGrid configuration retained. 621 local tests, 44 hosted targete
 checks and native TEST-origin cryptographic authentication checks passed. Test
 writes rolled back. Final archive synchronised to local/remote Git HEAD after
 recording deployment evidence. No external mail sent by rollout; PROD unchanged.
+
+
+## CHG-030 — MAH task visibility and My account (2026-11-27)
+
+Default MAH scope is A2/A3/A52. A7/A24/A68 require a matching current-source
+NMVO request or attributed own-side evidence; all list/detail/template/write paths
+share the policy. Supersedes the earlier default informational A24 display.
+My account is a participant tab with read-only identity, compact sign-in methods,
+optional passkey setup and confirmation back in cases. Fresh proof is prompted
+only for protected changes. Schema remains 0057; existing credentials, findings,
+contacts and mail template/configuration preserved. Local suite: 624 passed.
+Controlled TEST rollout/evidence: docs/deployment/ALERT-DESK-MAH-ACCOUNT.md.
+PROD unchanged; owner acceptance remains open.

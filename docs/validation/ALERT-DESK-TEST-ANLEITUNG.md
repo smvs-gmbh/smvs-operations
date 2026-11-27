@@ -114,3 +114,31 @@ Fehlgeschlagene Erstprüfungen erhalten; erfolgreiche Wiederholungen ergänzen.
 Vor einem Reset zuerst Nachweise sichern. Ein bestandener fachlicher Durchlauf
 ersetzt weder Rollen-/Ausfall-/Wiederherstellungsprüfungen noch die formale
 Review- und Freigabeentscheidung. Eine TEST-Abnahme schaltet PROD nicht frei.
+
+
+## Ergänzung 2026-11-27: MAH-Sicht und My account (CHG-030)
+
+1. Als MAH über die bekannte TEST-Adresse anmelden. Ohne konkrete Zuweisung
+   erscheinen A2/A3/A52; A7/A24/A68 dürfen auch unter All cases, Suche und einem
+   alten Direktlink nicht zugänglich sein. Produktzuordnung bleibt Voraussetzung.
+2. Als NMVO für einen A7/A24/A68 gezielt beim betreffenden MAH eine Abklärung
+   anfordern. Nur dieser aktuelle Alert wird zusätzlich freigegeben, keine
+   unangeforderten Schwester-Alerts. Eigene Befunde und NMVO-Entscheid bleiben
+   getrennt. Eine Anfrage darf keine andere Organisation freischalten.
+3. Im Reiter My account E-Mail, Organisation und Rolle kontrollieren. Diese
+   Angaben werden im CRM gepflegt. Vorhandene Passkeys müssen weiterhin sichtbar
+   und nutzbar sein; Magic Link bleibt als Alternative bestehen.
+4. Nach neuer Anmeldung erscheint die Fallübersicht. Ohne Passkey lässt sich die
+   optionale Einrichtung mit Later überspringen. Add passkey führt zur Einrichtung;
+   danach zurück zur Fallübersicht mit Bestätigung. Teste den nächsten Login mit
+   dem eingerichteten Passkey und mit einem neu angeforderten E-Mail-Link.
+5. Nach mehr als zehn Minuten erst beim Versuch, einen Passkey hinzuzufügen oder
+   zu widerrufen, erneut anmelden. Danach führt der Ablauf zurück zu My account.
+   Beim blossen Lesen darf kein permanenter Warntext zur Anmeldefrist erscheinen.
+6. Revoke nur mit einem entbehrlichen Test-Passkey prüfen: Bestätigung verlangt,
+   danach alle Sitzungen dieser Organisation/Rolle beendet. Einen tatsächlich
+   verwendeten Passkey nicht für diesen Test entfernen.
+
+Erwartung und tatsächliches Ergebnis mit Rolle, Zeit (UTC), Alert-ID und ohne
+Links, Codes oder Sitzungstoken protokollieren. Technische Tests ersetzen nicht
+die fachliche Abnahme. PROD gehört nicht zu diesem Prüfumfang.

@@ -1033,3 +1033,17 @@ additional trailing newline in the text template. Supporting local tests/browser
 checks and deployment/rollback boundaries are described in
 [the login guide](../deployment/ALERT-DESK-PARTICIPANT-LOGIN.md). Formal owner
 acceptance of actual devices, delivered links and recovery remains separate.
+
+
+## CHG-030 — MAH task visibility and My account (2026-11-27)
+
+Owner authorises local implementation and synthetic TEST deployment, including
+My account. URS-128 → FRS-EXC-017 → RA-01/04/07/09/14. Restrict default MAH cases
+to A2/A3/A52; require current-source matching request/own-side evidence for
+A7/A24/A68. Supersede CHG-028's default informational A24 visibility. Preserve
+source/product/Location ownership and all existing evidence. Integrate compact
+My account, optional setup, enrolment confirmation and contextual fresh-proof
+reauthentication. Schema remains 0057; existing mail configuration/template and
+real TEST contacts/credentials are retained. PROD excluded. Supporting evidence:
+[deployment record](../deployment/ALERT-DESK-MAH-ACCOUNT.md). Owner acceptance and
+formal QMS approval remain separate.

@@ -1,6 +1,5 @@
 <nav class="participant-navigation" aria-label="Alert Desk navigation">
   <a href="{{ my_cases_url }}" {{ 'aria-current=page' if not library_active }}>My cases</a>
   <a href="{{ library_url if case else '/alerts/templates' }}" {{ 'aria-current=page' if library_active }} data-template-navigation>My templates</a>
+  <a href="/alerts/account" {{ 'aria-current=page' if account_active }}>My account</a>
 </nav>
-
-<a class="alert-list-link" href="/alerts/account">Account access →</a>

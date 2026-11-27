@@ -866,3 +866,13 @@ No Jelastic deployment or production source request was performed.
   current structured answers when a source/finding revision changes.
 - [x] Existing template access/CRUD/audit API unchanged; no schema change.
 - [ ] Owner acceptance of implemented layout; FRS/RA/RTM reconciliation.
+
+
+## CHG-030 — MAH task visibility and My account (2026-11-27)
+
+- [x] Central MAH task policy across lists, detail, templates, submissions and bulk.
+- [x] My account tab with optional setup and contextual reauthentication.
+- [x] Local regression coverage (624 tests) and lint checks.
+- [ ] Owner acceptance of MAH task allocation and My account on actual devices.
+- [ ] Trusted own-Hub client mapping, if later required; no market-based inference.
+- [ ] Formal QMS baseline approval; this remains a pilot increment.

@@ -1,7 +1,7 @@
 const state = document.querySelector('#participant-login-status');
 const form = document.querySelector('#participant-signin');
 const magic = location.hash.slice(1);
-if (magic) history.replaceState(null, '', location.pathname);
+if (magic && form) history.replaceState(null, '', location.pathname);
 if (magic && form) {
   form.hidden = true;
   document.querySelector('#magic-confirmation').hidden = false;
@@ -11,7 +11,7 @@ const encode = value => btoa(String.fromCharCode(...new Uint8Array(value))).repl
 async function post(step, body = {}) {
   const response = await fetch('/alerts/auth/' + step, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
   const result = await response.json();
-  if (!response.ok) throw new Error(result.detail || 'Sign-in could not be completed. Try again.');
+  if (!response.ok) { const error = new Error(result.detail || 'Sign-in could not be completed. Try again.'); error.status = response.status; throw error; }
   return result;
 }
 function completed(result) {
@@ -52,20 +52,47 @@ form?.addEventListener('submit', event => {
 });
 document.querySelector('#consume-magic')?.addEventListener('click', event => run(event.target, async () => completed(await post('consume', {token: magic}))));
 document.querySelector('#choose-scope')?.addEventListener('click', event => run(event.target, async () => completed(await post('scope', {scope: Number(document.querySelector('#signin-scope').value)}))));
-async function loadKeys() {
-  const response = await fetch('/alerts/auth/account'); const data = await response.json();
+async function accountData() {
+  const response = await fetch('/alerts/auth/account');
   if (!response.ok) throw new Error('Sign in again to manage your account.');
+  return response.json();
+}
+async function readyForChange() {
+  const data = await accountData();
+  if (data.can_manage) return true;
+  document.querySelector('#reauth-required').hidden = false;
+  document.querySelector('#reauth-link').focus();
+  return false;
+}
+async function loadKeys() {
+  const data = await accountData();
   const list = document.querySelector('#passkey-list'); list.replaceChildren();
-  if (!data.keys.length) { const item = document.createElement('li'); item.textContent = 'No passkey registered for this organisation and role.'; list.append(item); }
+  document.querySelector('#passkey-summary').textContent = data.keys.length ? 'Passkey configured' : 'No passkey configured';
+  document.querySelector('#register-passkey').textContent = data.keys.length ? 'Add another passkey' : 'Add passkey';
   for (const key of data.keys) {
     const item = document.createElement('li'); const text = document.createElement('span');
-    text.textContent = `Passkey registered ${key.created_at.replace('T', ' ').replace('Z', ' UTC')}`;
-    const button = document.createElement('button'); button.className = 'button'; button.textContent = 'Revoke passkey and sign out';
-    button.addEventListener('click', () => {
-      if (confirm('Revoke this passkey and sign out all sessions for this organisation and role?')) run(button, async () => { await post('revoke', {key: key.id}); location.replace('/alerts/login'); });
-    }); item.append(text, button); list.append(item);
+    text.textContent = `Added ${key.created_at.slice(0, 10)}`;
+    const button = document.createElement('button'); button.className = 'account-revoke'; button.textContent = 'Revoke…';
+    button.setAttribute('aria-label', `Revoke passkey added ${key.created_at}`);
+    button.addEventListener('click', () => run(button, async () => {
+      if (!await readyForChange()) return;
+      if (confirm('Revoke this passkey and sign out all sessions for this organisation and role?')) { await post('revoke', {key: key.id}); location.replace('/alerts/login'); }
+    })); item.append(text, button); list.append(item);
   }
 }
-document.querySelector('#register-passkey')?.addEventListener('click', event => run(event.target, async () => { await passkey('create'); state.textContent = 'Passkey registered. You can use it for future sign-ins.'; await loadKeys(); }));
+document.querySelector('#register-passkey')?.addEventListener('click', event => run(event.target, async () => {
+  if (!await readyForChange()) return;
+  await passkey('create');
+  location.replace('/alerts?notice=passkey-added');
+}));
 document.querySelector('#sign-out')?.addEventListener('click', event => run(event.target, async () => { await post('logout'); location.replace('/alerts/login'); }));
 if (document.querySelector('#passkey-list')) loadKeys().catch(error => { state.textContent = error.message; });
+const onboarding = document.querySelector('#passkey-onboarding');
+if (onboarding) {
+  const key = 'alert-desk-passkey-later:' + onboarding.dataset.dismissKey;
+  try { onboarding.hidden = sessionStorage.getItem(key) === 'yes'; } catch { /* The prompt remains usable without storage. */ }
+  document.querySelector('#passkey-later').addEventListener('click', () => {
+    onboarding.hidden = true;
+    try { sessionStorage.setItem(key, 'yes'); } catch { /* Hiding for this page is enough. */ }
+  });
+}

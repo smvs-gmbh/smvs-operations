@@ -11,6 +11,7 @@
   {% endif %}
   <link rel="stylesheet" href="/alerts/case.css">
   <script defer src="/alerts/access.js"></script>
+  {% if listing %}<script defer src="/alerts/login.js"></script>{% endif %}
 </head>
 <body>
 {% include 'test_banner.html' %}
@@ -24,11 +25,20 @@
     <a href="{{ request.url.include_query_params(view=key).remove_query_params('before') }}" {% if filters.view == key %}aria-current="page"{% endif %}>{{ label }}{% if key == "on_hold" and listing.hold_count %} ({{ listing.hold_count }}){% endif %}</a>
     {% endfor %}
     <a href="/alerts/templates?{{ list_query }}">My templates</a>
-    <a href="/alerts/account">Account access</a>
+    <a href="/alerts/account">My account</a>
   </nav>
   <div class="heading"><div>
     <h1>My cases</h1><p>{{ listing.organisation }} · {{ 'MAH' if listing.role == 'mah' else 'End User' }}</p>
   </div></div>
+  {% if request.query_params.get('notice') == 'passkey-added' and listing.has_passkey %}
+  <p class="notice" role="status">Passkey added. You can use it for future sign-ins.</p>
+  {% elif not listing.has_passkey %}
+  <aside class="notice passkey-onboarding" id="passkey-onboarding" data-dismiss-key="{{ listing.account_context }}">
+    <div><strong>Sign in faster next time.</strong> Add a passkey for your device.</div>
+    <div class="login-actions"><a class="portal-button" href="/alerts/account?setup=1">Add passkey</a><button class="portal-button portal-button-secondary" type="button" id="passkey-later">Later</button></div>
+  </aside>
+  {% endif %}
+  <p id="participant-login-status" role="status" aria-live="polite"></p>
   <section class="panel portal-table-panel">
     <div class="panel-heading"><h2>Alerts</h2></div>
     <form class="filters alert-desk-filters" action="/alerts" method="get" role="search">

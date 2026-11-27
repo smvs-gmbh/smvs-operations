@@ -101,10 +101,22 @@ def audit(session, kind, grant=None, **data):
     )
 
 
-def fresh(session, raw, grant):
+def has_passkey(session, grant, secret):
+    return session.scalar(select(AlertDeskParticipantPasskey.id).where(
+        AlertDeskParticipantPasskey.access_id == grant.id,
+        AlertDeskParticipantPasskey.binding == binding(secret, grant),
+        AlertDeskParticipantPasskey.revoked_at.is_(None),
+    ).limit(1)) is not None
+
+
+def recently_verified(session, raw, grant):
     row = session.get(AlertDeskParticipantSession, pilot.digest(raw))
     since = row.created_at if row else grant.accepted_at
-    if not since or since < pilot.now() - timedelta(minutes=10):
+    return bool(since and since >= pilot.now() - timedelta(minutes=10))
+
+
+def fresh(session, raw, grant):
+    if not recently_verified(session, raw, grant):
         raise HTTPException(403, "Sign in again before managing passkeys.")
 
 
@@ -381,7 +393,8 @@ def install(app, sessions, secret):
     @app.get("/access/login/account")
     def account(request: Request):
         with sessions() as session:
-            _, grant = current(request, session)
+            raw, grant = current(request, session)
+            crm, email = access.membership(session, grant)
             keys = session.scalars(
                 select(AlertDeskParticipantPasskey)
                 .where(
@@ -392,6 +405,8 @@ def install(app, sessions, secret):
                 .order_by(AlertDeskParticipantPasskey.created_at)
             )
             return {
+                "email": email, "organisation": crm.name, "role": grant.role,
+                "can_manage": recently_verified(session, raw, grant),
                 "keys": [
                     {
                         "id": key.id,

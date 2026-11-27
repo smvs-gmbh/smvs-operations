@@ -63,6 +63,8 @@ def investigation_for(record, organisation, location, role, *, requesting_locati
         return "mah_a7" if role == "mah" else "end_user_a7"
     if not has_identifier_to_check(record):
         return None
+    if role == "mah" and record.error_code in {"A2", "A3", "A52", "A68"}:
+        return record.error_code.lower()
     if in_scope(record, organisation, location) or (
         market in {"CH", "LI"}
         and record.is_intermarket == 1

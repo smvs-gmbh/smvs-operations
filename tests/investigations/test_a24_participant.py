@@ -42,7 +42,7 @@ def test_own_a24_findings_comments_capa_and_foreign_requester_exclusion(tmp_path
             assert client.get("/cases/7/end_user/comment-templates").status_code == 404
             assert client.post("/cases/7/end_user/findings", json={**body, "publication": 7}, headers={"Origin": ORIGIN}).status_code == 404
             assert "Your investigation" not in client.get("/cases/6/mah").text
-            assert client.post("/cases/6/mah/findings", json=body, headers={"Origin": ORIGIN}).status_code == 422
+            assert client.post("/cases/6/mah/findings", json=body, headers={"Origin": ORIGIN}).status_code == 404
             assert not Findings(**body).matches_audience("mah", "A24")
             # Verified ownership comes from the server's current Location scope,
             # including records where the source omitted an Organisation ID.
@@ -66,13 +66,12 @@ def test_mah_a24_information_self_report_and_scoped_request(tmp_path):
         with TestClient(create_workspace(factory), base_url=ORIGIN, client=("127.0.0.1", 1234)) as client:
             path = "/cases/6/mah"
             page = client.get(path)
-            assert "No investigation requested." in page.text
-            assert "Report an issue on our side" in page.text
-            assert 'id="guided-form"' in page.text and 'name="comparison"' not in page.text
-            hidden = dict(re.findall(r'<input type="hidden" name="([^\"]+)" value="([^\"]*)"', page.text))
-            body = {"publication": 6, "basis": hidden["basis"], "submission_key": str(uuid4()), "finding": "investigating", "comment": "Checking our earlier transactions."}
+            assert page.status_code == 404
+            with factory() as s:
+                basis = s.get(NMVSException, 6).payload_hash
+            body = {"publication": 6, "basis": basis, "submission_key": str(uuid4()), "finding": "investigating", "comment": "Checking our earlier transactions."}
             endpoint = path + "/findings"
-            assert client.post(endpoint, json=body, headers={"Origin": ORIGIN}).status_code == 422
+            assert client.post(endpoint, json=body, headers={"Origin": ORIGIN}).status_code == 404
             # A specific current-source/current-MAH request enables the flow.
             with factory.begin() as s:
                 user = PortalUser(email="staff@example.test",handle="a24-staff",is_admin=1,is_nmvo=1)
@@ -82,17 +81,20 @@ def test_mah_a24_information_self_report_and_scoped_request(tmp_path):
                 assert crm is not None and "Findings unavailable" not in issue
                 request=AlertDeskResponseRequest(exception_id=6,role="mah",crm_organisation_id=crm.id+100,source_version=record.payload_hash,after_event_id=0,actor_id=user.id,requested_at=pilot.now(),due_on=(pilot.now()+timedelta(days=3)).date())
                 s.add(request);s.flush();request_id=request.id;crm_id=crm.id
-            assert "No investigation requested." in client.get(path).text
-            assert client.post(endpoint,json=body,headers={"Origin":ORIGIN}).status_code==422
+            assert client.get(path).status_code == 404
+            assert client.post(endpoint,json=body,headers={"Origin":ORIGIN}).status_code==404
             with factory.begin() as s:s.get(AlertDeskResponseRequest,request_id).crm_organisation_id=crm_id
             assert "SMVS has requested an investigation" in client.get(path).text
             assert client.post(endpoint,json=body,headers={"Origin":ORIGIN}).status_code==200
             with factory.begin() as s:s.get(AlertDeskResponseRequest,request_id).source_version="0"*64
-            assert client.post(endpoint,json={**body,"submission_key":str(uuid4())},headers={"Origin":ORIGIN}).status_code==422
+            assert client.post(endpoint,json={**body,"submission_key":str(uuid4())},headers={"Origin":ORIGIN}).status_code==404
             # An explicit own-side declaration is accepted and retained separately
             # from the eventual root-cause finding and NMVO decision.
             own={**body,"submission_key":str(uuid4()),"own_cause":True}
+            assert client.post(endpoint,json=own,headers={"Origin":ORIGIN}).status_code==404
+            with factory.begin() as s:s.get(AlertDeskResponseRequest,request_id).source_version=basis
             assert client.post(endpoint,json=own,headers={"Origin":ORIGIN}).status_code==200
+            with factory.begin() as s:s.get(AlertDeskResponseRequest,request_id).source_version="0"*64
             assert "No investigation requested." not in client.get(path).text
             own={**own,"submission_key":str(uuid4()),"finding":"other"}
             assert client.post(endpoint,json=own,headers={"Origin":ORIGIN}).status_code==422

@@ -1061,6 +1061,9 @@ def test_organisation_invitation_and_case_scope(preview_portal, monkeypatch):
             "Was this batch uploaded?" in page.text
             and "Synthetic location" not in page.text
         )
+        assert mah.get(f"/alerts/{attributed_id}").status_code == 404
+        from tests.investigations.mah_support import request_mah_review
+        request_mah_review(factory, [attributed_id, sibling_id])
         imt_page = mah.get(f"/alerts/{attributed_id}")
         assert "Your investigation" in imt_page.text
         assert "Was this batch uploaded?" not in imt_page.text
@@ -1118,7 +1121,7 @@ def test_organisation_invitation_and_case_scope(preview_portal, monkeypatch):
             mah.post(
                 f"/alerts/{unrelated_id}/findings", json=body, headers=browser
             ).status_code
-            == 409
+            == 404
         )
         with factory.begin() as session:
             session.scalar(

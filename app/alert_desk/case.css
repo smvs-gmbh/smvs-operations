@@ -82,3 +82,20 @@ header:has(.alert-desk-brand) { gap: 1.5rem; background: #fff; }
 #passkey-list { padding-left: 1.2rem; }
 #passkey-list li { padding: .75rem 0; }
 #passkey-list li span { display: block; margin-bottom: .5rem; overflow-wrap: anywhere; }
+
+.account-methods { max-width: 58rem; }
+.account-method { padding: 1.4rem; border-bottom: 1px solid #e3e9ef; }
+.account-method:last-child { border-bottom: 0; }
+.account-method h3 { margin: 0 0 .4rem; font-size: 1rem; }
+.account-method p { color: #61748a; margin: .35rem 0 1rem; }
+.account-method #passkey-list { list-style: none; padding: 0; }
+.account-method #passkey-list li { display: flex; align-items: baseline; flex-wrap: wrap; gap: .5rem 1.5rem; }
+.account-method #passkey-list li span { margin: 0; }
+.account-revoke { border: 0; background: none; color: #61748a; text-decoration: underline; font: inherit; cursor: pointer; }
+.account-secondary { margin-left: 1rem; color: #61748a; }
+.passkey-onboarding { max-width: 58rem; }
+
+.participant-account .portal-button, .passkey-onboarding .portal-button { display:inline-flex; align-items:center; justify-content:center; min-height:2.125rem; padding:.42rem .75rem; border:1px solid #c7d9eb; border-radius:.4rem; background:#edf4fb; color:#174c83; font:inherit; font-weight:550; cursor:pointer; }
+.participant-account .portal-button-secondary, .passkey-onboarding .portal-button-secondary { background:#fff; border-color:var(--line); color:var(--ink); }
+.participant-account .portal-button:hover:not(:disabled), .passkey-onboarding .portal-button:hover { background:#e0edf9; border-color:#a3bedb; }
+.participant-account .portal-button:disabled { opacity:.55; cursor:wait; }

@@ -1,17 +1,11 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ 'Account access' if account else 'Sign in' }} · SMVS Alert Desk</title>
+<title>Sign in · SMVS Alert Desk</title>
 <link rel="stylesheet" href="/alerts/design/focused.css"><link rel="stylesheet" href="/alerts/case.css">
 <script defer src="/alerts/login.js"></script></head><body>
 {% include 'test_banner.html' %}<header>{% include 'brand.html' %}</header>
 <main class="participant-login">
-{% if account %}
-<a class="alert-list-link" href="/alerts">← My cases</a>
-<h1>Account access</h1><p>Register a passkey to sign in without a new invitation or an email link.</p>
-<p class="investigation-hint">Managing passkeys requires a sign-in within the last ten minutes. <a href="/alerts/login">Sign in again →</a></p>
-<section class="action"><h2>Your passkeys</h2><ul id="passkey-list"></ul><button class="button primary" id="register-passkey" type="button">Register a passkey</button></section>
-<button class="button" type="button" id="sign-out">Sign out</button>
-{% else %}
+
 <h1>Sign in to Alert Desk</h1><p>Use the email address registered for your organisation.</p>
 <form id="participant-signin" class="action">
 <label for="signin-email">Email address</label><input type="email" name="email" id="signin-email" autocomplete="username webauthn" maxlength="254" required>
@@ -21,6 +15,5 @@
 <section class="action" id="scope-choice" hidden><h2>Choose your organisation</h2><label for="signin-scope">Organisation and role</label><select id="signin-scope"></select><button class="button primary" type="button" id="choose-scope">Continue</button></section>
 <p class="investigation-hint">No account yet? Ask SMVS to invite you. Sign-in does not create new permissions.</p>
 <p><a href="/alerts">Already signed in? Open my cases →</a></p>
-{% endif %}
 <p id="participant-login-status" role="status" aria-live="polite"></p>
 </main></body></html>

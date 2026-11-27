@@ -169,7 +169,7 @@ def recipient_scope(session, record, role, view):
     if not contacts:
         return crm, [], "No alert contact"
     if not session.scalar(
-        access.cases(session, role, crm, record.source_namespace).where(
+        access.cases(session, role, crm, record.source_namespace, include_unrequested=True).where(
             NMVSException.id == record.id
         )
     ):

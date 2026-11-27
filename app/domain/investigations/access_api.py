@@ -23,7 +23,6 @@ from app.domain.models import (
     AlertDeskAccess,
     AlertDeskEvent,
     AlertDeskGrant,
-    AlertDeskResponseRequest,
     ExceptionReview,
     NMVSException,
 )
@@ -208,6 +207,8 @@ def install(app, sessions, secret):
             return {
                 "organisation": crm.name,
                 "role": grant.role,
+                "has_passkey": participant_auth.has_passkey(session, grant, secret),
+                "account_context": participant_auth.keyed(secret, f"onboarding:{grant.id}:{grant.contact_version}"),
                 "hold_count": hold_count,
                 "rows": rows,
                 "next": rows[-1]["id"] if len(records) > access.PAGE_SIZE else None,
@@ -216,14 +217,11 @@ def install(app, sessions, secret):
     def mah_a24_context(session, record, grant, crm):
         if grant.role != "mah" or record.error_code != "A24":
             return False, False
-        requested = session.scalar(select(AlertDeskResponseRequest.id).where(
-            AlertDeskResponseRequest.exception_id == record.id,
-            AlertDeskResponseRequest.source_version == record.payload_hash,
-            AlertDeskResponseRequest.role == "mah",
-            AlertDeskResponseRequest.crm_organisation_id == crm.id,
-        ).limit(1)) is not None
-        latest = case_updates.latest_finding(session, record, "mah", crm.id)
-        return requested, bool(latest and latest.data.get("own_cause"))
+        requested = bool(session.scalar(select(NMVSException.id).where(
+            NMVSException.id == record.id, access.mah_request_condition(crm.id))))
+        own = bool(session.scalar(select(NMVSException.id).where(
+            NMVSException.id == record.id, access.mah_own_cause_condition(crm.id))))
+        return requested, own
 
     @app.get("/access/alerts/{identifier}")
     def read_case(identifier: int, token: Annotated[str, Depends(capability)]):

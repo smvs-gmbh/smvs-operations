@@ -1,0 +1,25 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My account · SMVS Alert Desk</title>
+<link rel="stylesheet" href="/alerts/portal.css"><link rel="stylesheet" href="/alerts/case.css">
+<script defer src="/alerts/login.js"></script></head><body>
+{% include 'test_banner.html' %}<header class="topbar alert-desk-topbar">{% include 'brand.html' %}</header>
+<main class="portal-workspace alert-desk-workspace participant-account">
+<nav class="portal-module-nav" aria-label="Case views">
+{% for key,label in [('my_cases','My cases'),('completed','Completed by us'),('on_hold','Packs on hold'),('all','All cases')] %}<a href="/alerts?view={{ key }}">{{ label }}</a>{% endfor %}
+<a href="/alerts/templates?return=cases">My templates</a><a href="/alerts/account" aria-current="page">My account</a>
+</nav>
+<div class="heading"><div><h1>My account</h1><p>{{ profile.email }} · {{ profile.organisation }} · {{ 'MAH' if profile.role == 'mah' else 'End User' }}</p></div></div>
+<section class="panel account-methods">
+<div class="panel-heading"><h2>Sign-in methods</h2></div>
+<div class="account-method"><h3 id="passkey-summary">{{ 'Passkey configured' if profile['keys'] else 'No passkey configured' }}</h3>
+<p>Use your device or security key to sign in.</p><ul id="passkey-list"></ul>
+<button class="portal-button" id="register-passkey" type="button">{{ 'Add another passkey' if profile['keys'] else 'Add passkey' }}</button>
+{% if setup %}<a class="account-secondary" href="/alerts">Later →</a>{% endif %}
+</div>
+<div class="account-method"><h3>Email sign-in link available</h3><p>Sent to {{ profile.email }}</p></div>
+</section>
+<aside class="notice" id="reauth-required" hidden><strong>For this change, please sign in again.</strong><p><a href="/alerts/login?next=account" id="reauth-link">Sign in to continue →</a></p></aside>
+<p id="participant-login-status" role="status" aria-live="polite"></p>
+<button class="portal-button portal-button-secondary" type="button" id="sign-out">Sign out</button>
+</main></body></html>

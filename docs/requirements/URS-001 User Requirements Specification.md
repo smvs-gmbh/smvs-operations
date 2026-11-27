@@ -7,7 +7,7 @@
 | **Document ID**    | URS-001                         |
 | **Title**          | User Requirements Specification |
 | **Status**         | Draft                           |
-| **Version**        | 0.28                            |
+| **Version**        | 0.29                            |
 | **Classification** | Internal                        |
 | **Owner**          | SMVS GmbH                       |
 | **Author**         | Reinhold Sojer                  |
@@ -842,3 +842,20 @@ Recheck current CRM membership, contact version and grant binding at proof and
 access. Support passkey enrolment/revocation after fresh proof, scoped multi-device
 eight-hour sessions and explicit context selection for multiple approved scopes.
 Preserve existing participant evidence and invitation/code access on migration.
+
+
+## URS-128 — Task-relevant MAH access and My account
+
+The MAH shall see product-matched A2/A3/A52 as routine cases. A7/A24/A68 shall
+only be accessible when an explicit current-source request for that MAH or an
+attributed current-source own-cause finding establishes involvement. Apply this
+to every view, search, direct read, templates and submission. Do not infer own
+Hub activity from an EU market label or open unknown codes. This supersedes the
+default informational A24 visibility in URS-126; preserve existing findings.
+
+Returning participants shall manage passkeys in a compact My account tab showing
+read-only email, organisation and role. Successful sign-in opens cases; offer
+optional passkey setup with Later. Successful enrolment returns to cases with a
+confirmation. Request fresh proof only when a protected change needs it, with a
+fixed return to My account. Preserve CRM identity management, existing methods,
+sessions, invitation eligibility and the configured flexible mail template.

@@ -12,6 +12,7 @@ from app.domain.models import (
     AlertDeskEvent,
     AlertDeskExportAttribution,
     AlertDeskGrant,
+    AlertDeskResponseRequest,
     CRMContact,
     CRMEndUser,
     CRMMah,
@@ -113,7 +114,29 @@ def code_hash(secret, challenge, code):
     ).hex()
 
 
-def cases(session, role, crm, namespace):
+MAH_ROUTINE_CODES = ("A2", "A3", "A52")
+MAH_CONDITIONAL_CODES = ("A7", "A24", "A68")
+
+
+def mah_request_condition(organisation_id):
+    return select(AlertDeskResponseRequest.id).where(
+        AlertDeskResponseRequest.exception_id == NMVSException.id,
+        AlertDeskResponseRequest.source_version == NMVSException.payload_hash,
+        AlertDeskResponseRequest.role == "mah",
+        AlertDeskResponseRequest.crm_organisation_id == organisation_id,
+    ).correlate(NMVSException).exists()
+
+
+def mah_own_cause_condition(organisation_id):
+    from app.domain.investigations.case_updates import finding_events
+
+    return finding_events("mah", organisation_id).where(or_(
+        AlertDeskEvent.data["own_cause"].as_boolean().is_(True),
+        AlertDeskEvent.data["finding"].as_string().in_(("procedural", "technical", "other")),
+    )).exists()
+
+
+def cases(session, role, crm, namespace, *, include_unrequested=False):
     statement = select(NMVSException).where(NMVSException.source_namespace == namespace)
     if role == "end_user":
         org = (
@@ -171,6 +194,13 @@ def cases(session, role, crm, namespace):
             func.max(SAIHolder.is_observed) == 1,
         )
     )
+    if not include_unrequested:
+        statement = statement.where(or_(
+            NMVSException.error_code.in_(MAH_ROUTINE_CODES),
+            NMVSException.error_code.in_(MAH_CONDITIONAL_CODES) & or_(
+                mah_request_condition(crm.id), mah_own_cause_condition(crm.id),
+            ),
+        ))
     return statement.where(
         NMVSException.gtin14.in_(packages),
         or_(NMVSException.source_market.is_(None), NMVSException.source_market != "LI"),

@@ -1,6 +1,6 @@
 # FRS-EXCEPTIONS-001 — Exceptions and Alert Desk
 
-Status **Draft v0.8**, 2026-11-26. Owner SMVS GmbH. The
+Status **Draft v0.9**, 2026-11-27. Owner SMVS GmbH. The
 [traceability matrix](../validation/RTM-001.md) records implementation and test coverage.
 
 Revision 0.2 specifies the implemented local URS-122 template behaviour and the
@@ -219,3 +219,26 @@ that scope's sessions. Retain hashed eight-hour sessions independently per devic
 legacy sessions until their existing expiry, and source/Location checks on reads
 and writes. Snapshot current grants for magic links and explicitly select context
 when multiple valid scopes remain. Schema 0057 is additive and evidence-protected.
+
+
+## FRS-EXC-017
+
+URS-128 / CHG-030: Centralise MAH visibility in the source-namespace and uniquely
+product/GLN-matched access query. Admit A2/A3/A52; require an existing
+AlertDeskResponseRequest matching case, role, CRM organisation and current payload
+hash, or a same-source attributed MAH own-side finding, for A7/A24/A68. Fail
+closed for unknown codes and unresolved product ownership. Apply identically to
+all lists/searches, direct case/template endpoints, writes and bulk targets.
+Staff may request a currently hidden conditional case after product/scope checks;
+this does not itself send mail. Never let a forged submission self-authorise an
+otherwise inaccessible case. Own-source evidence remains valid independently of
+a later progress update; a new source version requires new matching evidence.
+
+Render My account within participant navigation, with current read-only identity,
+passkey status/list, Add passkey, secondary confirmed Revoke and separate Sign out.
+Show the email alternative without treating it as self-registration. Sign-in
+returns to cases, optional setup can be dismissed, and enrolment redirects with a
+server-verified success notice. Check fresh proof server-side for key management;
+show reauthentication only after a protected action needs it. Whitelist the
+account return destination, retain HttpOnly/Secure cookies and existing origin,
+membership, binding and expiry checks. No schema migration.

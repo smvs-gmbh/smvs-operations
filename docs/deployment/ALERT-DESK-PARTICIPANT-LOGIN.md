@@ -120,3 +120,8 @@ MySQL succeeded in an isolated transaction; all writes were rolled back and all
 Starlette/httpx deprecation remains. No external emails were sent by these checks.
 Final source archive is reconciled to local/remote Git HEAD, with protected remote
 manifest/sync evidence; owner real-device/inbox acceptance remains separate.
+
+
+CHG-030 refines the account presentation and default sign-in destination; see
+[My account and MAH policy](ALERT-DESK-MAH-ACCOUNT.md). Authentication requirements
+and schema 0057 remain unchanged.

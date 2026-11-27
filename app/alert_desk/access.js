@@ -37,5 +37,5 @@ requestCode?.addEventListener("submit", event => {
 });
 verifyCode?.addEventListener("submit", event => {
   event.preventDefault();
-  send(verifyCode, {code: verifyCode.elements.code.value}, "/alerts/account");
+  send(verifyCode, {code: verifyCode.elements.code.value}, "/alerts");
 });
