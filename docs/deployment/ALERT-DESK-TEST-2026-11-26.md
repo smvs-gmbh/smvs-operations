@@ -285,3 +285,51 @@ PROD unchanged. This is pilot technical evidence, not formal acceptance.
 Hosted Python 3.15 targeted A24/mail/gateway regressions: 26 passed, one existing
 Starlette/httpx deprecation warning. These tests use isolated fixtures/mocked
 mail transport and send no external messages.
+
+
+## 2026-11-27 — CHG-029 Returning participant sign-in
+
+Application commit `b32222ebbce68a27d2c3722b915e6917c1b325b7`, schema 0057.
+Local development first: full suite 621 passed (one existing Starlette/httpx
+deprecation warning), changed-module lint passed, native local MySQL migration
+succeeded. Isolated Chrome virtual authenticator completed the actual JS link
+request/confirmation, passkey registration, sign-out and passkey sign-in; a new
+tab retained the session. A 390 px viewport showed no horizontal overflow.
+
+Protected consistent TEST snapshot before upgrade: SHA-256
+`c3a24b6142eb14ef69652797a3aa4932e0d3f0812c0ee49035ca78b21d57a3db`.
+Private `login-preflight.json` retains snapshot path, all 74 original table
+fingerprints/counts and previous runtime. 662 archive files verified before
+0056 → 0057. Existing tables except alembic version match row fingerprints after
+upgrade; no CRM/invitation/contact/user/findings/template rewrite or fixture reset.
+Runtime JSON is byte-identical: existing SendGrid template ID/key/sender/allowlist
+and both approved real contacts are preserved. Authentication uses new additive
+tables; legacy sessions remain recognised. PROD unchanged.
+
+Native TEST MySQL transaction, using the actual public TEST RP/origin, verified
+Magic Link request/one-time consumption, genuine signed WebAuthn registration and
+authentication, logout/revocation, and Secure/HttpOnly/Lax cookies. Mail was replaced
+by an in-process test callback. All writes were rolled back; all 79 tables matched
+their original row fingerprints afterwards. Evidence: private
+`participant-login-native.json`. Hosted Python 3.15 targeted auth/migration/mail/
+A24/gateway checks: 44 passed, existing deprecation warning only.
+
+Public HTTPS entry and login/script return 200, unauthenticated account returns
+303, staff delivery route remains publicly 404, VerifyIt homepage returns 200.
+Privacy headers include no-store and effective no-referrer (the edge also emits
+a default referrer policy; the app policy is last). No edge/auth safeguard was
+relaxed. No external email was sent by deployment or automated checks.
+
+Source reconciliation: the initial local/remote Git HEAD 2612187 differed from
+the TEST c20f2f1 application only by the deployment record. Final delivery includes
+this evidence as a documentation-only commit and synchronises the archived TEST
+release to that exact local/remote HEAD; private source manifest and final sync
+evidence identify the commit without a self-referential document hash. Restart
+services against the final archive, preserve schema/data/config and verify all
+manifest hashes/process working directories. No second migration is needed.
+
+Rollback keeps additive 0057 and authentication evidence; do not restore the
+pre-deployment backup over later participant work. Downgrade refuses populated
+authentication tables. Owner acceptance of actual delivered Magic Links and real
+device passkeys is pending; see the participant login guide. The installed key
+still has Mail Send scope, not template-management scope.

@@ -109,3 +109,14 @@ On hosted TEST, each owner/tester should:
 
 Record acceptance separately; do not include invitation/link/credential secrets in
 screenshots, Git or public tickets. Email languages remain deferred.
+
+
+## Installed technical evidence — 2026-11-27
+
+TEST upgraded to 0057 with existing data/configuration preserved. Hosted targeted
+checks: 44 passed. Actual TEST-origin WebAuthn and Magic Link checks on native
+MySQL succeeded in an isolated transaction; all writes were rolled back and all
+79 tables matched their originals. Local full suite: 621 passed. Existing
+Starlette/httpx deprecation remains. No external emails were sent by these checks.
+Final source archive is reconciled to local/remote Git HEAD, with protected remote
+manifest/sync evidence; owner real-device/inbox acceptance remains separate.

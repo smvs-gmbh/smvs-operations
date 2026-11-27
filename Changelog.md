@@ -286,3 +286,9 @@ authentication, revalidate grants, and retain existing findings and legacy sessi
 New eight-hour multi-device sessions are independently revocable; direct email
 navigation uses a Lax access cookie with exact-Origin POST checks. Schema 0057
 retains hashed auth tokens/sessions, public-key records and audit evidence.
+
+CHG-029 installed on synthetic TEST (schema 0057); both approved real contacts
+and existing SendGrid configuration retained. 621 local tests, 44 hosted targeted
+checks and native TEST-origin cryptographic authentication checks passed. Test
+writes rolled back. Final archive synchronised to local/remote Git HEAD after
+recording deployment evidence. No external mail sent by rollout; PROD unchanged.
