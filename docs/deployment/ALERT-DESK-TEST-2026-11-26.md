@@ -242,3 +242,46 @@ invitations. Test the owner's MAH invitation first, then the End User invitation
 using separate browser profiles. Acceptance by SendGrid is not inbox confirmation.
 Rollback: switch TEST mail mode to capture and restart API/portal, preserving
 receipt and participant data. Do not restore the database for a mail-mode rollback.
+
+
+## 2026-11-27 — CHG-026/027/028: logos and conditional MAH A24
+
+Installed committed runtime `c20f2f1d236648062f9d4afbc8fd18436bc8806e`,
+655 archived files verified by hash; schema stays 0056. Fresh protected consistent
+SQL/gzip snapshot before deployment: SHA-256
+`d84becc18388ddb526fb65140e7d9a8d9f37361f59d7752827160772118f2032`.
+Remote `brand-mail-preflight.json` records the backup path/counts/fingerprints,
+`brand-mail-deployment.json` records preservation checks. All 74 existing tables
+match preflight row fingerprints. No reset, contact update or migration. Both
+real contacts remain assigned for invitations: Nicolas Florin as End User and
+Reinhold Sojer as MAH. Runtime configuration including SendGrid key/template,
+recipient allowlist and public origin is byte-identical. Passkeys/findings/access
+records preserved. Configuration/code rollback must retain all subsequent data.
+
+Restarted API/gateway/portal. Checked each live process working directory against
+the installed commit; all four supervised services run. Public wide/narrow logo
+bytes match repository inputs, access page references the new logo and same-origin
+image CSP; private Operations logo responds at configured staff Host. Private
+delivery UI remains publicly 404; separate VerifyIt homepage remains 200.
+
+603 local tests passed with the existing Starlette/httpx deprecation warning;
+changed-module lint/diff checks passed. Chrome local preview shows A24 information
+state and the own-cause button opens the form without submitting. Native TEST
+MySQL transaction verified unrequested denial, a matching persisted MAH request,
+stale-request refusal and own-declaration submission/reload. Rolled back every
+test write and restored the original MAH session hash/expiry; findings/request
+counts match their originals. Private evidence: `mah-a24-checks.json`.
+
+The observed email's workspace-placeholder CTA needs replacement in SendGrid UI.
+The runtime Mail Send key receives 403 for template retrieval; no template-account
+change or external test mail was attempted. Corrected HTML/plain-text assets are
+prepared under deploy/alert-desk-test; subject remains {{subject}}. New body
+message_text removes duplicate destinations; legacy message remains available
+until the owner replaces/activates the template. See the SendGrid configuration
+guide. The owner's earlier successful invitation/code access is supporting manual
+evidence; corrected CTA rendering and independent End User acceptance remain open.
+PROD unchanged. This is pilot technical evidence, not formal acceptance.
+
+Hosted Python 3.15 targeted A24/mail/gateway regressions: 26 passed, one existing
+Starlette/httpx deprecation warning. These tests use isolated fixtures/mocked
+mail transport and send no external messages.

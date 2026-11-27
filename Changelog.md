@@ -269,3 +269,9 @@ A24 MAH view now explains its informational status. A scoped NMVO request or an
 explicit own-cause declaration enables progress/findings/comments/CAPA. Current
 source and organisation are checked; existing access/closure rules stay in force.
 No pack transaction, automatic mail, schema migration or fixture reset.
+
+CHG-026/027/028 installed on synthetic TEST as runtime `c20f2f1`, schema unchanged
+0056. Logos and conditional MAH A24 workflow verified; existing CRM addresses,
+findings, sessions/passkeys and SendGrid configuration preserved. Corrected email
+template assets await owner activation in SendGrid UI because the Mail Send key
+has no template permissions. No external messages sent by rollout; PROD unchanged.

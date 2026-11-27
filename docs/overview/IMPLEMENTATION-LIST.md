@@ -8,6 +8,11 @@ release. Dated sections further down preserve earlier decisions and milestones.
 
 ## Next
 
+- [ ] **CHG-028 — Accept conditional MAH A24 on TEST.** Information/no-request
+  state, matching NMVO request or explicit own declaration, attributed progress/
+  findings/comments/CAPA; no automatic mail or pack transaction. Technical checks
+  passed; owner acceptance remains open.
+
 - [ ] **Alert Desk email languages (deferred by owner).** Add preferred language
   to the CRM contact and allow the participant to change it in Alert Desk. Define
   supported languages, fallback and template selection before implementation.
@@ -15,8 +20,10 @@ release. Dated sections further down preserve earlier decisions and milestones.
 - [ ] **CHG-025 — Activate and validate TEST email.** Controlled SendGrid transport,
   shared template and private receipts are implemented; configure the private
   Mail Send key and active template ID, then verify approved participant delivery.
-  TEST runtime `614524d`, schema 0056 and both real contact addresses are installed.
-  SendGrid is now activated on TEST; first invitation/code/inbox checks remain pending.
+  TEST runtime `c20f2f1`, schema 0056 and both real contact addresses are installed.
+  SendGrid is active; owner confirmed invitation/code access. Replace the invalid
+  email CTA in the active SendGrid template using the corrected HTML/text assets;
+  verify the corrected link and independent End User access.
   Fresh invitations are required after contact-version changes.
   [Setup](../deployment/ALERT-DESK-SENDGRID-TEST.md).
 
