@@ -83,3 +83,30 @@ for the new transport/configuration/launcher/tests passed. Native local MySQL
 upgrade from 0055 to 0056 succeeded. Hosted rollout and contact updates require
 protected TEST backup and are recorded separately after execution. Actual SendGrid
 acceptance/inbox verification is pending; no external messages were sent by these checks.
+
+
+## 2026-11-27 — Correct the invitation button (CHG-027)
+
+The observed active email contained a `codex-workspace-link.invalid` button URL,
+which is not an Alert Desk address. The application supplies the real destination
+in `links[].url`; do not paste a rendered chat/workspace link into the template.
+The provided Mail Send key returns HTTP 403 for template retrieval, so template
+editing must be done in the SendGrid UI with an authorised account. No broader
+runtime key is required. Replace the HTML/plain-text version from the repository
+assets, retain subject `{{subject}}`, and activate the edited version.
+
+The corrected HTML uses `{{message_text}}` (body without duplicated destinations),
+`{{brand_logo_url}}` and exactly one CTA per `links` element:
+
+```handlebars
+{{#each links}}
+<a href="{{url}}">{{label}}</a>
+{{/each}}
+```
+
+The destination is dynamic; do not enter a fixed invitation or any
+`codex-workspace-link.invalid` URL. The original `message` field remains available
+for backwards compatibility until the active template is updated. Captured SMTP
+messages retain their complete plain-text destination. Verification-code emails
+have no CTA, reminders may deliberately have multiple distinct case links.
+This does not change the current 8-hour access policy or implement passkeys.

@@ -252,3 +252,12 @@ Verification: 39 targeted investigation/workspace/hosted-origin tests passed;
 Ruff and diff checks passed. Chrome desktop and emulated 390 px mobile previews
 verified loaded artwork and no horizontal overflow on the access page; local
 Operations sign-in visually checked. Input hashes match repository copies.
+
+
+### 2026-11-27 — CHG-027 TEST invitation template preparation
+
+Prepare single-destination HTML/plain-text SendGrid template with hosted Alert Desk
+logo; add message_text while retaining legacy message for existing active versions.
+The invalid workspace URL observed in the email is not produced by the application.
+Template replacement needs the SendGrid UI (runtime key has no template rights).
+A24 MAH behaviour awaits owner decision based on EMVO guidance.

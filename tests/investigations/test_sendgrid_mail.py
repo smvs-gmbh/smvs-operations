@@ -46,6 +46,10 @@ def test_sendgrid_single_allowed_recipient_template_tracking_and_durable_outcome
         assert data["personalizations"][0]["to"] == [{"email": "end_user@example.test"}]
         dynamic = data["personalizations"][0]["dynamic_template_data"]
         assert dynamic["subject"].startswith("[TEST]") and dynamic["links"][0]["url"].endswith(token)
+        assert body == dynamic["message"]  # Existing active templates remain usable.
+        assert token not in dynamic["message_text"] and "https://" not in dynamic["message_text"]
+        assert dynamic["brand_logo_url"] == "https://connect-test.example.test/alerts/brand/smvs-alert-desk-wide.png"
+        assert "codex-workspace-link.invalid" not in str(dynamic)
         assert data["tracking_settings"]["click_tracking"] == {"enable": False, "enable_text": False}
         assert data["tracking_settings"]["open_tracking"] == {"enable": False}
         return httpx.Response(202, headers={"X-Message-Id": "provider-reference"})

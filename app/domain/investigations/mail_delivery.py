@@ -26,13 +26,24 @@ def send(settings, recipient, subject, body):
     pattern = re.escape(origin) + r"/alerts(?:/access#[A-Za-z0-9_-]{43}|/[0-9]+)(?![A-Za-z0-9_/#-])"
     links = [{"url": url, "label": "Open Alert Desk" if "/access#" in url else "Open case"}
              for url in dict.fromkeys(re.findall(pattern, body))]
+    # Retain legacy message for existing templates; the revised template renders
+    # message_text plus one explicit link, avoiding an auto-linked duplicate URL.
+    message_text = body
+    for link in links:
+        message_text = message_text.replace(link["url"], "")
+    message_text = "\n".join(
+        line.rstrip() for line in message_text.splitlines()
+        if line.strip() not in {"Open:", "Open your organisation’s Alert Desk:",
+            "Open your case:", "Open the case to review the current instructions:"}
+    ).strip()
     payload = {
         "from": {"email": settings.alert_desk_mail_from, "name": "SMVS Alert Desk TEST"},
         "template_id": settings.alert_desk_sendgrid_template_id,
         "custom_args": {"smvs_test_delivery": identifier},
         "personalizations": [{"to": [{"email": recipient}], "dynamic_template_data": {
             "subject": "[TEST] " + subject, "message": body, "links": links,
-            "environment": "TEST", "heading": kind,
+            "environment": "TEST", "heading": kind, "message_text": message_text,
+            "brand_logo_url": origin + "/alerts/brand/smvs-alert-desk-wide.png",
         }}],
         "tracking_settings": {"click_tracking": {"enable": False, "enable_text": False}, "open_tracking": {"enable": False}},
     }

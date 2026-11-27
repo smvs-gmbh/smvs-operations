@@ -1,7 +1,7 @@
 SMVS Alert Desk TEST
 {{heading}}
 
-{{message}}
+{{message_text}}
 
 {{#each links}}
 {{label}}: {{url}}

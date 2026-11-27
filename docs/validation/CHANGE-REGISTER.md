@@ -975,3 +975,25 @@ gateway and staff preview rendering. Authentication and case scope are unchanged
 refusal; Chrome desktop/mobile and Operations sign-in checks provide visual QA.
 No schema/messaging/process requirement change; no TEST/PROD rollout authorised
 by this local implementation. Email template branding is separate from this change.
+
+
+## CHG-027 — TEST logo rollout and invitation-template correction (2026-11-27)
+
+Owner authorises TEST rollout of CHG-026 logos, preserving existing End User/MAH
+contacts, assignments, access sessions, passkeys, findings and SendGrid settings.
+No fixture reset or contact rewrite. Schema remains 0056. The observed email CTA
+resolved to codex-workspace-link.invalid; application payload already supplies the
+real configured-origin URL. Mail Send key cannot read/edit templates (HTTP 403).
+Prepare corrected HTML/plain-text assets for owner activation in SendGrid UI.
+Add backwards-compatible message_text without duplicate destinations plus the
+public TEST brand asset URL. Keep original message for the currently active
+template until it is replaced. No external message is sent by rollout.
+
+49 targeted mail/gateway/preview/workspace tests passed; transport lint passed.
+A24 MAH scope is not changed in this increment. Owner requested the EMVO definition
+and responsibilities before deciding: EMVO-00402 v3, pp.36–37; EMVO-00306 v2,
+pp.15–16 (MAH investigation conditional on own cause or specific End User/NMVO/NCA
+request). Conditional MAH workflow remains a proposal pending owner decision.
+
+Sources: https://emvo-medicines.eu/wp-content/uploads/EMVS-Alerts-and-Notifications.pdf
+and https://emvo-medicines.eu/wp-content/uploads/Best-Practice-on-Alert-Handling.docx.pdf.
